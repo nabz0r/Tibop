@@ -1,0 +1,1479 @@
+{
+  "schema_version": 1,
+  "archive": "https://www.scrabblecrds.fr/index.php?PG=9",
+  "games": [
+    {
+      "id": "150720CHMRF1",
+      "title": "Finale Championnat du Monde 2015 - P1",
+      "date": "2015-07-20",
+      "players": [
+        "Schélick ILAGOU REKAWE",
+        "Nigel RICHARDS"
+      ],
+      "source": "https://www.crds.fr/menus/classique/classique.php?ref=150720CHMRF1",
+      "source_sha256": "255262b76b23fb78a44eba2604eb1f3d35fd7c9b4bea3252a2ef3e4a2d1db9dc",
+      "ruleset": "Classique de compétition",
+      "dictionary": "ODS 6",
+      "dictionary_source": "https://fisf.net/lofficiel-du-scrabble/",
+      "final_scores": [
+        427,
+        370
+      ],
+      "final_scores_source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "archive_score_totals": [
+        427,
+        370
+      ],
+      "score_discrepancy": false,
+      "turns": [
+        {
+          "index": 1,
+          "player": 0,
+          "rack": "EESFESA",
+          "action": "place",
+          "word": "FEES",
+          "coordinate": "H7",
+          "score": 14,
+          "top_score": 26,
+          "blank_offsets": []
+        },
+        {
+          "index": 2,
+          "player": 1,
+          "rack": "EASJLOU",
+          "action": "place",
+          "word": "JALOUSEE",
+          "coordinate": "8A",
+          "score": 98,
+          "top_score": 98,
+          "blank_offsets": []
+        },
+        {
+          "index": 3,
+          "player": 0,
+          "rack": "AESEIEA",
+          "action": "place",
+          "word": "AISEE",
+          "coordinate": "F6",
+          "score": 9,
+          "top_score": 26,
+          "blank_offsets": []
+        },
+        {
+          "index": 4,
+          "player": 1,
+          "rack": "IEFHXMC",
+          "action": "place",
+          "word": "FAIX",
+          "coordinate": "B7",
+          "score": 36,
+          "top_score": 44,
+          "blank_offsets": []
+        },
+        {
+          "index": 5,
+          "player": 0,
+          "rack": "AESVPTS",
+          "action": "place",
+          "word": "VASTE",
+          "coordinate": "I6",
+          "score": 37,
+          "top_score": 38,
+          "blank_offsets": []
+        },
+        {
+          "index": 6,
+          "player": 1,
+          "rack": "CEHMOUQ",
+          "action": "place",
+          "word": "CHUM",
+          "coordinate": "E6",
+          "score": 22,
+          "top_score": 40,
+          "blank_offsets": []
+        },
+        {
+          "index": 7,
+          "player": 0,
+          "rack": "PSLENAN",
+          "action": "place",
+          "word": "PLAN",
+          "coordinate": "J4",
+          "score": 21,
+          "top_score": 27,
+          "blank_offsets": []
+        },
+        {
+          "index": 8,
+          "player": 1,
+          "rack": "EOQUBNV",
+          "action": "exchange",
+          "word": null,
+          "coordinate": null,
+          "score": 0,
+          "top_score": 28,
+          "exchanged": "OQUBNV"
+        },
+        {
+          "index": 9,
+          "player": 0,
+          "rack": "ENSBEPA",
+          "action": "place",
+          "word": "PAPES",
+          "coordinate": "4H",
+          "score": 24,
+          "top_score": 30,
+          "blank_offsets": []
+        },
+        {
+          "index": 10,
+          "player": 1,
+          "rack": "ENEINRE",
+          "action": "place",
+          "word": "REINE",
+          "coordinate": "K3",
+          "score": 27,
+          "top_score": 32,
+          "blank_offsets": []
+        },
+        {
+          "index": 11,
+          "player": 0,
+          "rack": "BENCSIB",
+          "action": "exchange",
+          "word": null,
+          "coordinate": null,
+          "score": 0,
+          "top_score": 28,
+          "exchanged": "BB"
+        },
+        {
+          "index": 12,
+          "player": 1,
+          "rack": "EENTTK?",
+          "action": "place",
+          "word": "SKEET",
+          "coordinate": "8K",
+          "score": 74,
+          "top_score": 74,
+          "blank_offsets": [
+            0
+          ]
+        },
+        {
+          "index": 13,
+          "player": 0,
+          "rack": "CISENMT",
+          "action": "place",
+          "word": "CIMENTES",
+          "coordinate": "N2",
+          "score": 76,
+          "top_score": 80,
+          "blank_offsets": []
+        },
+        {
+          "index": 14,
+          "player": 1,
+          "rack": "NTOUBUU",
+          "action": "place",
+          "word": "KNOUT",
+          "coordinate": "L8",
+          "score": 28,
+          "top_score": 28,
+          "blank_offsets": []
+        },
+        {
+          "index": 15,
+          "player": 0,
+          "rack": "RIYTOIN",
+          "action": "place",
+          "word": "YIN",
+          "coordinate": "O1",
+          "score": 42,
+          "top_score": 42,
+          "blank_offsets": []
+        },
+        {
+          "index": 16,
+          "player": 1,
+          "rack": "BUUAEDD",
+          "action": "place",
+          "word": "DUB",
+          "coordinate": "K11",
+          "score": 20,
+          "top_score": 25,
+          "blank_offsets": []
+        },
+        {
+          "index": 17,
+          "player": 0,
+          "rack": "IORTZEO",
+          "action": "place",
+          "word": "OXO",
+          "coordinate": "10A",
+          "score": 12,
+          "top_score": 37,
+          "blank_offsets": []
+        },
+        {
+          "index": 18,
+          "player": 1,
+          "rack": "ADEUTWQ",
+          "action": "place",
+          "word": "QIN",
+          "coordinate": "3M",
+          "score": 20,
+          "top_score": 24,
+          "blank_offsets": []
+        },
+        {
+          "index": 19,
+          "player": 0,
+          "rack": "EIRTZES",
+          "action": "place",
+          "word": "TISEREZ",
+          "coordinate": "14I",
+          "score": 93,
+          "top_score": 93,
+          "blank_offsets": []
+        },
+        {
+          "index": 20,
+          "player": 1,
+          "rack": "ADETUWN",
+          "action": "place",
+          "word": "WU",
+          "coordinate": "15H",
+          "score": 35,
+          "top_score": 42,
+          "blank_offsets": []
+        },
+        {
+          "index": 21,
+          "player": 0,
+          "rack": "EUARULI",
+          "action": "place",
+          "word": "LAUZE",
+          "coordinate": "O11",
+          "score": 45,
+          "top_score": 45,
+          "blank_offsets": []
+        },
+        {
+          "index": 22,
+          "player": 1,
+          "rack": "ADENTLO",
+          "action": "place",
+          "word": "LED",
+          "coordinate": "N13",
+          "score": 9,
+          "top_score": 22,
+          "blank_offsets": []
+        },
+        {
+          "index": 23,
+          "player": 0,
+          "rack": "IRUMLR?",
+          "action": "place",
+          "word": "MER",
+          "coordinate": "5M",
+          "score": 4,
+          "top_score": 24,
+          "blank_offsets": []
+        },
+        {
+          "index": 24,
+          "player": 1,
+          "rack": "AENOTGD",
+          "action": "exchange",
+          "word": null,
+          "coordinate": null,
+          "score": 0,
+          "top_score": 22,
+          "exchanged": "AGD"
+        },
+        {
+          "index": 25,
+          "player": 0,
+          "rack": "?ILRUBR",
+          "action": "place",
+          "word": "ERSE",
+          "coordinate": "10F",
+          "score": 4,
+          "top_score": 30,
+          "blank_offsets": []
+        },
+        {
+          "index": 26,
+          "player": 1,
+          "rack": "NETOHRV",
+          "action": "exchange",
+          "word": null,
+          "coordinate": null,
+          "score": 0,
+          "top_score": 21,
+          "exchanged": "HV"
+        },
+        {
+          "index": 27,
+          "player": 0,
+          "rack": "?BILRUG",
+          "action": "place",
+          "word": "BRU",
+          "coordinate": "5F",
+          "score": 17,
+          "top_score": 30,
+          "blank_offsets": []
+        },
+        {
+          "index": 28,
+          "player": 1,
+          "rack": "ORNETOA",
+          "action": "place",
+          "word": "ATOUT",
+          "coordinate": "12H",
+          "score": 6,
+          "top_score": 21,
+          "blank_offsets": []
+        },
+        {
+          "index": 29,
+          "player": 0,
+          "rack": "?GILAHD",
+          "action": "place",
+          "word": "DAHLIA",
+          "coordinate": "13C",
+          "score": 22,
+          "top_score": 25,
+          "blank_offsets": [
+            1
+          ]
+        },
+        {
+          "index": 30,
+          "player": 1,
+          "rack": "ENORAVG",
+          "action": "place",
+          "word": "HE",
+          "coordinate": "E13",
+          "score": 5,
+          "top_score": 28,
+          "blank_offsets": []
+        },
+        {
+          "index": 31,
+          "player": 0,
+          "rack": "GI",
+          "action": "place",
+          "word": "IL",
+          "coordinate": "C7",
+          "score": 9,
+          "top_score": 9,
+          "blank_offsets": []
+        }
+      ],
+      "end_adjustments": [
+        {
+          "index": 32,
+          "player": 1,
+          "rack": "AGNORV",
+          "action": "end",
+          "word": null,
+          "coordinate": null,
+          "score": -10,
+          "top_score": null
+        },
+        {
+          "index": 33,
+          "player": 0,
+          "rack": "G",
+          "action": "end",
+          "word": null,
+          "coordinate": null,
+          "score": -2,
+          "top_score": null
+        }
+      ]
+    },
+    {
+      "id": "150720CHMRF3",
+      "title": "Finale Championnat du Monde 2015 - P3",
+      "date": "2015-07-20",
+      "players": [
+        "Schélick ILAGOU REKAWE",
+        "Nigel RICHARDS"
+      ],
+      "source": "https://www.crds.fr/menus/classique/classique.php?ref=150720CHMRF3",
+      "source_sha256": "4099edcfe74be8c100b06b18b6b274f65aa442df4a7eb039777d9d94ec9e1ec5",
+      "ruleset": "Classique de compétition",
+      "dictionary": "ODS 6",
+      "dictionary_source": "https://fisf.net/lofficiel-du-scrabble/",
+      "final_scores": [
+        434,
+        565
+      ],
+      "final_scores_source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "archive_score_totals": [
+        434,
+        565
+      ],
+      "score_discrepancy": false,
+      "turns": [
+        {
+          "index": 1,
+          "player": 0,
+          "rack": "EOOPJCT",
+          "action": "exchange",
+          "word": null,
+          "coordinate": null,
+          "score": 0,
+          "top_score": 26,
+          "exchanged": "OPJ"
+        },
+        {
+          "index": 2,
+          "player": 1,
+          "rack": "DEARLHU",
+          "action": "exchange",
+          "word": null,
+          "coordinate": null,
+          "score": 0,
+          "top_score": 26,
+          "exchanged": "DH"
+        },
+        {
+          "index": 3,
+          "player": 0,
+          "rack": "COTEFMU",
+          "action": "exchange",
+          "word": null,
+          "coordinate": null,
+          "score": 0,
+          "top_score": 26,
+          "exchanged": "FM"
+        },
+        {
+          "index": 4,
+          "player": 1,
+          "rack": "URALEIM",
+          "action": "place",
+          "word": "MIAULER",
+          "coordinate": "8G",
+          "score": 68,
+          "top_score": 70,
+          "blank_offsets": []
+        },
+        {
+          "index": 5,
+          "player": 0,
+          "rack": "COUTEET",
+          "action": "place",
+          "word": "CULOTTEE",
+          "coordinate": "K6",
+          "score": 70,
+          "top_score": 76,
+          "blank_offsets": []
+        },
+        {
+          "index": 6,
+          "player": 1,
+          "rack": "ODPIRUI",
+          "action": "place",
+          "word": "PRODUIT",
+          "coordinate": "11E",
+          "score": 20,
+          "top_score": 22,
+          "blank_offsets": []
+        },
+        {
+          "index": 7,
+          "player": 0,
+          "rack": "HSZMVHS",
+          "action": "exchange",
+          "word": null,
+          "coordinate": null,
+          "score": 0,
+          "top_score": 24,
+          "exchanged": "HMVHS"
+        },
+        {
+          "index": 8,
+          "player": 1,
+          "rack": "IJKVETE",
+          "action": "place",
+          "word": "JIVE",
+          "coordinate": "L3",
+          "score": 32,
+          "top_score": 32,
+          "blank_offsets": []
+        },
+        {
+          "index": 9,
+          "player": 0,
+          "rack": "SZIODEN",
+          "action": "place",
+          "word": "MIAULEREZ",
+          "coordinate": "8G",
+          "score": 57,
+          "top_score": 57,
+          "blank_offsets": []
+        },
+        {
+          "index": 10,
+          "player": 1,
+          "rack": "EKTAMAF",
+          "action": "place",
+          "word": "FREAK",
+          "coordinate": "F10",
+          "score": 45,
+          "top_score": 46,
+          "blank_offsets": []
+        },
+        {
+          "index": 11,
+          "player": 0,
+          "rack": "DINOSLU",
+          "action": "place",
+          "word": "DILUONS",
+          "coordinate": "7C",
+          "score": 71,
+          "top_score": 72,
+          "blank_offsets": []
+        },
+        {
+          "index": 12,
+          "player": 1,
+          "rack": "AMTHSOG",
+          "action": "place",
+          "word": "OGHAMS",
+          "coordinate": "15A",
+          "score": 54,
+          "top_score": 60,
+          "blank_offsets": []
+        },
+        {
+          "index": 13,
+          "player": 0,
+          "rack": "SREEBES",
+          "action": "place",
+          "word": "BE",
+          "coordinate": "M2",
+          "score": 26,
+          "top_score": 28,
+          "blank_offsets": []
+        },
+        {
+          "index": 14,
+          "player": 1,
+          "rack": "TNRASNG",
+          "action": "place",
+          "word": "REGNANTS",
+          "coordinate": "N7",
+          "score": 72,
+          "top_score": 72,
+          "blank_offsets": []
+        },
+        {
+          "index": 15,
+          "player": 0,
+          "rack": "EERSSRI",
+          "action": "place",
+          "word": "SAR",
+          "coordinate": "I7",
+          "score": 4,
+          "top_score": 25,
+          "blank_offsets": []
+        },
+        {
+          "index": 16,
+          "player": 1,
+          "rack": "XSEL?EI",
+          "action": "place",
+          "word": "EX",
+          "coordinate": "L11",
+          "score": 55,
+          "top_score": 86,
+          "blank_offsets": []
+        },
+        {
+          "index": 17,
+          "player": 0,
+          "rack": "EEIRSSP",
+          "action": "place",
+          "word": "PISSEREZ",
+          "coordinate": "O1",
+          "score": 112,
+          "top_score": 112,
+          "blank_offsets": []
+        },
+        {
+          "index": 18,
+          "player": 1,
+          "rack": "?EILSEE",
+          "action": "place",
+          "word": "IDEELLES",
+          "coordinate": "C6",
+          "score": 68,
+          "top_score": 68,
+          "blank_offsets": [
+            4
+          ]
+        },
+        {
+          "index": 19,
+          "player": 0,
+          "rack": "TVTBYAA",
+          "action": "place",
+          "word": "BYE",
+          "coordinate": "8A",
+          "score": 42,
+          "top_score": 42,
+          "blank_offsets": []
+        },
+        {
+          "index": 20,
+          "player": 1,
+          "rack": "LREM?IU",
+          "action": "place",
+          "word": "IMBRULEE",
+          "coordinate": "A6",
+          "score": 61,
+          "top_score": 66,
+          "blank_offsets": [
+            7
+          ]
+        },
+        {
+          "index": 21,
+          "player": 0,
+          "rack": "AATTVQN",
+          "action": "place",
+          "word": "QAT",
+          "coordinate": "13E",
+          "score": 11,
+          "top_score": 25,
+          "blank_offsets": []
+        },
+        {
+          "index": 22,
+          "player": 1,
+          "rack": "ENOWNLO",
+          "action": "place",
+          "word": "WU",
+          "coordinate": "F6",
+          "score": 31,
+          "top_score": 31,
+          "blank_offsets": []
+        },
+        {
+          "index": 23,
+          "player": 0,
+          "rack": "AANTVHC",
+          "action": "place",
+          "word": "VACHA",
+          "coordinate": "J2",
+          "score": 30,
+          "top_score": 30,
+          "blank_offsets": []
+        },
+        {
+          "index": 24,
+          "player": 1,
+          "rack": "ELNNOOT",
+          "action": "place",
+          "word": "NEO",
+          "coordinate": "13J",
+          "score": 15,
+          "top_score": 18,
+          "blank_offsets": []
+        },
+        {
+          "index": 25,
+          "player": 0,
+          "rack": "NTDFAAI",
+          "action": "invalid",
+          "word": "ANTIFADA",
+          "coordinate": null,
+          "score": 0,
+          "top_score": 18,
+          "blank_offsets": []
+        },
+        {
+          "index": 26,
+          "player": 1,
+          "rack": "ELNOTUA",
+          "action": "place",
+          "word": "ENOUAT",
+          "coordinate": "O10",
+          "score": 32,
+          "top_score": 32,
+          "blank_offsets": []
+        },
+        {
+          "index": 27,
+          "player": 0,
+          "rack": "AADFINT",
+          "action": "place",
+          "word": "FINI",
+          "coordinate": "D4",
+          "score": 16,
+          "top_score": null,
+          "blank_offsets": []
+        },
+        {
+          "index": 28,
+          "player": 1,
+          "rack": "L",
+          "action": "place",
+          "word": "BEL",
+          "coordinate": "M2",
+          "score": 7,
+          "top_score": 7,
+          "blank_offsets": []
+        }
+      ],
+      "end_adjustments": [
+        {
+          "index": 29,
+          "player": 0,
+          "rack": "AADT",
+          "action": "end",
+          "word": null,
+          "coordinate": null,
+          "score": -5,
+          "top_score": null
+        },
+        {
+          "index": 30,
+          "player": 1,
+          "rack": "",
+          "action": "end",
+          "word": null,
+          "coordinate": null,
+          "score": 5,
+          "top_score": null
+        }
+      ]
+    },
+    {
+      "id": "160726CHPMF1",
+      "title": "Chp du Monde 2016 à Agadir - Finale P1",
+      "date": "2016-07-26",
+      "players": [
+        "Gildas Ingrid MADELA (GA)",
+        "Abib ALABI (CI)"
+      ],
+      "source": "https://www.crds.fr/menus/classique/classique.php?ref=160726CHPMF1",
+      "source_sha256": "7bb6b515e653896fe024e18856833a241929479e43dde488e6db442fbc05e373",
+      "ruleset": "Classique de compétition",
+      "dictionary": "ODS 7",
+      "dictionary_source": "https://fisf.net/lofficiel-du-scrabble/",
+      "final_scores": [
+        380,
+        413
+      ],
+      "final_scores_source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "archive_score_totals": [
+        380,
+        411
+      ],
+      "score_discrepancy": true,
+      "turns": [
+        {
+          "index": 1,
+          "player": 0,
+          "rack": "VUMARAN",
+          "action": "place",
+          "word": "MU",
+          "coordinate": "H7",
+          "score": 6,
+          "top_score": 24,
+          "blank_offsets": []
+        },
+        {
+          "index": 2,
+          "player": 1,
+          "rack": "RITRPO?",
+          "action": "place",
+          "word": "PRIORAT",
+          "coordinate": "9C",
+          "score": 66,
+          "top_score": 69,
+          "blank_offsets": [
+            5
+          ]
+        },
+        {
+          "index": 3,
+          "player": 0,
+          "rack": "AANRVFJ",
+          "action": "exchange",
+          "word": null,
+          "coordinate": null,
+          "score": 0,
+          "top_score": 24,
+          "exchanged": "ANVFJ"
+        },
+        {
+          "index": 4,
+          "player": 1,
+          "rack": "EGIEEMI",
+          "action": "place",
+          "word": "GRIMEE",
+          "coordinate": "D8",
+          "score": 20,
+          "top_score": 24,
+          "blank_offsets": []
+        },
+        {
+          "index": 5,
+          "player": 0,
+          "rack": "RAEIREK",
+          "action": "place",
+          "word": "MARK",
+          "coordinate": "11D",
+          "score": 28,
+          "top_score": 33,
+          "blank_offsets": []
+        },
+        {
+          "index": 6,
+          "player": 1,
+          "rack": "EICNVSL",
+          "action": "place",
+          "word": "SICLE",
+          "coordinate": "H11",
+          "score": 39,
+          "top_score": 39,
+          "blank_offsets": []
+        },
+        {
+          "index": 7,
+          "player": 0,
+          "rack": "EEIROS?",
+          "action": "place",
+          "word": "EROTISEE",
+          "coordinate": "15H",
+          "score": 74,
+          "top_score": 77,
+          "blank_offsets": [
+            3
+          ]
+        },
+        {
+          "index": 8,
+          "player": 1,
+          "rack": "NVAHLSL",
+          "action": "place",
+          "word": "HALL",
+          "coordinate": "14L",
+          "score": 27,
+          "top_score": 27,
+          "blank_offsets": []
+        },
+        {
+          "index": 9,
+          "player": 0,
+          "rack": "ULQETEA",
+          "action": "place",
+          "word": "TALQUEE",
+          "coordinate": "I1",
+          "score": 70,
+          "top_score": 70,
+          "blank_offsets": []
+        },
+        {
+          "index": 10,
+          "player": 1,
+          "rack": "NSVABEA",
+          "action": "place",
+          "word": "BAVANT",
+          "coordinate": "1D",
+          "score": 42,
+          "top_score": 42,
+          "blank_offsets": []
+        },
+        {
+          "index": 11,
+          "player": 0,
+          "rack": "NEPTTDU",
+          "action": "place",
+          "word": "PUTTAS",
+          "coordinate": "M10",
+          "score": 16,
+          "top_score": 24,
+          "blank_offsets": []
+        },
+        {
+          "index": 12,
+          "player": 1,
+          "rack": "ESYAAUN",
+          "action": "place",
+          "word": "NAY",
+          "coordinate": "2E",
+          "score": 34,
+          "top_score": 48,
+          "blank_offsets": []
+        },
+        {
+          "index": 13,
+          "player": 0,
+          "rack": "DENXAIE",
+          "action": "place",
+          "word": "EX",
+          "coordinate": "10I",
+          "score": 33,
+          "top_score": 34,
+          "blank_offsets": []
+        },
+        {
+          "index": 14,
+          "player": 1,
+          "rack": "AESUCSV",
+          "action": "place",
+          "word": "VUS",
+          "coordinate": "14B",
+          "score": 20,
+          "top_score": 38,
+          "blank_offsets": []
+        },
+        {
+          "index": 15,
+          "player": 0,
+          "rack": "ADEINRB",
+          "action": "place",
+          "word": "RIBAUDE",
+          "coordinate": "5E",
+          "score": 40,
+          "top_score": 72,
+          "blank_offsets": []
+        },
+        {
+          "index": 16,
+          "player": 1,
+          "rack": "ACESDEE",
+          "action": "place",
+          "word": "CEDES",
+          "coordinate": "L1",
+          "score": 33,
+          "top_score": 33,
+          "blank_offsets": []
+        },
+        {
+          "index": 17,
+          "player": 0,
+          "rack": "NFOGEHS",
+          "action": "place",
+          "word": "CHEF",
+          "coordinate": "1L",
+          "score": 36,
+          "top_score": 36,
+          "blank_offsets": []
+        },
+        {
+          "index": 18,
+          "player": 1,
+          "rack": "AEIFORN",
+          "action": "place",
+          "word": "FORAINE",
+          "coordinate": "N6",
+          "score": 80,
+          "top_score": 80,
+          "blank_offsets": []
+        },
+        {
+          "index": 19,
+          "player": 0,
+          "rack": "GNOSIUU",
+          "action": "place",
+          "word": "GNOU",
+          "coordinate": "K8",
+          "score": 22,
+          "top_score": 28,
+          "blank_offsets": []
+        },
+        {
+          "index": 20,
+          "player": 1,
+          "rack": "ODTLIAO",
+          "action": "place",
+          "word": "LAD",
+          "coordinate": "15A",
+          "score": 20,
+          "top_score": 21,
+          "blank_offsets": []
+        },
+        {
+          "index": 21,
+          "player": 0,
+          "rack": "ISUZTJW",
+          "action": "place",
+          "word": "JUTEZ",
+          "coordinate": "K2",
+          "score": 35,
+          "top_score": 35,
+          "blank_offsets": []
+        },
+        {
+          "index": 22,
+          "player": 1,
+          "rack": "IOOTNNS",
+          "action": "place",
+          "word": "TON",
+          "coordinate": "4D",
+          "score": 10,
+          "top_score": 27,
+          "blank_offsets": []
+        },
+        {
+          "index": 23,
+          "player": 0,
+          "rack": "ISWEEM",
+          "action": "place",
+          "word": "MISE",
+          "coordinate": "O7",
+          "score": 31,
+          "top_score": 37,
+          "blank_offsets": []
+        },
+        {
+          "index": 24,
+          "player": 1,
+          "rack": "INOS",
+          "action": "place",
+          "word": "FIONS",
+          "coordinate": "O1",
+          "score": 9,
+          "top_score": 17,
+          "blank_offsets": []
+        }
+      ],
+      "end_adjustments": [
+        {
+          "index": 25,
+          "player": 0,
+          "rack": "EW",
+          "action": "end",
+          "word": null,
+          "coordinate": null,
+          "score": -11,
+          "top_score": null
+        },
+        {
+          "index": 26,
+          "player": 1,
+          "rack": "",
+          "action": "end",
+          "word": null,
+          "coordinate": null,
+          "score": 11,
+          "top_score": null
+        }
+      ]
+    },
+    {
+      "id": "211026CHPMF1",
+      "title": "Chpt du Monde 2021 à Aix-les-Bains - Finale P1",
+      "date": "2021-10-26",
+      "players": [
+        "Amédée ASSOMO",
+        "Eric Salvador TCHOUYO"
+      ],
+      "source": "https://www.crds.fr/menus/classique/classique.php?ref=211026CHPMF1",
+      "source_sha256": "eae7e6a24654c0eab3dfb6b6f8f163ffcfca5b491bdbc7f5c60c38ff082e09f1",
+      "ruleset": "Classique de compétition",
+      "dictionary": "ODS 8",
+      "dictionary_source": "https://fisf.net/lofficiel-du-scrabble/",
+      "final_scores": [
+        506,
+        441
+      ],
+      "final_scores_source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "archive_score_totals": [
+        506,
+        450
+      ],
+      "score_discrepancy": true,
+      "turns": [
+        {
+          "index": 1,
+          "player": 0,
+          "rack": "MECTEUG",
+          "action": "place",
+          "word": "MEC",
+          "coordinate": "H8",
+          "score": 12,
+          "top_score": 18,
+          "blank_offsets": []
+        },
+        {
+          "index": 2,
+          "player": 1,
+          "rack": "PEAUFNE",
+          "action": "place",
+          "word": "FUNE",
+          "coordinate": "I7",
+          "score": 22,
+          "top_score": 23,
+          "blank_offsets": []
+        },
+        {
+          "index": 3,
+          "player": 0,
+          "rack": "EGTUSUK",
+          "action": "place",
+          "word": "TEK",
+          "coordinate": "G7",
+          "score": 49,
+          "top_score": 49,
+          "blank_offsets": []
+        },
+        {
+          "index": 4,
+          "player": 1,
+          "rack": "AEPLSEA",
+          "action": "place",
+          "word": "PALE",
+          "coordinate": "J10",
+          "score": 25,
+          "top_score": 44,
+          "blank_offsets": []
+        },
+        {
+          "index": 5,
+          "player": 0,
+          "rack": "GSUUAEA",
+          "action": "exchange",
+          "word": null,
+          "coordinate": null,
+          "score": 0,
+          "top_score": 26,
+          "exchanged": "GAUU"
+        },
+        {
+          "index": 6,
+          "player": 1,
+          "rack": "AESOVRI",
+          "action": "place",
+          "word": "OVAIRES",
+          "coordinate": "K5",
+          "score": 102,
+          "top_score": 102,
+          "blank_offsets": []
+        },
+        {
+          "index": 7,
+          "player": 0,
+          "rack": "AESSILV",
+          "action": "place",
+          "word": "VALISES",
+          "coordinate": "11B",
+          "score": 77,
+          "top_score": 87,
+          "blank_offsets": []
+        },
+        {
+          "index": 8,
+          "player": 1,
+          "rack": "HELAWMR",
+          "action": "place",
+          "word": "HELA",
+          "coordinate": "A8",
+          "score": 32,
+          "top_score": 32,
+          "blank_offsets": []
+        },
+        {
+          "index": 9,
+          "player": 0,
+          "rack": "LEAPRI?",
+          "action": "place",
+          "word": "PELERAIT",
+          "coordinate": "13G",
+          "score": 76,
+          "top_score": 81,
+          "blank_offsets": [
+            7
+          ]
+        },
+        {
+          "index": 10,
+          "player": 1,
+          "rack": "MRWFMBS",
+          "action": "exchange",
+          "word": null,
+          "coordinate": null,
+          "score": 0,
+          "top_score": 16,
+          "exchanged": "BFMMW"
+        },
+        {
+          "index": 11,
+          "player": 0,
+          "rack": "OEESTIL",
+          "action": "place",
+          "word": "ETOILES",
+          "coordinate": "B3",
+          "score": 66,
+          "top_score": 70,
+          "blank_offsets": []
+        },
+        {
+          "index": 12,
+          "player": 1,
+          "rack": "RSTDUON",
+          "action": "place",
+          "word": "RETONDUS",
+          "coordinate": "3A",
+          "score": 70,
+          "top_score": 70,
+          "blank_offsets": []
+        },
+        {
+          "index": 13,
+          "player": 0,
+          "rack": "XUETZMQ",
+          "action": "place",
+          "word": "MOQUEZ",
+          "coordinate": "5A",
+          "score": 46,
+          "top_score": 66,
+          "blank_offsets": []
+        },
+        {
+          "index": 14,
+          "player": 1,
+          "rack": "IIRTAFD",
+          "action": "place",
+          "word": "FIS",
+          "coordinate": "H1",
+          "score": 18,
+          "top_score": 36,
+          "blank_offsets": []
+        },
+        {
+          "index": 15,
+          "player": 0,
+          "rack": "TXEEOA?",
+          "action": "place",
+          "word": "EXO",
+          "coordinate": "H13",
+          "score": 36,
+          "top_score": 69,
+          "blank_offsets": []
+        },
+        {
+          "index": 16,
+          "player": 1,
+          "rack": "ADIRTCO",
+          "action": "place",
+          "word": "COR",
+          "coordinate": "A1",
+          "score": 15,
+          "top_score": 30,
+          "blank_offsets": []
+        },
+        {
+          "index": 17,
+          "player": 0,
+          "rack": "?AEETDI",
+          "action": "place",
+          "word": "FEDERAIT",
+          "coordinate": "1H",
+          "score": 83,
+          "top_score": 83,
+          "blank_offsets": [
+            4
+          ]
+        },
+        {
+          "index": 18,
+          "player": 1,
+          "rack": "ADIRTNN",
+          "action": "place",
+          "word": "ORDINANT",
+          "coordinate": "15H",
+          "score": 80,
+          "top_score": 80,
+          "blank_offsets": []
+        },
+        {
+          "index": 19,
+          "player": 0,
+          "rack": "GRAUGOT",
+          "action": "place",
+          "word": "GOGO",
+          "coordinate": "5J",
+          "score": 6,
+          "top_score": 21,
+          "blank_offsets": []
+        },
+        {
+          "index": 20,
+          "player": 1,
+          "rack": "EBUBYRN",
+          "action": "place",
+          "word": "BABY",
+          "coordinate": "C10",
+          "score": 34,
+          "top_score": 41,
+          "blank_offsets": []
+        },
+        {
+          "index": 21,
+          "player": 0,
+          "rack": "ARTUNIA",
+          "action": "place",
+          "word": "AUX",
+          "coordinate": "14F",
+          "score": 18,
+          "top_score": 36,
+          "blank_offsets": []
+        },
+        {
+          "index": 22,
+          "player": 1,
+          "rack": "ENRUWEH",
+          "action": "place",
+          "word": "WOH",
+          "coordinate": "M4",
+          "score": 15,
+          "top_score": 26,
+          "blank_offsets": []
+        },
+        {
+          "index": 23,
+          "player": 0,
+          "rack": "AINRTMU",
+          "action": "place",
+          "word": "RUMINA",
+          "coordinate": "15A",
+          "score": 26,
+          "top_score": 36,
+          "blank_offsets": []
+        },
+        {
+          "index": 24,
+          "player": 1,
+          "rack": "EENRUJS",
+          "action": "place",
+          "word": "JUSEE",
+          "coordinate": "N3",
+          "score": 39,
+          "top_score": 39,
+          "blank_offsets": []
+        },
+        {
+          "index": 25,
+          "player": 0,
+          "rack": "T",
+          "action": "place",
+          "word": "HELAT",
+          "coordinate": "A8",
+          "score": 9,
+          "top_score": null,
+          "blank_offsets": []
+        }
+      ],
+      "end_adjustments": [
+        {
+          "index": 26,
+          "player": 1,
+          "rack": "NR",
+          "action": "end",
+          "word": null,
+          "coordinate": null,
+          "score": -2,
+          "top_score": null
+        },
+        {
+          "index": 27,
+          "player": 0,
+          "rack": "",
+          "action": "end",
+          "word": null,
+          "coordinate": null,
+          "score": 2,
+          "top_score": null
+        }
+      ]
+    }
+  ],
+  "references": [
+    {
+      "id": "mondial-classique-2025",
+      "title": "Finale mondiale 2025 à Trois-Rivières",
+      "players": [
+        "Quentin Mallégol",
+        "King Josaphat Nkouete Chewa"
+      ],
+      "dictionary": "ODS 9",
+      "source": "https://ffsc.fr/endirect/endirect.php?tournoi_id=25341",
+      "scores_source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "match_scores": [
+        [
+          342,
+          455
+        ],
+        [
+          448,
+          519
+        ],
+        [
+          534,
+          510
+        ],
+        [
+          512,
+          366
+        ],
+        [
+          503,
+          451
+        ]
+      ],
+      "highlight": {
+        "player": 0,
+        "match": 5,
+        "word": "HO",
+        "coordinate": "H1",
+        "score": 17,
+        "source": "https://www.ffsc.fr/mafiche.exporter.scrabblerama.php?numero=513",
+        "analysis": "Mallégol ferme les appuis du C et du S en laissant une lettre dans le sac. Le placement neutralise deux scrabbles que son adversaire pouvait former sur le C."
+      }
+    },
+    {
+      "id": "mondial-classique-2026",
+      "title": "Finale mondiale 2026 à Tunis",
+      "players": [
+        "Ouraga Guy Roland Boli",
+        "Gauthier Houillon"
+      ],
+      "dictionary": "ODS 9",
+      "source": "https://ffsc.fr/endirect/endirect.php?tournoi_id=25971",
+      "scores_source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "match_scores": [
+        [
+          574,
+          463
+        ],
+        [
+          472,
+          486
+        ],
+        [
+          473,
+          409
+        ],
+        [
+          408,
+          523
+        ],
+        [
+          544,
+          345
+        ]
+      ]
+    }
+  ]
+}

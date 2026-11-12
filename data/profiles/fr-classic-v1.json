@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "id": "fr-classic-v1",
+  "language": "fr",
+  "name": "Français classique",
+  "status": "active",
+  "board": {
+    "size": 15,
+    "layout": "classic-15",
+    "center": [
+      7,
+      7
+    ]
+  },
+  "rules": {
+    "rack_size": 7,
+    "min_word_tiles": 2,
+    "bingo_tiles": 7,
+    "bingo_bonus": 50,
+    "players": [
+      2,
+      3,
+      4
+    ],
+    "exchange_min_bag": 7,
+    "exchange_policy": "draw_then_return",
+    "scoreless_end": {
+      "trigger": "passes",
+      "limit": 3,
+      "per_player": true
+    },
+    "rack_out_scoring": "transfer_residue"
+  },
+  "orthography": {
+    "script": "Latn",
+    "normalization": "fr_latin_fold",
+    "segmentation": "unicode_scalar"
+  },
+  "lexicon": {
+    "id": "fr-grammalecte-7.7-v1",
+    "name": "Grammalecte 7.7",
+    "license": "MPL-2.0",
+    "status": "bundled",
+    "path": "data/fr/words.txt"
+  },
+  "tiles": [
+    {
+      "symbol": "?",
+      "count": 2,
+      "points": 0,
+      "vowel": false
+    },
+    {
+      "symbol": "A",
+      "count": 9,
+      "points": 1,
+      "vowel": true
+    },
+    {
+      "symbol": "B",
+      "count": 2,
+      "points": 3,
+      "vowel": false
+    },
+    {
+      "symbol": "C",
+      "count": 2,
+      "points": 3,
+      "vowel": false
+    },
+    {
+      "symbol": "D",
+      "count": 3,
+      "points": 2,
+      "vowel": false
+    },
+    {
+      "symbol": "E",
+      "count": 15,
+      "points": 1,
+      "vowel": true
+    },
+    {
+      "symbol": "F",
+      "count": 2,
+      "points": 4,
+      "vowel": false
+    },
+    {
+      "symbol": "G",
+      "count": 2,
+      "points": 2,
+      "vowel": false
+    },
+    {
+      "symbol": "H",
+      "count": 2,
+      "points": 4,
+      "vowel": false
+    },
+    {
+      "symbol": "I",
+      "count": 8,
+      "points": 1,
+      "vowel": true
+    },
+    {
+      "symbol": "J",
+      "count": 1,
+      "points": 8,
+      "vowel": false
+    },
+    {
+      "symbol": "K",
+      "count": 1,
+      "points": 10,
+      "vowel": false
+    },
+    {
+      "symbol": "L",
+      "count": 5,
+      "points": 1,
+      "vowel": false
+    },
+    {
+      "symbol": "M",
+      "count": 3,
+      "points": 2,
+      "vowel": false
+    },
+    {
+      "symbol": "N",
+      "count": 6,
+      "points": 1,
+      "vowel": false
+    },
+    {
+      "symbol": "O",
+      "count": 6,
+      "points": 1,
+      "vowel": true
+    },
+    {
+      "symbol": "P",
+      "count": 2,
+      "points": 3,
+      "vowel": false
+    },
+    {
+      "symbol": "Q",
+      "count": 1,
+      "points": 8,
+      "vowel": false
+    },
+    {
+      "symbol": "R",
+      "count": 6,
+      "points": 1,
+      "vowel": false
+    },
+    {
+      "symbol": "S",
+      "count": 6,
+      "points": 1,
+      "vowel": false
+    },
+    {
+      "symbol": "T",
+      "count": 6,
+      "points": 1,
+      "vowel": false
+    },
+    {
+      "symbol": "U",
+      "count": 6,
+      "points": 1,
+      "vowel": true
+    },
+    {
+      "symbol": "V",
+      "count": 2,
+      "points": 4,
+      "vowel": false
+    },
+    {
+      "symbol": "W",
+      "count": 1,
+      "points": 10,
+      "vowel": false
+    },
+    {
+      "symbol": "X",
+      "count": 1,
+      "points": 10,
+      "vowel": false
+    },
+    {
+      "symbol": "Y",
+      "count": 1,
+      "points": 10,
+      "vowel": true
+    },
+    {
+      "symbol": "Z",
+      "count": 1,
+      "points": 10,
+      "vowel": false
+    }
+  ],
+  "sources": [
+    {
+      "title": "FISF, règlement international du Scrabble classique",
+      "url": "https://www.ffsc.fr/files/public/fichiers/reglements/classique/Reglement.international.du.Scrabble.classique.pdf"
+    },
+    {
+      "title": "FISF, Guide officiel de l’arbitrage, tableau des lettres, p. 5",
+      "url": "https://fisf.net/wp-content/uploads/2025/08/GOA-ODS6-Septembre2011.pdf"
+    },
+    {
+      "title": "Grammalecte, lexique 7.7",
+      "url": "https://www.grammalecte.net/#telechargement"
+    }
+  ],
+  "notes": [
+    "L’arbitrage Lettrine est automatique. À trois et quatre joueurs, trois tours complets de passes prolongent la règle du duel."
+  ]
+}

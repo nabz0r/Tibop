@@ -1,0 +1,675 @@
+{
+  "campaign": {
+    "target": 100000,
+    "seed": 20261112,
+    "lexicon": "Grammalecte 7.7",
+    "lexicon_words": 406312,
+    "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
+    "engine": "fr-classic-v1"
+  },
+  "public": {
+    "best_score": 897,
+    "bingo_count": 228188,
+    "bingo_rate": 0.08283843658732709,
+    "completed": 100000,
+    "distinct_words": 106131,
+    "draw_rate": 0.00241,
+    "elapsed_seconds": 26.836403208,
+    "engine": "fr-classic-v1",
+    "error": null,
+    "exchange_rate": 3.013125246177778e-05,
+    "finished_reason": {
+      "passes": 2989,
+      "rack_out": 97011
+    },
+    "first_win_rate": 0.52491,
+    "levels": [
+      {
+        "draws": 136,
+        "games": 50000,
+        "id": 0,
+        "label": "Découverte",
+        "mean_score": 294.91842,
+        "rating": 748,
+        "wins": 11966
+      },
+      {
+        "draws": 131,
+        "games": 50000,
+        "id": 1,
+        "label": "Initié",
+        "mean_score": 346.79166,
+        "rating": 1016,
+        "wins": 19408
+      },
+      {
+        "draws": 113,
+        "games": 50000,
+        "id": 2,
+        "label": "Stratège",
+        "mean_score": 434.12896,
+        "rating": 1409,
+        "wins": 31000
+      },
+      {
+        "draws": 102,
+        "games": 50000,
+        "id": 3,
+        "label": "Expert",
+        "mean_score": 494.75334,
+        "rating": 1627,
+        "wins": 37385
+      }
+    ],
+    "lexicon": "Grammalecte 7.7",
+    "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
+    "lexicon_words": 406312,
+    "matchups": [
+      {
+        "a": 0,
+        "a_wins": 5350,
+        "b": 0,
+        "b_wins": 4599,
+        "draws": 51,
+        "games": 10000
+      },
+      {
+        "a": 0,
+        "a_wins": 1840,
+        "b": 1,
+        "b_wins": 8132,
+        "draws": 28,
+        "games": 10000
+      },
+      {
+        "a": 0,
+        "a_wins": 160,
+        "b": 2,
+        "b_wins": 9838,
+        "draws": 2,
+        "games": 10000
+      },
+      {
+        "a": 0,
+        "a_wins": 17,
+        "b": 3,
+        "b_wins": 9979,
+        "draws": 4,
+        "games": 10000
+      },
+      {
+        "a": 1,
+        "a_wins": 5466,
+        "b": 1,
+        "b_wins": 4495,
+        "draws": 39,
+        "games": 10000
+      },
+      {
+        "a": 1,
+        "a_wins": 1047,
+        "b": 2,
+        "b_wins": 8936,
+        "draws": 17,
+        "games": 10000
+      },
+      {
+        "a": 1,
+        "a_wins": 268,
+        "b": 3,
+        "b_wins": 9724,
+        "draws": 8,
+        "games": 10000
+      },
+      {
+        "a": 2,
+        "a_wins": 5341,
+        "b": 2,
+        "b_wins": 4627,
+        "draws": 32,
+        "games": 10000
+      },
+      {
+        "a": 2,
+        "a_wins": 2258,
+        "b": 3,
+        "b_wins": 7712,
+        "draws": 30,
+        "games": 10000
+      },
+      {
+        "a": 3,
+        "a_wins": 5397,
+        "b": 3,
+        "b_wins": 4573,
+        "draws": 30,
+        "games": 10000
+      }
+    ],
+    "mean_score": 392.648095,
+    "mean_turns": 27.54615,
+    "pair_target": 10000,
+    "pass_rate": 0.009950936882286635,
+    "recent": [
+      {
+        "at": 0.069535583,
+        "completed": 256
+      },
+      {
+        "at": 0.341463916,
+        "completed": 1280
+      },
+      {
+        "at": 0.614949625,
+        "completed": 2304
+      },
+      {
+        "at": 0.897874666,
+        "completed": 3328
+      },
+      {
+        "at": 1.170313416,
+        "completed": 4352
+      },
+      {
+        "at": 1.4425639160000001,
+        "completed": 5376
+      },
+      {
+        "at": 1.712481916,
+        "completed": 6400
+      },
+      {
+        "at": 1.98227275,
+        "completed": 7424
+      },
+      {
+        "at": 2.250553291,
+        "completed": 8448
+      },
+      {
+        "at": 2.518730083,
+        "completed": 9472
+      },
+      {
+        "at": 2.791975916,
+        "completed": 10496
+      },
+      {
+        "at": 3.067635375,
+        "completed": 11520
+      },
+      {
+        "at": 3.337588958,
+        "completed": 12544
+      },
+      {
+        "at": 3.608936166,
+        "completed": 13568
+      },
+      {
+        "at": 3.884853541,
+        "completed": 14592
+      },
+      {
+        "at": 4.162731666,
+        "completed": 15616
+      },
+      {
+        "at": 4.436071791,
+        "completed": 16640
+      },
+      {
+        "at": 4.705272208,
+        "completed": 17664
+      },
+      {
+        "at": 4.974377166,
+        "completed": 18688
+      },
+      {
+        "at": 5.244556333,
+        "completed": 19712
+      },
+      {
+        "at": 5.514833333,
+        "completed": 20736
+      },
+      {
+        "at": 5.786238,
+        "completed": 21760
+      },
+      {
+        "at": 6.059175166,
+        "completed": 22784
+      },
+      {
+        "at": 6.333524041,
+        "completed": 23808
+      },
+      {
+        "at": 6.606168916,
+        "completed": 24832
+      },
+      {
+        "at": 6.878825958,
+        "completed": 25856
+      },
+      {
+        "at": 7.152726666,
+        "completed": 26880
+      },
+      {
+        "at": 7.422861166,
+        "completed": 27904
+      },
+      {
+        "at": 7.704539083,
+        "completed": 28928
+      },
+      {
+        "at": 7.985789791,
+        "completed": 29952
+      },
+      {
+        "at": 8.258222875,
+        "completed": 30976
+      },
+      {
+        "at": 8.529962125,
+        "completed": 32000
+      },
+      {
+        "at": 8.799780833,
+        "completed": 33024
+      },
+      {
+        "at": 9.074049208,
+        "completed": 34048
+      },
+      {
+        "at": 9.346801,
+        "completed": 35072
+      },
+      {
+        "at": 9.620457791,
+        "completed": 36096
+      },
+      {
+        "at": 9.893436333,
+        "completed": 37120
+      },
+      {
+        "at": 10.167322208,
+        "completed": 38144
+      },
+      {
+        "at": 10.439915833,
+        "completed": 39168
+      },
+      {
+        "at": 10.712164083,
+        "completed": 40192
+      },
+      {
+        "at": 10.991721375000001,
+        "completed": 41216
+      },
+      {
+        "at": 11.27223,
+        "completed": 42240
+      },
+      {
+        "at": 11.559608916,
+        "completed": 43264
+      },
+      {
+        "at": 11.84086175,
+        "completed": 44288
+      },
+      {
+        "at": 12.1188575,
+        "completed": 45312
+      },
+      {
+        "at": 12.393719416,
+        "completed": 46336
+      },
+      {
+        "at": 12.668802125,
+        "completed": 47360
+      },
+      {
+        "at": 12.945255291,
+        "completed": 48384
+      },
+      {
+        "at": 13.221639625,
+        "completed": 49408
+      },
+      {
+        "at": 13.494219333,
+        "completed": 50432
+      },
+      {
+        "at": 13.763716916,
+        "completed": 51456
+      },
+      {
+        "at": 14.041347083,
+        "completed": 52480
+      },
+      {
+        "at": 14.316533249999999,
+        "completed": 53504
+      },
+      {
+        "at": 14.59370775,
+        "completed": 54528
+      },
+      {
+        "at": 14.867745333,
+        "completed": 55552
+      },
+      {
+        "at": 15.142210958,
+        "completed": 56576
+      },
+      {
+        "at": 15.41863025,
+        "completed": 57600
+      },
+      {
+        "at": 15.696374416,
+        "completed": 58624
+      },
+      {
+        "at": 15.977113125,
+        "completed": 59648
+      },
+      {
+        "at": 16.253664875,
+        "completed": 60672
+      },
+      {
+        "at": 16.53014275,
+        "completed": 61696
+      },
+      {
+        "at": 16.80569425,
+        "completed": 62720
+      },
+      {
+        "at": 17.085791791,
+        "completed": 63744
+      },
+      {
+        "at": 17.362221708,
+        "completed": 64768
+      },
+      {
+        "at": 17.635947125,
+        "completed": 65792
+      },
+      {
+        "at": 17.909950375,
+        "completed": 66816
+      },
+      {
+        "at": 18.183409416,
+        "completed": 67840
+      },
+      {
+        "at": 18.457655708,
+        "completed": 68864
+      },
+      {
+        "at": 18.729651125,
+        "completed": 69888
+      },
+      {
+        "at": 19.009360916,
+        "completed": 70912
+      },
+      {
+        "at": 19.28318225,
+        "completed": 71936
+      },
+      {
+        "at": 19.558527666,
+        "completed": 72960
+      },
+      {
+        "at": 19.831956583,
+        "completed": 73984
+      },
+      {
+        "at": 20.110784333,
+        "completed": 75008
+      },
+      {
+        "at": 20.390947041,
+        "completed": 76032
+      },
+      {
+        "at": 20.667917708,
+        "completed": 77056
+      },
+      {
+        "at": 20.947705416,
+        "completed": 78080
+      },
+      {
+        "at": 21.223551375,
+        "completed": 79104
+      },
+      {
+        "at": 21.495097625,
+        "completed": 80128
+      },
+      {
+        "at": 21.769718083,
+        "completed": 81152
+      },
+      {
+        "at": 22.045568583,
+        "completed": 82176
+      },
+      {
+        "at": 22.318043,
+        "completed": 83200
+      },
+      {
+        "at": 22.590981,
+        "completed": 84224
+      },
+      {
+        "at": 22.863186125,
+        "completed": 85248
+      },
+      {
+        "at": 23.146658,
+        "completed": 86272
+      },
+      {
+        "at": 23.422317166,
+        "completed": 87296
+      },
+      {
+        "at": 23.704538833,
+        "completed": 88320
+      },
+      {
+        "at": 23.98191025,
+        "completed": 89344
+      },
+      {
+        "at": 24.261971125,
+        "completed": 90368
+      },
+      {
+        "at": 24.537469958,
+        "completed": 91392
+      },
+      {
+        "at": 24.814780375,
+        "completed": 92416
+      },
+      {
+        "at": 25.084467458,
+        "completed": 93440
+      },
+      {
+        "at": 25.358360958,
+        "completed": 94464
+      },
+      {
+        "at": 25.631503083,
+        "completed": 95488
+      },
+      {
+        "at": 25.903359000000002,
+        "completed": 96512
+      },
+      {
+        "at": 26.178920416,
+        "completed": 97536
+      },
+      {
+        "at": 26.4489755,
+        "completed": 98560
+      },
+      {
+        "at": 26.722875208,
+        "completed": 99584
+      }
+    ],
+    "running": false,
+    "seed": 20261112,
+    "target": 100000,
+    "turns": 2754615,
+    "words": [
+      {
+        "count": 15413,
+        "mean_score": 22.404723285538182,
+        "word": "JE"
+      },
+      {
+        "count": 14279,
+        "mean_score": 19.807969745780518,
+        "word": "QI"
+      },
+      {
+        "count": 13425,
+        "mean_score": 24.74532588454376,
+        "word": "NEW"
+      },
+      {
+        "count": 13159,
+        "mean_score": 23.785166046052133,
+        "word": "WU"
+      },
+      {
+        "count": 10053,
+        "mean_score": 32.17626579130608,
+        "word": "EX"
+      },
+      {
+        "count": 8416,
+        "mean_score": 21.211264258555133,
+        "word": "EH"
+      },
+      {
+        "count": 7128,
+        "mean_score": 22.788019079685746,
+        "word": "QUE"
+      },
+      {
+        "count": 7067,
+        "mean_score": 10.413471062685723,
+        "word": "ET"
+      },
+      {
+        "count": 6776,
+        "mean_score": 20.667945690672962,
+        "word": "HA"
+      },
+      {
+        "count": 6700,
+        "mean_score": 32.27373134328358,
+        "word": "XI"
+      },
+      {
+        "count": 6565,
+        "mean_score": 11.756130997715156,
+        "word": "DE"
+      },
+      {
+        "count": 6416,
+        "mean_score": 9.621415211970074,
+        "word": "EN"
+      },
+      {
+        "count": 6318,
+        "mean_score": 9.128679962013296,
+        "word": "IL"
+      },
+      {
+        "count": 5922,
+        "mean_score": 6.7890915231340765,
+        "word": "OR"
+      },
+      {
+        "count": 5752,
+        "mean_score": 30.978789986091794,
+        "word": "KO"
+      },
+      {
+        "count": 5720,
+        "mean_score": 9.070804195804195,
+        "word": "AI"
+      },
+      {
+        "count": 5567,
+        "mean_score": 9.269804203341117,
+        "word": "UN"
+      },
+      {
+        "count": 5549,
+        "mean_score": 8.69255721751667,
+        "word": "NI"
+      },
+      {
+        "count": 5515,
+        "mean_score": 10.005802357207616,
+        "word": "LE"
+      },
+      {
+        "count": 5407,
+        "mean_score": 16.589606066210468,
+        "word": "VU"
+      },
+      {
+        "count": 5313,
+        "mean_score": 33.66403162055336,
+        "word": "KM"
+      },
+      {
+        "count": 5223,
+        "mean_score": 20.143212713000192,
+        "word": "OH"
+      },
+      {
+        "count": 5151,
+        "mean_score": 25.981168705105805,
+        "word": "WON"
+      },
+      {
+        "count": 5116,
+        "mean_score": 22.051211884284598,
+        "word": "AH"
+      }
+    ]
+  },
+  "archive_sha256": "266812523ac3512f72f3605e40e16c9164b29a79519d2a6eaa1b4e4655ee042a"
+}

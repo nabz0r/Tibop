@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "id": "ru-mattel-v1",
+  "language": "ru",
+  "name": "Russe classique Mattel",
+  "status": "opt_in",
+  "board": {
+    "size": 15,
+    "layout": "classic-15",
+    "center": [
+      7,
+      7
+    ]
+  },
+  "rules": {
+    "rack_size": 7,
+    "min_word_tiles": 2,
+    "bingo_tiles": 7,
+    "bingo_bonus": 50,
+    "players": [
+      2,
+      3,
+      4
+    ],
+    "exchange_min_bag": 1,
+    "exchange_policy": "draw_then_return",
+    "scoreless_end": {
+      "trigger": "passes",
+      "limit": 2,
+      "per_player": true
+    },
+    "rack_out_scoring": "transfer_residue"
+  },
+  "orthography": {
+    "script": "Cyrl",
+    "normalization": "nfc_uppercase",
+    "segmentation": "unicode_scalar"
+  },
+  "lexicon": {
+    "id": "ru-external",
+    "name": "Dictionnaire russe choisi par les joueurs",
+    "license": null,
+    "status": "external",
+    "path": null
+  },
+  "tiles": [
+    {
+      "symbol": "?",
+      "count": 2,
+      "points": 0,
+      "vowel": false
+    },
+    {
+      "symbol": "А",
+      "count": 8,
+      "points": 1,
+      "vowel": true
+    },
+    {
+      "symbol": "Б",
+      "count": 2,
+      "points": 3,
+      "vowel": false
+    },
+    {
+      "symbol": "В",
+      "count": 4,
+      "points": 1,
+      "vowel": false
+    },
+    {
+      "symbol": "Г",
+      "count": 2,
+      "points": 3,
+      "vowel": false
+    },
+    {
+      "symbol": "Д",
+      "count": 4,
+      "points": 2,
+      "vowel": false
+    },
+    {
+      "symbol": "Е",
+      "count": 8,
+      "points": 1,
+      "vowel": true
+    },
+    {
+      "symbol": "Ё",
+      "count": 1,
+      "points": 3,
+      "vowel": true
+    },
+    {
+      "symbol": "Ж",
+      "count": 1,
+      "points": 5,
+      "vowel": false
+    },
+    {
+      "symbol": "З",
+      "count": 2,
+      "points": 5,
+      "vowel": false
+    },
+    {
+      "symbol": "И",
+      "count": 5,
+      "points": 1,
+      "vowel": true
+    },
+    {
+      "symbol": "Й",
+      "count": 1,
+      "points": 4,
+      "vowel": false
+    },
+    {
+      "symbol": "К",
+      "count": 4,
+      "points": 2,
+      "vowel": false
+    },
+    {
+      "symbol": "Л",
+      "count": 4,
+      "points": 2,
+      "vowel": false
+    },
+    {
+      "symbol": "М",
+      "count": 3,
+      "points": 2,
+      "vowel": false
+    },
+    {
+      "symbol": "Н",
+      "count": 5,
+      "points": 1,
+      "vowel": false
+    },
+    {
+      "symbol": "О",
+      "count": 10,
+      "points": 1,
+      "vowel": true
+    },
+    {
+      "symbol": "П",
+      "count": 4,
+      "points": 2,
+      "vowel": false
+    },
+    {
+      "symbol": "Р",
+      "count": 5,
+      "points": 1,
+      "vowel": false
+    },
+    {
+      "symbol": "С",
+      "count": 5,
+      "points": 1,
+      "vowel": false
+    },
+    {
+      "symbol": "Т",
+      "count": 5,
+      "points": 1,
+      "vowel": false
+    },
+    {
+      "symbol": "У",
+      "count": 4,
+      "points": 2,
+      "vowel": true
+    },
+    {
+      "symbol": "Ф",
+      "count": 1,
+      "points": 10,
+      "vowel": false
+    },
+    {
+      "symbol": "Х",
+      "count": 1,
+      "points": 5,
+      "vowel": false
+    },
+    {
+      "symbol": "Ц",
+      "count": 1,
+      "points": 5,
+      "vowel": false
+    },
+    {
+      "symbol": "Ч",
+      "count": 1,
+      "points": 5,
+      "vowel": false
+    },
+    {
+      "symbol": "Ш",
+      "count": 1,
+      "points": 8,
+      "vowel": false
+    },
+    {
+      "symbol": "Щ",
+      "count": 1,
+      "points": 10,
+      "vowel": false
+    },
+    {
+      "symbol": "Ъ",
+      "count": 1,
+      "points": 10,
+      "vowel": false
+    },
+    {
+      "symbol": "Ы",
+      "count": 2,
+      "points": 4,
+      "vowel": true
+    },
+    {
+      "symbol": "Ь",
+      "count": 2,
+      "points": 3,
+      "vowel": false
+    },
+    {
+      "symbol": "Э",
+      "count": 1,
+      "points": 8,
+      "vowel": true
+    },
+    {
+      "symbol": "Ю",
+      "count": 1,
+      "points": 8,
+      "vowel": true
+    },
+    {
+      "symbol": "Я",
+      "count": 2,
+      "points": 3,
+      "vowel": true
+    }
+  ],
+  "sources": [
+    {
+      "title": "Mattel, notice russe 51284-0627, © 2004, fac-similé",
+      "url": "https://gaga.ru/gaga/files/pdf/rules/ru/24-327307.pdf"
+    },
+    {
+      "title": "J. W. Spear, photographie des 104 jetons d’un coffret russe",
+      "url": "https://www.gtoal.com/wordgames/details/russian/spears-russian-tiles2.jpg"
+    },
+    {
+      "title": "OpenRussian, candidat de lexique libre à qualifier",
+      "url": "https://github.com/Badestrand/russian-dictionary"
+    }
+  ],
+  "notes": [
+    "Règles de boîte. L’échange est limité par le nombre de jetons disponibles. La variante de tournoi du livret impose au moins sept jetons dans le sac.",
+    "Ё est un jeton distinct de Е. Un lexique russe local est nécessaire."
+  ]
+}

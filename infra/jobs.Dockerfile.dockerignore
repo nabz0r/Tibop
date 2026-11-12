@@ -1,0 +1,10 @@
+*
+!infra/
+!infra/job_runner.py
+!docs/
+!docs/*.md
+!data/
+!data/expert/
+!data/expert/sample.json
+!data/fr/
+!data/fr/README.md

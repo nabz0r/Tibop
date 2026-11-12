@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Tableau de bord local des simulations de Scrabble francophone.">
+  <meta name="theme-color" content="#f7f7f1">
+  <title>Lettrine · Laboratoire de Scrabble</title>
+  <link rel="icon" href="/assets/lettrine-mark.png" type="image/png">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">Aller au contenu</a>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="#vue" class="brand" aria-label="Lettrine, vue d’ensemble">
+        <img class="brand-tile" src="/assets/lettrine-mark.png" width="36" height="36" alt="">
+        <strong>Lettrine</strong>
+      </a>
+      <nav class="nav" aria-label="Navigation principale">
+        <a href="#vue" data-view="vue" aria-current="page"><span class="nav-icon icon-overview" aria-hidden="true"></span>Vue d’ensemble</a>
+        <a href="#meta" data-view="meta"><span class="nav-icon icon-meta" aria-hidden="true"></span>Analyse</a>
+        <a href="#parties" data-view="parties"><span class="nav-icon icon-games" aria-hidden="true"></span>Parties</a>
+        <a href="#admin" data-view="admin"><span class="nav-icon icon-admin" aria-hidden="true"></span>Administration</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="server-status"><span class="status-dot"></span><span id="connection">Connexion…</span></div>
+        <p id="sidebar-lexicon">Scrabble francophone</p>
+      </div>
+    </aside>
+
+    <main id="content" class="content" tabindex="-1">
+      <section class="view" id="view-vue" aria-labelledby="overview-title">
+        <header class="page-head">
+          <div>
+            <h1 id="overview-title">Vue d’ensemble</h1>
+            <p>Suivez les simulations et comparez les quatre niveaux de jeu.</p>
+          </div>
+          <a class="button primary" href="/download/lettrine.apk" download><span aria-hidden="true">↓</span> Télécharger l’APK</a>
+        </header>
+
+        <section class="run-card" aria-labelledby="run-title">
+          <div class="run-copy">
+            <div class="run-head"><h2 id="run-title">Campagne de simulation</h2><span class="run-status" id="run-status"><span class="status-dot"></span><span id="run-status-label">Connexion…</span></span></div>
+            <div class="run-count"><strong id="run-count">—</strong><span id="run-target"></span></div>
+            <progress id="run-progress" max="100000" value="0" aria-label="Progression de la campagne"></progress>
+            <div class="run-caption"><span id="run-label">Parties enregistrées</span><span id="run-percent">—</span></div>
+          </div>
+          <div class="run-art" aria-hidden="true">
+            <div class="art-grid"></div>
+            <span class="art-tile art-tile-a">J<sub>8</sub></span>
+            <span class="art-tile art-tile-b">E<sub>1</sub></span>
+            <span class="art-tile art-tile-c">U<sub>1</sub></span>
+          </div>
+        </section>
+
+        <div class="metrics" aria-label="Indicateurs de simulation">
+          <article class="metric"><div class="metric-icon" aria-hidden="true">↗</div><p>Score moyen</p><div class="metric-value" id="metric-score">—</div><small>Points par joueur</small></article>
+          <article class="metric"><div class="metric-icon" aria-hidden="true">◇</div><p>Meilleur score</p><div class="metric-value" id="metric-best">—</div><small>Points en une partie</small></article>
+          <article class="metric"><div class="metric-icon" aria-hidden="true">≋</div><p>Durée moyenne</p><div class="metric-value" id="metric-turns">—</div><small>Tours par partie</small></article>
+          <article class="metric"><div class="metric-icon" aria-hidden="true">✦</div><p>Scrabbles</p><div class="metric-value" id="metric-bingos">—</div><small>Poses de sept lettres</small></article>
+        </div>
+
+        <div class="overview-grid">
+          <section class="panel" aria-labelledby="level-title">
+            <div class="panel-head"><div><h2 id="level-title">Elo des quatre bots</h2><p>Échelle relative à la campagne de référence</p></div><a href="#meta" class="text-link">Voir l’analyse <span aria-hidden="true">→</span></a></div>
+            <div id="overview-levels" class="level-list"><p class="empty">En attente des premiers résultats.</p></div>
+          </section>
+          <section class="panel models-panel" aria-labelledby="models-title">
+            <div class="panel-head"><div><h2 id="models-title">Modèles du laboratoire</h2><p>Performance de jeu et analyse de position</p></div></div>
+            <div class="model-entry" id="trained-panel" hidden>
+              <div class="model-head"><h3>Expert entraîné</h3><strong class="model-elo" id="trained-elo"></strong></div>
+              <p>Face à l’Expert de référence, sur des tirages réservés.</p>
+              <div class="model-performance"><span>Score de match</span><strong id="trained-match-rate"></strong></div>
+              <div id="trained-track"></div>
+              <div class="model-foot"><span id="trained-games"></span><a class="text-link" href="/api/models" download="lettrine-expert-fr.json">Données JSON <span aria-hidden="true">↓</span></a></div>
+            </div>
+            <div class="model-entry" id="local-model-entry">
+              <div class="model-head"><h3 id="local-model">Llama local</h3><span class="model-role">Analyse</span></div>
+              <p>Commente les coups et leurs variantes.</p>
+              <p id="llm-elo-placeholder">Elo en jeu non mesuré.</p>
+              <div id="llm-benchmarks"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="view-meta" hidden aria-labelledby="meta-title">
+        <header class="page-head">
+          <div><h1 id="meta-title">Analyse du jeu</h1><p>Mesurez l’écart entre les niveaux et les habitudes de jeu.</p></div>
+          <a href="#parties" class="button secondary">Explorer les parties <span aria-hidden="true">→</span></a>
+        </header>
+        <div class="metrics" aria-label="Indicateurs de stratégie">
+          <article class="metric"><div class="metric-icon" aria-hidden="true">↗</div><p>Victoires du premier joueur</p><div class="metric-value" id="metric-first">—</div><small>Sur l’ensemble des parties</small></article>
+          <article class="metric"><div class="metric-icon" aria-hidden="true">✦</div><p>Scrabbles</p><div class="metric-value" id="metric-meta-bingos">—</div><small>Poses de sept lettres</small></article>
+          <article class="metric"><div class="metric-icon" aria-hidden="true">↔</div><p>Échanges</p><div class="metric-value" id="metric-exchanges">—</div><small>Part des tours</small></article>
+          <article class="metric"><div class="metric-icon" aria-hidden="true">»</div><p>Passes</p><div class="metric-value" id="metric-passes">—</div><small>Part des tours</small></article>
+        </div>
+
+        <section class="panel meta-panel" aria-labelledby="rating-title">
+          <div class="panel-head"><div><h2 id="rating-title">Performances par niveau</h2><p>Classement, victoires et scores observés</p></div></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th scope="col">Niveau</th><th scope="col" class="numeric">Elo</th><th scope="col" class="numeric">Parties</th><th scope="col" class="numeric">Victoires</th><th scope="col" class="numeric">Nuls</th><th scope="col" class="numeric">Score moyen</th></tr></thead>
+            <tbody id="meta-levels"><tr><td colspan="6" class="empty">En attente des premiers résultats.</td></tr></tbody>
+          </table></div>
+        </section>
+
+        <div class="overview-grid meta-grid">
+          <section class="panel" aria-labelledby="pairs-title">
+            <div class="panel-head"><div><h2 id="pairs-title">Confrontations</h2><p>Victoires et nuls pour chaque paire de bots</p></div></div>
+            <div id="meta-matchups" class="matchup-list"><p class="empty">En attente des premières confrontations.</p></div>
+          </section>
+          <section class="panel" aria-labelledby="meta-words-title">
+            <div class="panel-head"><div><h2 id="meta-words-title">Fréquence des mots</h2><p>Occurrences et points du coup</p></div></div>
+            <div id="meta-words" class="words-list"><p class="empty">En attente des premiers résultats.</p></div>
+          </section>
+        </div>
+        <section class="panel analysis-panel" aria-labelledby="corpus-title">
+          <div class="panel-head"><div><h2 id="corpus-title">Recherche dans le corpus</h2><p>Trouvez des positions, des archives et des analyses par thème.</p></div></div>
+          <form id="corpus-search" class="filters corpus-filters" role="search" aria-labelledby="corpus-title">
+            <label>Thème ou position<input type="search" name="q" id="corpus-query" placeholder="Ex. conserver un joker en milieu de partie" minlength="2" maxlength="180" required></label>
+            <button type="submit" class="button primary" id="corpus-submit">Rechercher</button>
+          </form>
+          <p id="corpus-status" class="corpus-status" role="status" hidden></p>
+          <div id="corpus-results" class="corpus-results"></div>
+        </section>
+      </section>
+
+      <section class="view" id="view-parties" hidden aria-labelledby="games-title">
+        <header class="page-head">
+          <div><h1 id="games-title">Parties</h1><p>Ouvrez une partie pour reconstituer le plateau, coup par coup.</p></div>
+          <a class="button secondary" href="#admin"><span aria-hidden="true">↓</span> Exporter les parties</a>
+        </header>
+        <div class="source-switch" aria-label="Origine des parties">
+          <button type="button" class="button" id="source-simulations" aria-pressed="true" aria-controls="simulation-games">Simulations</button>
+          <button type="button" class="button" id="source-archives" aria-pressed="false" aria-controls="archive-games">Archives de compétition</button>
+          <button type="button" class="button" id="source-imports" aria-pressed="false" aria-controls="imported-games">Parties importées</button>
+          <button type="button" class="button" id="source-live" aria-pressed="false" aria-controls="live-games">Duel en direct</button>
+        </div>
+        <section id="simulation-games" class="panel game-panel" aria-label="Historique des parties simulées">
+          <form class="filters" id="games-filters" role="search">
+            <label>Rechercher<input type="search" name="q" id="games-query" placeholder="Identifiant ou graine" autocomplete="off"></label>
+            <label>Niveau<select name="level" id="games-level">
+              <option value="">Tous les niveaux</option><option value="0">Découverte</option><option value="1">Initié</option><option value="2">Stratège</option><option value="3">Expert</option>
+            </select></label>
+            <label class="check-filter"><input type="checkbox" name="elite" id="games-elite"> Expert × Expert</label>
+            <button type="submit" class="button primary">Filtrer</button>
+          </form>
+          <div class="table-wrap"><table class="games-table">
+            <thead><tr><th scope="col">Partie</th><th scope="col">Niveaux</th><th scope="col" class="numeric">Score</th><th scope="col" class="numeric">Tours</th><th scope="col">Gagnant</th><th scope="col"><span class="sr-only">Rejouer</span></th></tr></thead>
+            <tbody id="games-rows"><tr><td colspan="6" class="empty">Chargement des parties…</td></tr></tbody>
+          </table></div>
+          <div class="pagination">
+            <span id="games-count" aria-live="polite">—</span>
+            <div class="page-buttons">
+              <button type="button" class="button secondary" id="games-prev" disabled><span aria-hidden="true">←</span> Précédent</button>
+              <button type="button" class="button secondary" id="games-next" disabled>Suivant <span aria-hidden="true">→</span></button>
+            </div>
+          </div>
+        </section>
+        <div id="archive-games" hidden>
+          <section class="panel" aria-labelledby="archive-title">
+            <div class="panel-head"><div><h2 id="archive-title">Parties de championnat</h2><p>Reconstitutions d’après les relevés du Comité Dauphiné-Savoie.</p></div></div>
+            <div id="archive-list" class="archive-list"><p class="empty">Chargement des archives…</p></div>
+          </section>
+          <section class="panel archive-references" aria-labelledby="reference-title">
+            <div class="panel-head"><div><h2 id="reference-title">Finales récentes</h2><p>Résultats du Championnat du monde en Scrabble classique.</p></div></div>
+            <div id="reference-list" class="reference-list"><p class="empty">Chargement des résultats…</p></div>
+          </section>
+        </div>
+        <section id="imported-games" class="panel game-panel" hidden aria-labelledby="imported-title">
+          <div class="panel-head"><div><h2 id="imported-title">Parties importées</h2><p>Retrouvez les parties envoyées depuis l’application ou un fichier.</p></div><a class="text-link" href="#admin">Importer un fichier <span aria-hidden="true">→</span></a></div>
+          <div class="table-wrap"><table class="games-table">
+            <thead><tr><th scope="col">Partie</th><th scope="col">Joueurs</th><th scope="col" class="numeric">Score</th><th scope="col" class="numeric">Tours</th><th scope="col">Gagnant</th><th scope="col"><span class="sr-only">Rejouer</span></th></tr></thead>
+            <tbody id="imports-rows"><tr><td colspan="6" class="empty">Chargement des parties importées…</td></tr></tbody>
+          </table></div>
+          <div class="pagination">
+            <span id="imports-count" aria-live="polite">—</span>
+            <div class="page-buttons">
+              <button type="button" class="button secondary" id="imports-prev" disabled><span aria-hidden="true">←</span> Précédent</button>
+              <button type="button" class="button secondary" id="imports-next" disabled>Suivant <span aria-hidden="true">→</span></button>
+            </div>
+          </div>
+        </section>
+        <section id="live-games" class="panel live-panel" hidden aria-labelledby="live-title">
+          <div class="panel-head"><div><h2 id="live-title">Duel en direct</h2><p>Choisissez deux bots et suivez leur partie tour par tour.</p></div></div>
+          <form id="live-form" class="filters live-form">
+            <label>Premier joueur<select id="live-a"><option value="0">Découverte</option><option value="1">Initié</option><option value="2">Stratège</option><option value="3" selected>Expert</option></select></label>
+            <label>Second joueur<select id="live-b"><option value="0">Découverte</option><option value="1">Initié</option><option value="2">Stratège</option><option value="3" selected>Expert</option></select></label>
+            <label>Graine facultative<input type="number" id="live-seed" inputmode="numeric" min="0" max="4294967295" placeholder="Aléatoire"></label>
+            <button type="submit" class="button primary"><span aria-hidden="true">▶</span> Suivre le duel</button>
+          </form>
+        </section>
+      </section>
+
+      <section class="view" id="view-admin" hidden aria-labelledby="admin-title">
+        <header class="page-head">
+          <div><h1 id="admin-title">Administration</h1><p>Importez des parties, téléchargez les données et consultez l’état du service.</p></div>
+          <button type="button" class="button secondary" id="refresh"><span aria-hidden="true">↻</span> Actualiser</button>
+        </header>
+        <div class="admin-grid">
+          <section class="panel" aria-labelledby="export-title">
+            <div class="panel-head"><div><h2 id="export-title">Exports</h2><p>Téléchargez les parties déjà enregistrées.</p></div></div>
+            <div class="export-row"><div><h3>Simulations et coups</h3><p>Historique complet de la campagne.</p></div><div class="export-actions"><a class="button primary" href="/api/export?format=json" download aria-label="Exporter les simulations en JSON">↓ JSON</a><a class="button secondary" href="/api/export?format=jsonl" download aria-label="Exporter les simulations en JSONL">↓ JSONL</a></div></div>
+            <div class="export-row"><div><h3>Résumé des parties</h3><p>Une ligne par partie, pour un tableur.</p></div><a class="button secondary" href="/api/export?format=csv" download>↓ CSV</a></div>
+            <div class="export-row"><div><h3>Archive Expert × Expert</h3><p>Parties et coups des confrontations entre bots experts.</p></div><div class="export-actions"><a class="button secondary" href="/api/export?format=json&amp;elite=1" download aria-label="Exporter les parties expertes en JSON">↓ JSON</a><a class="button secondary" href="/api/export?format=jsonl&amp;elite=1" download aria-label="Exporter les parties expertes en JSONL">↓ JSONL</a></div></div>
+            <div class="export-row"><div><h3>Archives de compétition</h3><p>Relevés historiques avec leur provenance.</p></div><a class="button secondary" href="/api/expert" download="archives-competition.json">↓ JSON</a></div>
+            <div class="export-row"><div><h3>Parties importées</h3><p>Historique ajouté depuis un fichier.</p></div><div class="export-actions"><a class="button secondary" href="/api/imports/export?format=json" download aria-label="Exporter les parties importées en JSON">↓ JSON</a><a class="button secondary" href="/api/imports/export?format=jsonl" download aria-label="Exporter les parties importées en JSONL">↓ JSONL</a></div></div>
+          </section>
+          <div class="admin-stack">
+            <section class="panel app-download" aria-labelledby="app-title">
+              <div class="app-download-copy"><h2 id="app-title">Lettrine sur Android</h2><p>Le jeu et l’historique de vos parties.</p></div>
+              <a class="button primary" href="/download/lettrine.apk" download aria-label="Télécharger Lettrine pour Android">↓ APK</a>
+            </section>
+            <section class="panel" aria-labelledby="import-title">
+              <div class="panel-head"><div><h2 id="import-title">Importer des parties</h2><p>Ajoutez un export Lettrine ou un fichier de parties.</p></div></div>
+              <form id="import-form" class="import-form">
+                <input id="import-file" class="sr-only" type="file" accept=".json,.jsonl,.ndjson,application/json,application/x-ndjson" aria-labelledby="import-picker-label" aria-describedby="import-help" required>
+                <label for="import-file" class="import-picker"><span id="import-picker-label">Choisir un fichier</span><span id="import-filename">Aucun fichier choisi</span></label>
+                <p id="import-help">JSON ou JSONL · 32 Mio maximum</p>
+                <div class="import-actions">
+                  <button id="import-submit" class="button primary" type="submit" disabled>↑ Importer</button>
+                  <a href="#parties" class="text-link" id="view-imports-link">Voir les parties importées <span aria-hidden="true">→</span></a>
+                </div>
+                <p id="import-status" class="import-status" role="status" hidden></p>
+              </form>
+            </section>
+            <section class="panel" aria-labelledby="runtime-title">
+              <div class="panel-head"><div><h2 id="runtime-title">État de la campagne</h2><p id="last-sync">En attente de la première mise à jour.</p></div></div>
+              <dl class="runtime">
+                <div><dt>État</dt><dd id="admin-state">—</dd></div>
+                <div><dt>Base de données</dt><dd id="admin-storage">—</dd></div>
+                <div><dt>Parties enregistrées</dt><dd id="admin-count">—</dd></div>
+                <div><dt>Temps de calcul</dt><dd id="admin-elapsed">—</dd></div>
+                <div><dt>Lexique</dt><dd id="admin-lexicon">—</dd></div>
+                <div><dt>Mots du lexique</dt><dd id="admin-lexicon-count">—</dd></div>
+              </dl>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="game-dialog" aria-labelledby="game-title">
+    <div class="dialog-head">
+      <div><h2 id="game-title">Partie</h2><p id="game-subtitle"></p><p id="game-source" hidden></p><p id="live-status" role="status" hidden></p></div>
+      <div class="dialog-actions">
+        <a class="button secondary" id="live-export" download hidden>↓ JSON</a>
+        <form method="dialog"><button class="button secondary close-button" type="submit" aria-label="Fermer">×</button></form>
+      </div>
+    </div>
+    <div id="game-loading" class="empty" role="status">Chargement de la partie…</div>
+    <div id="game-replay" hidden>
+      <div class="replay-layout">
+        <div class="replay-board-panel">
+          <div class="board-scroll"><div id="board" class="board" role="img" aria-label="Plateau du Scrabble"></div></div>
+          <div class="board-legend" aria-label="Cases bonus">
+            <span><i class="premium tw"></i>Mot triple</span><span><i class="premium dw"></i>Mot double</span>
+            <span><i class="premium tl"></i>Lettre triple</span><span><i class="premium dl"></i>Lettre double</span>
+          </div>
+          <div class="replay-controls">
+            <button type="button" class="button secondary compact" id="replay-prev" aria-label="Coup précédent">←</button>
+            <label class="sr-only" for="replay-step">Choisir un coup</label><input type="range" id="replay-step" min="0" max="0" value="0">
+            <button type="button" class="button secondary compact" id="replay-next" aria-label="Coup suivant">→</button>
+            <button type="button" class="button secondary compact" id="replay-play" aria-label="Lire la partie" aria-pressed="false"><span aria-hidden="true">▶</span></button>
+          </div>
+          <p id="replay-caption" class="replay-caption" aria-live="polite"></p>
+          <div class="position-state" id="position-state"></div>
+        </div>
+        <div class="replay-moves">
+          <h3>Coups joués</h3>
+          <ol id="move-list"></ol>
+          <section id="position-review" class="position-review" aria-labelledby="review-title">
+            <div class="review-head"><h3 id="review-title">Analyse du coup</h3><button id="review-run" class="button secondary compact" type="button">Analyser</button></div>
+            <p id="review-status" class="review-note" role="status">Sélectionnez un coup à examiner.</p>
+            <div id="review-results" hidden>
+              <dl class="review-summary" id="review-summary"></dl>
+              <ol id="review-options"></ol>
+              <p id="review-method" class="review-note"></p>
+            </div>
+            <div id="position-challenge" class="position-challenge">
+              <button id="challenge-run" class="button secondary compact" type="button">Challenger avec Llama</button>
+              <p id="challenge-status" class="review-note" role="status" hidden></p>
+              <div id="challenge-result" hidden><p id="challenge-model" class="challenge-model"></p><p id="challenge-commentary"></p></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </dialog>
+</body>
+</html>

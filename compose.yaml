@@ -1,0 +1,157 @@
+name: lettrine
+
+x-pg: &pg-env
+  LETTRINE_PG_HOST: postgres
+  LETTRINE_PG_PASSWORD: ${LETTRINE_DB_PASSWORD:-lettrine-local}
+
+x-ollama: &ollama-env
+  LETTRINE_OLLAMA_URL: ${LETTRINE_OLLAMA_URL:-http://host.docker.internal:11434}
+  LETTRINE_OLLAMA_MODEL: ${LETTRINE_OLLAMA_MODEL:-llama3.2:3b}
+  LETTRINE_EMBED_MODEL: ${LETTRINE_EMBED_MODEL:-qwen3-embedding:0.6b}
+
+x-jobs: &jobs
+  image: lettrine-jobs:local
+  build:
+    context: .
+    dockerfile: infra/jobs.Dockerfile
+  restart: unless-stopped
+  init: true
+  read_only: true
+  tmpfs: ["/tmp:size=16m"]
+  pids_limit: 48
+  security_opt: ["no-new-privileges:true"]
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: lettrine
+      POSTGRES_USER: lettrine
+      POSTGRES_PASSWORD: ${LETTRINE_DB_PASSWORD:-lettrine-local}
+    command: ["postgres", "-c", "shared_buffers=96MB", "-c", "work_mem=4MB", "-c", "maintenance_work_mem=48MB", "-c", "max_connections=24"]
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+      - ./infra/schema.sql:/docker-entrypoint-initdb.d/01-lettrine.sql:ro
+      - ./infra/vector.sql:/docker-entrypoint-initdb.d/02-vector.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lettrine -d lettrine"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 384m
+    cpus: 2
+    restart: unless-stopped
+    networks: [data]
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory", "48mb", "--maxmemory-policy", "noeviction"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    mem_limit: 96m
+    cpus: 0.5
+    restart: unless-stopped
+    networks: [data]
+
+  api:
+    image: lettrine-api:local
+    build:
+      context: .
+      target: api
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    volumes:
+      - ./results:/app/results:ro
+      - ./android/artifacts:/app/android/artifacts:ro
+    environment:
+      <<: [*pg-env, *ollama-env]
+      LETTRINE_DB: /app/results/campaign.sqlite
+      LETTRINE_WORDS: /app/data/fr/words.txt
+      LETTRINE_REDIS_URL: redis://redis:6379/0
+      TOKIO_WORKER_THREADS: "2"
+    healthcheck:
+      test: ["CMD", "lettrine", "probe"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    init: true
+    read_only: true
+    user: "10001:10001"
+    pids_limit: 64
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 512m
+    cpus: 2
+    restart: unless-stopped
+    networks: [edge, data]
+
+  worker:
+    <<: *jobs
+    command: ["worker"]
+    environment:
+      <<: [*pg-env, *ollama-env]
+      LETTRINE_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "/app/infra/job_runner.py", "health", "worker"]
+      interval: 15s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+    mem_limit: 160m
+    cpus: 0.75
+    networks: [edge, data]
+
+  beat:
+    <<: *jobs
+    command: ["beat"]
+    environment:
+      LETTRINE_REDIS_URL: redis://redis:6379/0
+      LETTRINE_INDEX_INTERVAL_SECS: "900"
+    depends_on:
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "/app/infra/job_runner.py", "health", "beat"]
+      interval: 15s
+      timeout: 3s
+      retries: 6
+    mem_limit: 64m
+    cpus: 0.25
+    networks: [data]
+
+  dashboard:
+    image: lettrine-dashboard:local
+    build:
+      context: .
+      target: dashboard
+    depends_on:
+      api: {condition: service_healthy}
+    ports:
+      - "127.0.0.1:${LETTRINE_PORT:-8787}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 4
+    init: true
+    pids_limit: 32
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 64m
+    cpus: 0.5
+    restart: unless-stopped
+    networks: [edge]
+
+volumes:
+  pgvector_data:
+  redis_data:
+networks:
+  edge:
+  data:
+    internal: true

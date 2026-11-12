@@ -1,0 +1,137 @@
+# Architecture de Lettrine
+
+Le studio tourne sur le Mac. Docker Compose héberge le tableau de bord, l’API, PostgreSQL, Redis et les traitements en arrière-plan. Android joue hors ligne et transmet un fichier au studio quand le joueur choisit d’exporter. Le simulateur Rust peut produire ou reprendre une campagne indépendamment du studio.
+
+```mermaid
+flowchart LR
+    U["Navigateur · 127.0.0.1:8787"] --> D["Dashboard · Nginx"]
+    D --> A["API · Rust / Axum"]
+    A --> P[("PostgreSQL 17 + pgvector")]
+    A --> R[("Redis Streams")]
+    B["Beat · planification"] --> R
+    W["Worker · Python"] --> R
+    W --> P
+    W --> O["Ollama sur macOS"]
+    A --> O
+    M["APK Android · hors ligne"] -->|Export JSON manuel| U
+    L["Laboratoire · Rust"] --> S[("Campagne SQLite")]
+    S -->|Import d’une campagne terminée| P
+    Z["Archive JSONL Zstandard"] -->|Restauration| P
+```
+
+## Services et ressources
+
+| Service | Travail | Plafond RAM | Plafond CPU |
+|---|---|---:|---:|
+| `dashboard` | Fichiers web, compression HTTP, transfert de l’API et des téléchargements | 64 Mio | 0,5 |
+| `api` | Parties, statistiques, imports, analyses, recherche, duel diffusé et APK | 512 Mio | 2 |
+| `postgres` | Métadonnées, parties simulées et importées, vecteurs | 384 Mio | 2 |
+| `redis` | File de travail, résultats temporaires, signaux de vie | 96 Mio | 0,5 |
+| `worker` | Commentaires Ollama et indexation du corpus | 160 Mio | 0,75 |
+| `beat` | Planifie l’indexation périodique | 64 Mio | 0,25 |
+
+Les plafonds Compose totalisent 1 280 Mio et six cœurs logiques. Ils excluent Docker Desktop, Ollama natif et les commandes de simulation ou d’entraînement lancées directement sur le Mac. Redis plafonne ses données à 48 Mio et refuse les nouvelles écritures en cas de saturation. PostgreSQL est limité à 24 connexions. L’API accepte deux analyses et deux exports simultanés, ainsi qu’un commentaire Ollama à la fois. [Configuration Compose](../compose.yaml) · [API](../src/server.rs)
+
+Le navigateur accède à Nginx via `127.0.0.1`. Le réseau privé `data` relie PostgreSQL, Redis, l’API et les services de fond. Le réseau `edge` relie Nginx, l’API et le worker. Aucun port PostgreSQL, Redis ou Axum n’est publié sur le Mac. Le profil d’exploitation est mono-utilisateur local et l’API ne demande pas de compte. Le secret PostgreSQL peut être fourni par `LETTRINE_DB_PASSWORD` à l’initialisation du volume. [Configuration Compose](../compose.yaml) · [Configuration Nginx](../infra/dashboard.conf)
+
+## Démarrer et restaurer
+
+Depuis la racine du dépôt, `./tools/start.sh` démarre le studio, restaure la campagne sur un volume neuf et lance les traitements. Avec Docker Desktop démarré, les services peuvent aussi être lancés directement.
+
+```sh
+docker compose up -d --build --wait
+docker compose ps
+curl -fsS http://127.0.0.1:8787/health
+```
+
+Le port local se règle via `LETTRINE_PORT`. Les tests de santé confirment que les services répondent. La présence des parties et des vecteurs se vérifie séparément.
+
+Sur un volume PostgreSQL neuf, restaurer la campagne incluse. La commande demande Python 3 et l’outil `zstd` sur le Mac.
+
+```sh
+python3 tools/import_campaign.py \
+  --archive data/campaign/duels-fr-100000.jsonl.zst \
+  --metadata data/campaign/metadata.json
+curl -fsS http://127.0.0.1:8787/api/stats
+```
+
+La restauration charge les parties et les deux métadonnées dans une seule transaction. Elle accepte la relance sur la même campagne et refuse une campagne différente dans la même collection. Les parties importées depuis Android ont leur propre table. L’API sert l’APK depuis `android/artifacts/lettrine.apk`, monté en lecture seule. Compiler l’APK sur le Mac si cet artefact manque au dépôt ou à la version téléchargée. [Import de la campagne](../tools/import_campaign.py) · [Compilation Android](../android/README.md)
+
+## Données et provenance
+
+- **Simulations.** `lab_games` porte les identifiants, les graines, les niveaux, les scores et le journal complet en JSONB. `lab_meta` garde le manifeste de la campagne et ses statistiques. Le corpus de référence compte 100 000 duels dont 10 000 Expert × Expert.
+- **Archives historiques.** `data/expert/sample.json` conserve les parties humaines et les références sourcées, avec le dictionnaire d’époque. Le rejeu affiche les coups historiques documentés et les écarts de sources éventuels. Il garde ses statistiques indépendantes.
+- **Imports personnels.** `lab_imports` enregistre l’objet normalisé, un identifiant local, l’identifiant externe et une empreinte de dédoublonnage. L’import est atomique et valide la structure, les coordonnées, les types de coups et le nombre de joueurs. Il accepte les lettres Unicode sur 15 × 15 et ne recalcule pas la légalité lexicale ni les scores déclarés.
+- **Recherche.** `lab_vectors` contient les documents indexés, leur source et un vecteur de 1 024 dimensions. Cet index se reconstruit à partir des données et de la documentation. Les parties personnelles en sont exclues.
+
+[Schéma](../infra/schema.sql) · [Archives](../data/expert/README.md) · [Validation des imports](../src/import.rs)
+
+## API locale
+
+Les coordonnées des jetons sont des entiers de 0 à 14, ligne puis colonne. Les tours commencent à 1 et les sièges à 0. Un jeton placé porte `letter` et `blank`. Une partie simulée détaillée contient le journal `moves`, les scores ajustés et les informations de fin.
+
+| Route | Résultat |
+|---|---|
+| `GET /api/stats` | Totaux, Elo relatif, matrice des duels, mots fréquents, progression, lexique et stockage |
+| `GET /api/games?elite=1&limit=20&offset=0` | Résumés paginés et total. `elite=1` cible Expert × Expert, `level=3` cible tout duel avec Expert, `q` filtre par identifiant ou graine |
+| `GET /api/games/{id}` | Rejeu complet d’un duel simulé |
+| `GET /api/games/{id}/review?turn=N` | Revue déterministe du tour avec score, meilleur score immédiat et variantes évaluées |
+| `GET /api/games/{id}/challenge?turn=N` | Commentaire facultatif du modèle local sur les résultats de la revue |
+| `GET /api/live?seed=123&a=3&b=3` | Flux SSE `start`, `move`, `done` pour un duel généré à la demande |
+| `GET /api/export?format=jsonl&elite=1` | Export de simulations, avec filtres identiques à la liste. Formats JSONL, JSON et CSV de résumé |
+| `POST /api/import` | Corps brut JSON ou JSONL, jusqu’à 32 Mio, renvoie `imported` et `duplicates` |
+| `GET /api/imports` et `GET /api/imports/{id}` | Historique paginé des imports et détail d’une partie |
+| `GET /api/imports/export?format=json` | Export des imports au format JSON ou JSONL |
+| `GET /api/expert` | Archives historiques et références |
+| `GET /api/models` et `GET /api/profiles` | Résultats d’entraînement et profils de langues |
+| `GET /api/llm-benchmarks` | Duels pilotes par modèle Ollama, adversaire, taille et intervalle |
+| `GET /api/adaptive?elo=1200` | Niveau le plus proche selon les cotes de la campagne et score attendu |
+| `GET /api/search?q=jouer+le+joker` | Jusqu’à huit extraits et leurs sources, classés par similarité cosinus |
+| `GET /download/lettrine.apk` | APK Android de test |
+
+```sh
+curl -fsS 'http://127.0.0.1:8787/api/games/100000/review?turn=1'
+curl -N 'http://127.0.0.1:8787/api/live?seed=123&a=3&b=3'
+curl -fsS 'http://127.0.0.1:8787/api/export?format=jsonl&elite=1' -o experts.jsonl
+curl -fsS --data-binary @historique-android.json http://127.0.0.1:8787/api/import
+```
+
+Le flux SSE affiche progressivement un duel calculé avant la diffusion. Il reste éphémère et peut être exporté puis importé. L’API reçoit des fichiers de parties Android terminées. Elle ne relaie pas les parties Android en cours. [Routes](../src/server.rs) · [Interface web](../web/app.js)
+
+## Redis, pgvector et Ollama
+
+Le commentaire et l’indexation sont deux tâches de la même file Redis Stream, `lettrine:jobs`. Le groupe `lettrine:workers` lit les nouvelles entrées et reprend les messages en attente depuis trois minutes. Le worker écrit le résultat, acquitte puis retire le message dans une transaction Redis. Les résultats expirent après 15 minutes. En cas d’arrêt avant l’acquittement, le traitement peut recommencer. L’indexation utilise des identifiants stables et des mises à jour idempotentes.
+
+Beat réserve une fenêtre d’indexation avec un verrou Redis et propose une tâche au démarrage, puis toutes les 15 minutes par défaut. Le worker et beat renouvellent leurs signaux de vie toutes les cinq secondes, avec expiration à 30 secondes. Redis conserve sa file sur le volume `redis_data` par journalisation append-only et synchronisation disque chaque seconde. L’API attend le résultat d’un commentaire jusqu’à 87 secondes. Les erreurs de modèle donnent un retour explicite, avec une nouvelle demande possible. [Worker et planificateur](../infra/job_runner.py) · [Configuration Redis](../compose.yaml)
+
+Ollama s’exécute sur macOS. Les conteneurs appellent `http://host.docker.internal:11434` par défaut. `LETTRINE_OLLAMA_MODEL` choisit le modèle de commentaire, `llama3.2:3b` par défaut. `LETTRINE_EMBED_MODEL` choisit le modèle d’index, `qwen3-embedding:0.6b` par défaut, avec une sortie de 1 024 valeurs. Après un changement de modèle, la réindexation doit se terminer avant de comparer les résultats. [Configuration Ollama](../compose.yaml) · [Schéma pgvector](../infra/vector.sql)
+
+```sh
+ollama pull llama3.2:3b
+ollama pull qwen3-embedding:0.6b
+docker compose logs --tail=30 worker beat
+curl -fsS --get --data-urlencode 'q=jouer le joker' http://127.0.0.1:8787/api/search
+```
+
+Le corpus de recherche comprend la documentation, les archives humaines et une sélection de positions de duels simulés Expert. Le commentaire linguistique résume les variantes et l’incertitude calculées par le moteur. Il peut ajouter des interprétations non étayées. Les résultats chiffrés de la revue restent la référence. Les scores, la validation des mots, les bots et le rejeu restent disponibles indépendamment d’Ollama.
+
+## Rejouer et entraîner le laboratoire
+
+```sh
+LETTRINE_DB=results/reproduction-fr.sqlite \
+  LETTRINE_GAMES=100000 LETTRINE_SEED=20261112 cargo run --release --locked -- run
+LETTRINE_DB=results/reproduction-fr.sqlite cargo run --release --locked -- stats
+cargo run --release --locked -- train results/politique-test.json
+```
+
+La simulation utilise des graines reproductibles et enregistre par lots le journal compressé et les compteurs dans SQLite. Une exécution relancée avec la même configuration reprend les identifiants manquants. Le manifeste fixe la graine, le profil et le SHA-256 du dictionnaire. L’Elo de la campagne est relatif aux quatre bots testés.
+
+L’entraînement ajuste les poids de la politique Expert par autojeu, avec les deux sièges joués sur chaque graine. La sélection et le test utilisent des graines distinctes. Le duel à la demande utilise la politique sélectionnée si elle a été promue et correspond au dictionnaire. La revue de coups teste des variantes et leurs réponses sur trois demi-coups, à partir des jetons inconnus échantillonnés. Cette approche laisse la recherche complète à plus long horizon comme travail séparé. [Résultats](RESULTATS.md) · [Méthode](ENTRAINEMENT.md) · [Manifeste de la politique](../data/models/fr-bots-v1.json)
+
+## Android et versions de jeu
+
+Android utilise un moteur natif Java et le lexique français intégré. Le jeu entre amis masque le chevalet au changement de siège. Le Bluetooth classique demande deux appareils déjà associés et compatibles en version et en empreinte de lexique. L’hôte valide les actions et tient le sac. Il transmet à l’invité son chevalet et l’état public, avec le nombre de jetons dans le sac et les coups sans chevalets adverses. Le jeu local et solo peut reprendre après fermeture. Une coupure Bluetooth interrompt la partie. Le parcours Bluetooth reste à valider entre deux appareils physiques. [Android](../android/README.md)
+
+Les parties terminées, statistiques et cotes Android restent dans le stockage de l’application jusqu’à un export volontaire. Le mode adaptatif utilise la cote locale et l’écart en cours. Les cotes du studio et celles du téléphone s’étalonnent séparément. L’APK reste français et son paquet de test est destiné à l’installation directe.
+
+Les profils de jeu versionnés regroupent géométrie, jetons, conditions de fin, lexique et orthographe. Les variantes anglaise et russe demandent un lexique local, tandis que le profil japonais documente une mécanique propre. Un profil incompatible ou un lexique différent empêche de recalculer les variantes d’une campagne. Les archives historiques conservent leurs éditions de référence. [Profils de langue](LANGUES.md)

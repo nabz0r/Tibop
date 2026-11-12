@@ -1,0 +1,9 @@
+/target/
+/results/*
+!/results/.gitkeep
+/android/.gradle/
+/android/local.properties
+/android/**/build/
+*.jks
+*.keystore
+.env

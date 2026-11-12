@@ -1,0 +1,26 @@
+{
+  "id": "fr-grammalecte-7.7-v1",
+  "language": "fr",
+  "license": "MPL-2.0",
+  "source": "https://www.grammalecte.net/dic/lexique-grammalecte-fr-v7.7.zip",
+  "source_sha256": "bdccf2065e252010253171000a38de84581407896b6bc60aca7d4d69dab7e4d2",
+  "sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
+  "word_count": 406312,
+  "two_letter_count": 149,
+  "counts_by_length": {
+    "2": 149,
+    "3": 597,
+    "4": 2288,
+    "5": 7077,
+    "6": 16506,
+    "7": 30406,
+    "8": 46338,
+    "9": 58737,
+    "10": 63482,
+    "11": 59605,
+    "12": 48750,
+    "13": 35527,
+    "14": 23107,
+    "15": 13743
+  }
+}

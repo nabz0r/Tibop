@@ -1,0 +1,553 @@
+{
+  "baseline": {
+    "blank_weight": 23,
+    "end_penalty": 3,
+    "leave_scale": 100,
+    "s_weight": 9,
+    "turnover": 0,
+    "width": 12
+  },
+  "engine": "fr-classic-v1",
+  "holdout": {
+    "confidence_interval_95": [
+      0.5126914492409435,
+      0.5258085507590565
+    ],
+    "draws": 42,
+    "elo_delta": 13.0,
+    "games": 12000,
+    "losses": 5748,
+    "match_score_rate": 0.51925,
+    "mean_margin": 6.277333333333333,
+    "paired_deals": 6000,
+    "wins": 6210
+  },
+  "levels": [
+    {
+      "id": 0,
+      "label": "Découverte",
+      "policy": "sample_rank_5_to_15_with_vocabulary"
+    },
+    {
+      "id": 1,
+      "label": "Initié",
+      "policy": "sample_rank_2_to_7_with_vocabulary"
+    },
+    {
+      "id": 2,
+      "label": "Stratège",
+      "policy": "sample_top_three"
+    },
+    {
+      "id": 3,
+      "label": "Expert",
+      "policy": "trained_rack_and_points",
+      "weights": {
+        "blank_weight": 69,
+        "end_penalty": 2,
+        "leave_scale": 163,
+        "s_weight": 13,
+        "turnover": 4,
+        "width": 22
+      }
+    }
+  ],
+  "lexicon": "Grammalecte 7.7",
+  "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
+  "method": "Sélection par duels auto-joués, deux sièges par graine. Évaluation indépendante sur graines réservées.",
+  "promoted": true,
+  "schema": "lettrine.bot-policy.v1",
+  "selected": {
+    "blank_weight": 69,
+    "end_penalty": 2,
+    "leave_scale": 163,
+    "s_weight": 13,
+    "turnover": 4,
+    "width": 22
+  },
+  "test_first_seed": 810000000,
+  "training_first_seed": 510000000,
+  "training_games": 60000,
+  "trials": [
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.512459531643449,
+          0.5392071350232177
+        ],
+        "draws": 15,
+        "elo_delta": 18.0,
+        "games": 3000,
+        "losses": 1415,
+        "match_score_rate": 0.5258333333333334,
+        "mean_margin": 5.116666666666666,
+        "paired_deals": 1500,
+        "wins": 1570
+      },
+      "policy": {
+        "blank_weight": 53,
+        "end_penalty": 4,
+        "leave_scale": 150,
+        "s_weight": 20,
+        "turnover": 4,
+        "width": 24
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.5126041823736293,
+          0.5383958176263707
+        ],
+        "draws": 9,
+        "elo_delta": 18.0,
+        "games": 3000,
+        "losses": 1419,
+        "match_score_rate": 0.5255,
+        "mean_margin": 4.2,
+        "paired_deals": 1500,
+        "wins": 1572
+      },
+      "policy": {
+        "blank_weight": 29,
+        "end_penalty": 6,
+        "leave_scale": 164,
+        "s_weight": 12,
+        "turnover": 6,
+        "width": 22
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.5017238987936156,
+          0.5282761012063845
+        ],
+        "draws": 8,
+        "elo_delta": 10.0,
+        "games": 3000,
+        "losses": 1451,
+        "match_score_rate": 0.515,
+        "mean_margin": -0.014333333333333333,
+        "paired_deals": 1500,
+        "wins": 1541
+      },
+      "policy": {
+        "blank_weight": 59,
+        "end_penalty": 2,
+        "leave_scale": 114,
+        "s_weight": 10,
+        "turnover": 7,
+        "width": 28
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.5011542904548166,
+          0.5278457095451833
+        ],
+        "draws": 9,
+        "elo_delta": 10.0,
+        "games": 3000,
+        "losses": 1452,
+        "match_score_rate": 0.5145,
+        "mean_margin": 1.3296666666666668,
+        "paired_deals": 1500,
+        "wins": 1539
+      },
+      "policy": {
+        "blank_weight": 58,
+        "end_penalty": 5,
+        "leave_scale": 98,
+        "s_weight": 34,
+        "turnover": 5,
+        "width": 14
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.506375651878981,
+          0.5319576814543523
+        ],
+        "draws": 5,
+        "elo_delta": 13.0,
+        "games": 3000,
+        "losses": 1440,
+        "match_score_rate": 0.5191666666666667,
+        "mean_margin": 3.53,
+        "paired_deals": 1500,
+        "wins": 1555
+      },
+      "policy": {
+        "blank_weight": 60,
+        "end_penalty": 2,
+        "leave_scale": 93,
+        "s_weight": 31,
+        "turnover": -1,
+        "width": 31
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.49811859670180136,
+          0.5258814032981987
+        ],
+        "draws": 16,
+        "elo_delta": 8.0,
+        "games": 3000,
+        "losses": 1456,
+        "match_score_rate": 0.512,
+        "mean_margin": 6.733666666666666,
+        "paired_deals": 1500,
+        "wins": 1528
+      },
+      "policy": {
+        "blank_weight": 64,
+        "end_penalty": 8,
+        "leave_scale": 173,
+        "s_weight": 27,
+        "turnover": -1,
+        "width": 30
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.4993786179818753,
+          0.5219547153514581
+        ],
+        "draws": 10,
+        "elo_delta": 7.0,
+        "games": 3000,
+        "losses": 1463,
+        "match_score_rate": 0.5106666666666667,
+        "mean_margin": 3.094333333333333,
+        "paired_deals": 1500,
+        "wins": 1527
+      },
+      "policy": {
+        "blank_weight": 34,
+        "end_penalty": 6,
+        "leave_scale": 141,
+        "s_weight": 6,
+        "turnover": -1,
+        "width": 14
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.4759132814909347,
+          0.4990867185090653
+        ],
+        "draws": 11,
+        "elo_delta": -9.0,
+        "games": 3000,
+        "losses": 1532,
+        "match_score_rate": 0.4875,
+        "mean_margin": -2.969,
+        "paired_deals": 1500,
+        "wins": 1457
+      },
+      "policy": {
+        "blank_weight": 43,
+        "end_penalty": 4,
+        "leave_scale": 62,
+        "s_weight": 11,
+        "turnover": -2,
+        "width": 12
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.49397191008329716,
+          0.5103614232500361
+        ],
+        "draws": 11,
+        "elo_delta": 2.0,
+        "games": 3000,
+        "losses": 1488,
+        "match_score_rate": 0.5021666666666667,
+        "mean_margin": 0.154,
+        "paired_deals": 1500,
+        "wins": 1501
+      },
+      "policy": {
+        "blank_weight": 21,
+        "end_penalty": 2,
+        "leave_scale": 111,
+        "s_weight": 6,
+        "turnover": 0,
+        "width": 17
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.5031746037343788,
+          0.5291587295989545
+        ],
+        "draws": 11,
+        "elo_delta": 11.0,
+        "games": 3000,
+        "losses": 1446,
+        "match_score_rate": 0.5161666666666667,
+        "mean_margin": 0.429,
+        "paired_deals": 1500,
+        "wins": 1543
+      },
+      "policy": {
+        "blank_weight": 39,
+        "end_penalty": 8,
+        "leave_scale": 120,
+        "s_weight": 9,
+        "turnover": 6,
+        "width": 29
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.49721662166577324,
+          0.5231167116675601
+        ],
+        "draws": 9,
+        "elo_delta": 7.0,
+        "games": 3000,
+        "losses": 1465,
+        "match_score_rate": 0.5101666666666667,
+        "mean_margin": 0.2876666666666667,
+        "paired_deals": 1500,
+        "wins": 1526
+      },
+      "policy": {
+        "blank_weight": 41,
+        "end_penalty": 7,
+        "leave_scale": 81,
+        "s_weight": 19,
+        "turnover": 6,
+        "width": 28
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.5115272755375045,
+          0.5371393911291621
+        ],
+        "draws": 10,
+        "elo_delta": 17.0,
+        "games": 3000,
+        "losses": 1422,
+        "match_score_rate": 0.5243333333333333,
+        "mean_margin": 6.285333333333333,
+        "paired_deals": 1500,
+        "wins": 1568
+      },
+      "policy": {
+        "blank_weight": 74,
+        "end_penalty": 7,
+        "leave_scale": 128,
+        "s_weight": 19,
+        "turnover": 2,
+        "width": 30
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.5058862835908451,
+          0.5314470497424884
+        ],
+        "draws": 6,
+        "elo_delta": 13.0,
+        "games": 3000,
+        "losses": 1441,
+        "match_score_rate": 0.5186666666666667,
+        "mean_margin": 3.699333333333333,
+        "paired_deals": 1500,
+        "wins": 1553
+      },
+      "policy": {
+        "blank_weight": 65,
+        "end_penalty": 5,
+        "leave_scale": 94,
+        "s_weight": 34,
+        "turnover": 0,
+        "width": 28
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.5024287901965344,
+          0.5279045431367989
+        ],
+        "draws": 9,
+        "elo_delta": 11.0,
+        "games": 3000,
+        "losses": 1450,
+        "match_score_rate": 0.5151666666666667,
+        "mean_margin": 3.074,
+        "paired_deals": 1500,
+        "wins": 1541
+      },
+      "policy": {
+        "blank_weight": 53,
+        "end_penalty": 6,
+        "leave_scale": 94,
+        "s_weight": 28,
+        "turnover": 2,
+        "width": 28
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.5086072965512103,
+          0.529726036782123
+        ],
+        "draws": 11,
+        "elo_delta": 13.0,
+        "games": 3000,
+        "losses": 1437,
+        "match_score_rate": 0.5191666666666667,
+        "mean_margin": 3.706,
+        "paired_deals": 1500,
+        "wins": 1552
+      },
+      "policy": {
+        "blank_weight": 76,
+        "end_penalty": 4,
+        "leave_scale": 100,
+        "s_weight": 12,
+        "turnover": 1,
+        "width": 27
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.4889160436065125,
+          0.5137506230601542
+        ],
+        "draws": 8,
+        "elo_delta": 1.0,
+        "games": 3000,
+        "losses": 1492,
+        "match_score_rate": 0.5013333333333333,
+        "mean_margin": -0.03333333333333333,
+        "paired_deals": 1500,
+        "wins": 1500
+      },
+      "policy": {
+        "blank_weight": 21,
+        "end_penalty": 6,
+        "leave_scale": 82,
+        "s_weight": 26,
+        "turnover": 2,
+        "width": 13
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.49023450083790604,
+          0.5130988324954274
+        ],
+        "draws": 8,
+        "elo_delta": 1.0,
+        "games": 3000,
+        "losses": 1491,
+        "match_score_rate": 0.5016666666666667,
+        "mean_margin": -1.8603333333333334,
+        "paired_deals": 1500,
+        "wins": 1501
+      },
+      "policy": {
+        "blank_weight": 76,
+        "end_penalty": 6,
+        "leave_scale": 60,
+        "s_weight": 13,
+        "turnover": 1,
+        "width": 12
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.4862493769398458,
+          0.5110839563934875
+        ],
+        "draws": 8,
+        "elo_delta": -1.0,
+        "games": 3000,
+        "losses": 1500,
+        "match_score_rate": 0.49866666666666665,
+        "mean_margin": -0.15266666666666667,
+        "paired_deals": 1500,
+        "wins": 1492
+      },
+      "policy": {
+        "blank_weight": 56,
+        "end_penalty": 6,
+        "leave_scale": 85,
+        "s_weight": 18,
+        "turnover": -2,
+        "width": 19
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.4830746521715109,
+          0.5052586811618224
+        ],
+        "draws": 7,
+        "elo_delta": -4.0,
+        "games": 3000,
+        "losses": 1514,
+        "match_score_rate": 0.49416666666666664,
+        "mean_margin": -1.5776666666666668,
+        "paired_deals": 1500,
+        "wins": 1479
+      },
+      "policy": {
+        "blank_weight": 25,
+        "end_penalty": 6,
+        "leave_scale": 64,
+        "s_weight": 14,
+        "turnover": 0,
+        "width": 17
+      }
+    },
+    {
+      "evaluation": {
+        "confidence_interval_95": [
+          0.5130943242063978,
+          0.5389056757936023
+        ],
+        "draws": 8,
+        "elo_delta": 18.0,
+        "games": 3000,
+        "losses": 1418,
+        "match_score_rate": 0.526,
+        "mean_margin": 4.867666666666667,
+        "paired_deals": 1500,
+        "wins": 1574
+      },
+      "policy": {
+        "blank_weight": 69,
+        "end_penalty": 2,
+        "leave_scale": 163,
+        "s_weight": 13,
+        "turnover": 4,
+        "width": 22
+      }
+    }
+  ]
+}

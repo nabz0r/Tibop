@@ -1,0 +1,14 @@
+*
+!Cargo.toml
+!Cargo.lock
+!src/
+!src/**
+!web/
+!web/**
+!data/
+!data/**
+!docs/
+!docs/**
+!infra/
+!infra/**
+data/campaign/*.zst

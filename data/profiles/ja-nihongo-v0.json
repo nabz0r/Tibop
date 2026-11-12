@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "ja-nihongo-v0",
+  "language": "ja-JP",
+  "name": "Japonais にほんごスクラブル",
+  "status": "draft",
+  "board": null,
+  "rules": null,
+  "orthography": {
+    "script": "Jpan",
+    "normalization": null,
+    "segmentation": null
+  },
+  "lexicon": {
+    "id": "kojien",
+    "name": "Kōjien",
+    "license": null,
+    "status": "licensed_external",
+    "path": null
+  },
+  "tiles": null,
+  "sources": [
+    {
+      "title": "Entretien avec Takashi Dezaki, secrétariat de にほんごスクラブル協会",
+      "url": "https://kikutoko.org/post/201"
+    },
+    {
+      "title": "EDRDG, JMdict et ses lectures japonaises",
+      "url": "https://www.edrdg.org/dokuwiki/doku.php?do=&id=wiki_index.php_jmdict-edict_dictionary_project"
+    },
+    {
+      "title": "Tokyo Scrabble Club, événements anglophones CSW24",
+      "url": "https://tokyoscrabble.club/"
+    }
+  ],
+  "notes": [
+    "Huit jetons hiragana au départ. Les homophones écrits en kanji marquent selon la longueur de la lecture, avec un multiplicateur pour ceux trouvés sans dictionnaire. La variante nécessite un moteur spécifique.",
+    "La distribution complète des jetons, le plateau détaillé et les conditions de fin demandent une source de référence supplémentaire."
+  ]
+}
