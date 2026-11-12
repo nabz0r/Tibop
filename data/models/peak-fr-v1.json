@@ -1,0 +1,148 @@
+{
+  "schema": "lettrine.peak-benchmark.v1",
+  "profile": "fr-classic-v1",
+  "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
+  "reference": {
+    "leave_scale": 163,
+    "blank_weight": 69,
+    "s_weight": 13,
+    "turnover": 4,
+    "end_penalty": 2,
+    "width": 22
+  },
+  "config": {
+    "candidates": 5,
+    "samples": 16,
+    "rollout_weight": 0.7,
+    "endgame_max_tiles": 14,
+    "endgame_max_states": 18000
+  },
+  "first_seed": 982900000,
+  "paired_deals": 1000,
+  "games": 2000,
+  "wins": 1107,
+  "draws": 9,
+  "losses": 884,
+  "match_score_rate": 0.55575,
+  "confidence_interval_95": [
+    0.5378626266538313,
+    0.5736373733461686
+  ],
+  "mean_margin": 15.4345,
+  "elo_delta": 38.881210510329964,
+  "exact_endgame_moves": 2219,
+  "sampled_moves": 20261,
+  "elapsed_seconds": 77.042277,
+  "promoted": true,
+  "method": "Duels appariés contre Expert entraîné, chacun ouvre une fois par tirage. Intervalle à 95 % sur les paires. Les mêmes allocations échantillonnées sont utilisées pour chaque coup candidat. Le solveur exact ne joue que ses solutions prouvées lorsque le sac est vide.",
+  "development": {
+    "pilot": {
+      "config": {
+        "candidates": 5,
+        "samples": 8,
+        "rollout_weight": 0.58,
+        "endgame_max_tiles": 10,
+        "endgame_max_states": 6000
+      },
+      "first_seed": 982301000,
+      "paired_deals": 400,
+      "games": 800,
+      "wins": 407,
+      "draws": 2,
+      "losses": 391,
+      "match_score_rate": 0.51,
+      "confidence_interval_95": [
+        0.481994167274179,
+        0.538005832725821
+      ],
+      "mean_margin": 4.68
+    },
+    "selection_criterion": "Meilleur taux de points sur le seul lot de sélection. Évaluation finale sur de nouvelles graines.",
+    "selection_split": [
+      {
+        "config": {
+          "candidates": 5,
+          "samples": 16,
+          "rollout_weight": 0.7,
+          "endgame_max_tiles": 14,
+          "endgame_max_states": 18000
+        },
+        "first_seed": 982500000,
+        "paired_deals": 230,
+        "games": 460,
+        "wins": 257,
+        "draws": 4,
+        "losses": 199,
+        "match_score_rate": 0.5630434782608695,
+        "confidence_interval_95": [
+          0.5277419948393636,
+          0.5983449616823755
+        ],
+        "mean_margin": 13.810869565217391
+      },
+      {
+        "config": {
+          "candidates": 5,
+          "samples": 8,
+          "rollout_weight": 0.0,
+          "endgame_max_tiles": 14,
+          "endgame_max_states": 18000
+        },
+        "first_seed": 982500000,
+        "paired_deals": 230,
+        "games": 460,
+        "wins": 231,
+        "draws": 0,
+        "losses": 229,
+        "match_score_rate": 0.5021739130434782,
+        "confidence_interval_95": [
+          0.4979130434782609,
+          0.5064347826086956
+        ],
+        "mean_margin": 2.3869565217391306
+      },
+      {
+        "config": {
+          "candidates": 5,
+          "samples": 16,
+          "rollout_weight": 0.35,
+          "endgame_max_tiles": 14,
+          "endgame_max_states": 18000
+        },
+        "first_seed": 982500000,
+        "paired_deals": 230,
+        "games": 460,
+        "wins": 242,
+        "draws": 2,
+        "losses": 216,
+        "match_score_rate": 0.5282608695652173,
+        "confidence_interval_95": [
+          0.49183530161070255,
+          0.5646864375197321
+        ],
+        "mean_margin": 10.058695652173913
+      },
+      {
+        "config": {
+          "candidates": 7,
+          "samples": 16,
+          "rollout_weight": 0.35,
+          "endgame_max_tiles": 14,
+          "endgame_max_states": 18000
+        },
+        "first_seed": 982500000,
+        "paired_deals": 230,
+        "games": 460,
+        "wins": 238,
+        "draws": 1,
+        "losses": 221,
+        "match_score_rate": 0.5184782608695652,
+        "confidence_interval_95": [
+          0.48380415382874964,
+          0.5531523679103807
+        ],
+        "mean_margin": 11.965217391304348
+      }
+    ]
+  }
+}

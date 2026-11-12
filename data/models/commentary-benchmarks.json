@@ -1,0 +1,485 @@
+{
+  "schema": "lettrine.commentary-benchmark.v1",
+  "method": "Exact = les deux scores et une variante de marge maximale parmi les options affichées. Latence locale préchauffée sur les réponses valides. Le score ne juge pas la qualité générale du commentaire.",
+  "items": [
+    {
+      "model": "llama3.2:3b",
+      "cases": 8,
+      "valid": 6,
+      "grounded": 1,
+      "p50_ms": 1200,
+      "p95_ms": 1514,
+      "positions": [
+        {
+          "game": 100000,
+          "turn": 1,
+          "valid": true,
+          "grounded": false,
+          "ms": 1091,
+          "answer": {
+            "index": 3,
+            "score_joue": 34,
+            "meilleur_score_immediat": 34,
+            "commentaire": "L'écart entre le score immédiat et la marge simulée est dû à la mauvaise estimation de la marge simulée pour la variante LYCEE avec un erreur-type de 6.43. La marge simulée est supérieure à la marge réelle, ce qui entraîne une mauvaise estimation du score immédiat."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              4
+            ],
+            "score_joue": 34,
+            "meilleur_score_immediat": 34
+          }
+        },
+        {
+          "game": 100000,
+          "turn": 9,
+          "valid": false,
+          "grounded": false,
+          "ms": 1642,
+          "answer": null,
+          "error": "Unterminated string starting at: line 5 column 18 (char 86)",
+          "expected": {
+            "indices": [
+              1
+            ],
+            "score_joue": 37,
+            "meilleur_score_immediat": 37
+          }
+        },
+        {
+          "game": 99999,
+          "turn": 13,
+          "valid": true,
+          "grounded": false,
+          "ms": 1266,
+          "answer": {
+            "index": 2,
+            "score_joue": 48,
+            "meilleur_score_immediat": 48,
+            "commentaire": "L'écart entre le score immédiat et la marge simulée est dû à la différence entre le score réel du jeu (48) et le score estimé de la marge simulée (30,0). L'erreur-type de 6,19 est une incertitude due à la précision limitée de la marge simulée."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              3
+            ],
+            "score_joue": 48,
+            "meilleur_score_immediat": 48
+          }
+        },
+        {
+          "game": 99998,
+          "turn": 17,
+          "valid": true,
+          "grounded": true,
+          "ms": 1173,
+          "answer": {
+            "index": 4,
+            "score_joue": 74,
+            "meilleur_score_immediat": 74,
+            "commentaire": "L'écart entre le score immédiat et la marge simulée est dû à la mauvaise estimation de la marge simulée pour le mot 'MELES', qui est supérieur à son score réel. L'erreur-type indique l'incertitude de cette estimation."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              4
+            ],
+            "score_joue": 74,
+            "meilleur_score_immediat": 74
+          }
+        },
+        {
+          "game": 99990,
+          "turn": 5,
+          "valid": false,
+          "grounded": false,
+          "ms": 1605,
+          "answer": null,
+          "error": "Unterminated string starting at: line 5 column 18 (char 86)",
+          "expected": {
+            "indices": [
+              1
+            ],
+            "score_joue": 16,
+            "meilleur_score_immediat": 20
+          }
+        },
+        {
+          "game": 96001,
+          "turn": 18,
+          "valid": true,
+          "grounded": false,
+          "ms": 1514,
+          "answer": {
+            "index": 1,
+            "score_joue": 19,
+            "meilleur_score_immediat": 20,
+            "commentaire": "L'écart entre le score immédiat et la marge simulée est dû à la mauvaise estimation de la marge simulée pour la variante AA, qui est de 20.0, alors que le score joué est de 19. Le score joué est inférieur à la marge simulée, ce qui indique une erreur de type 7.65, qui représente une incertitude de 7.65 points."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              1
+            ],
+            "score_joue": 13,
+            "meilleur_score_immediat": 20
+          }
+        },
+        {
+          "game": 51342,
+          "turn": 7,
+          "valid": true,
+          "grounded": false,
+          "ms": 1226,
+          "answer": {
+            "index": 1,
+            "score_joue": 26,
+            "meilleur_score_immediat": 26,
+            "commentaire": "L'écart entre le score immédiat et la marge simulée est dû à la mauvaise estimation de la marge simulée pour la variante 'VA', qui est de 7,12. L'erreur-type est de 6,76, ce qui indique une incertitude de 6,76 unités."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              4
+            ],
+            "score_joue": 11,
+            "meilleur_score_immediat": 26
+          }
+        },
+        {
+          "game": 22341,
+          "turn": 2,
+          "valid": true,
+          "grounded": false,
+          "ms": 1159,
+          "answer": {
+            "index": 1,
+            "score_joue": 31,
+            "meilleur_score_immediat": 31,
+            "commentaire": "L'écart entre le score immédiat et la marge simulée est dû à l'erreur_type, qui représente l'incertitude. Cette valeur est supérieure à zéro, indiquant que le score immédiat est supérieur à la marge simulée."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              3
+            ],
+            "score_joue": 20,
+            "meilleur_score_immediat": 31
+          }
+        }
+      ]
+    },
+    {
+      "model": "gemma4:latest",
+      "cases": 8,
+      "valid": 7,
+      "grounded": 6,
+      "p50_ms": 2072,
+      "p95_ms": 2311,
+      "positions": [
+        {
+          "game": 100000,
+          "turn": 1,
+          "valid": true,
+          "grounded": true,
+          "ms": 1450,
+          "answer": {
+            "index": 4,
+            "score_joue": 34,
+            "meilleur_score_immediat": 34,
+            "commentaire": "La marge simulée est supérieure au score immédiat car elle prend en compte un potentiel de score plus élevé que ce qui a été atteint. L'écart est donc dû à une estimation de gain future non réalisée actuellement."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              4
+            ],
+            "score_joue": 34,
+            "meilleur_score_immediat": 34
+          }
+        },
+        {
+          "game": 100000,
+          "turn": 9,
+          "valid": true,
+          "grounded": true,
+          "ms": 1914,
+          "answer": {
+            "index": 1,
+            "score_joue": 37,
+            "meilleur_score_immediat": 37,
+            "commentaire": "Le score immédiat est égal à la marge simulée pour cette variante. Cela suggère une cohérence entre les deux estimations basées sur les données fournies. L'incertitude est de 8.7 pour cette variante spécifique."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              1
+            ],
+            "score_joue": 37,
+            "meilleur_score_immediat": 37
+          }
+        },
+        {
+          "game": 99999,
+          "turn": 13,
+          "valid": true,
+          "grounded": true,
+          "ms": 2022,
+          "answer": {
+            "index": 3,
+            "score_joue": 48,
+            "meilleur_score_immediat": 48,
+            "commentaire": "La marge simulée est légèrement supérieure au score immédiat, ce qui suggère un potentiel de gain non capturé par le calcul immédiat. L'écart est faible par rapport à l'incertitude estimée par l'erreur-type de 5.80."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              3
+            ],
+            "score_joue": 48,
+            "meilleur_score_immediat": 48
+          }
+        },
+        {
+          "game": 99998,
+          "turn": 17,
+          "valid": false,
+          "grounded": false,
+          "ms": 2850,
+          "answer": null,
+          "error": "Unterminated string starting at: line 5 column 18 (char 86)",
+          "expected": {
+            "indices": [
+              4
+            ],
+            "score_joue": 74,
+            "meilleur_score_immediat": 74
+          }
+        },
+        {
+          "game": 99990,
+          "turn": 5,
+          "valid": true,
+          "grounded": true,
+          "ms": 2226,
+          "answer": {
+            "index": 1,
+            "score_joue": 16,
+            "meilleur_score_immediat": 20,
+            "commentaire": "La marge simulée est supérieure au meilleur score immédiat car elle prend en compte un potentiel de score plus élevé que ce qui est réalisable immédiatement. L'écart est donc dû à une projection de gain future non encore concrétisée dans le score immédiat. L'incertitude associée à cette projection est de 9.44."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              1
+            ],
+            "score_joue": 16,
+            "meilleur_score_immediat": 20
+          }
+        },
+        {
+          "game": 96001,
+          "turn": 18,
+          "valid": true,
+          "grounded": true,
+          "ms": 2246,
+          "answer": {
+            "index": 1,
+            "score_joue": 13,
+            "meilleur_score_immediat": 20,
+            "commentaire": "La marge simulée est supérieure au score immédiat car elle prend en compte un potentiel de score plus élevé que ce qui est réalisable immédiatement. L'écart est donc dû à une projection de gain future non encore concrétisée dans le score immédiat.  L'incertitude associée à cette projection est de 7.65."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              1
+            ],
+            "score_joue": 13,
+            "meilleur_score_immediat": 20
+          }
+        },
+        {
+          "game": 51342,
+          "turn": 7,
+          "valid": true,
+          "grounded": false,
+          "ms": 2072,
+          "answer": {
+            "index": 0,
+            "score_joue": 11,
+            "meilleur_score_immediat": 26,
+            "commentaire": "La marge simulée est la plus élevée pour la variante 0, mais le score immédiat est bien supérieur au score joué. L'écart suggère que la meilleure action n'est pas celle qui maximise la marge simulée.\n  L'incertitude associée à cette analyse est de 7.87."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              4
+            ],
+            "score_joue": 11,
+            "meilleur_score_immediat": 26
+          }
+        },
+        {
+          "game": 22341,
+          "turn": 2,
+          "valid": true,
+          "grounded": true,
+          "ms": 2311,
+          "answer": {
+            "index": 3,
+            "score_joue": 20,
+            "meilleur_score_immediat": 31,
+            "commentaire": "La marge simulée est significativement supérieure au score immédiat, ce qui suggère un potentiel de gain non capturé par le calcul actuel. L'écart est dû à une estimation plus élevée des possibilités futures par rapport au meilleur coup visible immédiatement.  \n\nL'incertitude associée à cette estimation est de 3.86."
+          },
+          "error": null,
+          "expected": {
+            "indices": [
+              3
+            ],
+            "score_joue": 20,
+            "meilleur_score_immediat": 31
+          }
+        }
+      ]
+    },
+    {
+      "model": "qwen3:0.6b",
+      "cases": 8,
+      "valid": 0,
+      "grounded": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "positions": [
+        {
+          "game": 100000,
+          "turn": 1,
+          "valid": false,
+          "grounded": false,
+          "ms": 930,
+          "answer": null,
+          "error": "Unterminated string starting at: line 5 column 18 (char 86)",
+          "expected": {
+            "indices": [
+              4
+            ],
+            "score_joue": 34,
+            "meilleur_score_immediat": 34
+          }
+        },
+        {
+          "game": 100000,
+          "turn": 9,
+          "valid": false,
+          "grounded": false,
+          "ms": 879,
+          "answer": null,
+          "error": "Unterminated string starting at: line 5 column 18 (char 86)",
+          "expected": {
+            "indices": [
+              1
+            ],
+            "score_joue": 37,
+            "meilleur_score_immediat": 37
+          }
+        },
+        {
+          "game": 99999,
+          "turn": 13,
+          "valid": false,
+          "grounded": false,
+          "ms": 841,
+          "answer": null,
+          "error": "Unterminated string starting at: line 5 column 18 (char 86)",
+          "expected": {
+            "indices": [
+              3
+            ],
+            "score_joue": 48,
+            "meilleur_score_immediat": 48
+          }
+        },
+        {
+          "game": 99998,
+          "turn": 17,
+          "valid": false,
+          "grounded": false,
+          "ms": 882,
+          "answer": null,
+          "error": "Unterminated string starting at: line 5 column 18 (char 86)",
+          "expected": {
+            "indices": [
+              4
+            ],
+            "score_joue": 74,
+            "meilleur_score_immediat": 74
+          }
+        },
+        {
+          "game": 99990,
+          "turn": 5,
+          "valid": false,
+          "grounded": false,
+          "ms": 816,
+          "answer": null,
+          "error": "Unterminated string starting at: line 5 column 18 (char 86)",
+          "expected": {
+            "indices": [
+              1
+            ],
+            "score_joue": 16,
+            "meilleur_score_immediat": 20
+          }
+        },
+        {
+          "game": 96001,
+          "turn": 18,
+          "valid": false,
+          "grounded": false,
+          "ms": 811,
+          "answer": null,
+          "error": "Unterminated string starting at: line 5 column 18 (char 86)",
+          "expected": {
+            "indices": [
+              1
+            ],
+            "score_joue": 13,
+            "meilleur_score_immediat": 20
+          }
+        },
+        {
+          "game": 51342,
+          "turn": 7,
+          "valid": false,
+          "grounded": false,
+          "ms": 803,
+          "answer": null,
+          "error": "Unterminated string starting at: line 5 column 18 (char 86)",
+          "expected": {
+            "indices": [
+              4
+            ],
+            "score_joue": 11,
+            "meilleur_score_immediat": 26
+          }
+        },
+        {
+          "game": 22341,
+          "turn": 2,
+          "valid": false,
+          "grounded": false,
+          "ms": 752,
+          "answer": null,
+          "error": "Unterminated string starting at: line 5 column 18 (char 86)",
+          "expected": {
+            "indices": [
+              3
+            ],
+            "score_joue": 20,
+            "meilleur_score_immediat": 31
+          }
+        }
+      ]
+    }
+  ]
+}

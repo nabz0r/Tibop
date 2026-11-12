@@ -7,6 +7,7 @@ import hashlib
 import io
 import json
 import os
+import re
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -14,6 +15,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PROFILE = "fr-classic-v1"
 SQL_BEFORE = b"""BEGIN;
 SET LOCAL client_min_messages TO warning;
 DO $$ BEGIN PERFORM pg_advisory_xact_lock(24876, 40751); END $$;
@@ -26,41 +28,41 @@ SQL_COPY_GAMES = b"""\.
 CREATE TEMP TABLE incoming_games (payload jsonb NOT NULL) ON COMMIT DROP;
 COPY incoming_games FROM STDIN WITH (FORMAT csv);
 """
-SQL_AFTER = b"""\.
+SQL_AFTER = """\\.
 DO $$
 BEGIN
     IF EXISTS (
-        SELECT 1 FROM lab_meta old JOIN incoming_meta new USING (key)
-        WHERE old.key = 'campaign' AND old.value <> new.value
+        SELECT 1 FROM {meta} old JOIN incoming_meta new USING (key)
+        WHERE old.key = 'campaign' AND old.value <> new.value {scope_old}
     ) THEN
         RAISE EXCEPTION 'Une autre campagne est deja presente dans PostgreSQL';
     END IF;
 END
 $$;
-INSERT INTO lab_games (id, seed, a, b, score_a, score_b, turns, winner, payload)
-SELECT (payload->>'id')::bigint, (payload->>'seed')::bigint,
+INSERT INTO {games} ({column}id, seed, a, b, score_a, score_b, turns, winner, payload)
+SELECT {scope_select}(payload->>'id')::bigint, (payload->>'seed')::bigint,
        (payload->'levels'->>0)::smallint, (payload->'levels'->>1)::smallint,
        (payload->'scores'->>0)::integer, (payload->'scores'->>1)::integer,
        (payload->>'turns')::integer, (payload->>'winner')::smallint, payload
 FROM incoming_games
-ON CONFLICT (id) DO UPDATE
+ON CONFLICT ({column}id) DO UPDATE
     SET seed = excluded.seed, a = excluded.a, b = excluded.b,
         score_a = excluded.score_a, score_b = excluded.score_b,
         turns = excluded.turns, winner = excluded.winner, payload = excluded.payload
-    WHERE lab_games.payload IS DISTINCT FROM excluded.payload;
+    WHERE {games}.payload IS DISTINCT FROM excluded.payload;
 DO $$
 BEGIN
-    IF (SELECT count(*) FROM lab_games) <>
+    IF (SELECT count(*) FROM {games} {scope_count}) <>
        (SELECT (value->>'completed')::bigint FROM incoming_meta WHERE key = 'public') THEN
         RAISE EXCEPTION 'Le nombre de parties ne correspond pas au manifeste';
     END IF;
 END
 $$;
-INSERT INTO lab_meta (key, value)
-SELECT key, value FROM incoming_meta
-ON CONFLICT (key) DO UPDATE SET value = excluded.value
-WHERE lab_meta.value IS DISTINCT FROM excluded.value;
-ANALYZE lab_games;
+INSERT INTO {meta} ({column}key, value)
+SELECT {scope_select}key, value FROM incoming_meta WHERE key <> 'profile'
+ON CONFLICT ({column}key) DO UPDATE SET value = excluded.value
+WHERE {meta}.value IS DISTINCT FROM excluded.value;
+ANALYZE {games};
 COMMIT;
 """
 
@@ -94,9 +96,11 @@ def sqlite_source(binary, database):
     return values, export, env
 
 
-def expected_count(values):
+def expected_count(values, profile):
     campaign = json.loads(values["campaign"])
     public = json.loads(values["public"])
+    if campaign["engine"] != profile:
+        raise ValueError(f"Le manifeste porte le profil {campaign['engine']} et non {profile}.")
     count = public["completed"]
     if public["running"] or public.get("error") or count == 0 or count != campaign["target"]:
         raise ValueError("Cette commande importe une campagne terminée.")
@@ -111,9 +115,24 @@ def csv_bytes(rows):
     return buffer.getvalue().encode("utf-8")
 
 
-def migrate(metadata, export, env, compose_file):
-    expected = expected_count(metadata)
-    schema = (ROOT / "infra/schema.sql").read_bytes()
+def migration_sql(profile):
+    if profile == DEFAULT_PROFILE:
+        schema = "schema.sql"
+        sql = SQL_AFTER.format(meta="lab_meta", games="lab_games", column="",
+                               scope_old="", scope_select="", scope_count="")
+    else:
+        schema = "languages.sql"
+        scope = "(SELECT value #>> '{}' FROM incoming_meta WHERE key = 'profile')"
+        sql = SQL_AFTER.format(meta="lab_profile_meta", games="lab_profile_games", column="profile, ",
+                               scope_old=f"AND old.profile = {scope}", scope_select=f"{scope}, ",
+                               scope_count=f"WHERE profile = {scope}")
+    return (ROOT / "infra" / schema).read_bytes(), sql.encode("utf-8")
+
+
+def migrate(metadata, export, env, compose_file, profile):
+    expected = expected_count(metadata, profile)
+    schema, finalize = migration_sql(profile)
+    metadata = {**metadata, "profile": json.dumps(profile)}
     psql = ["docker", "compose"]
     if compose_file:
         psql += ["-f", str(compose_file.resolve())]
@@ -140,12 +159,12 @@ def migrate(metadata, export, env, compose_file):
                     raise RuntimeError(f"L’exporteur Lettrine s’est arrêté avec le code {status}.")
             if count != expected:
                 raise ValueError(f"La source contient {count} parties, contre {expected} attendues.")
-            loader.stdin.write(SQL_AFTER)
+            loader.stdin.write(finalize)
         finally:
             loader.stdin.close()
         if loader.wait():
             raise RuntimeError("PostgreSQL a rejeté la transaction.")
-    print(f"{count:,}".replace(",", " ") + " parties et leurs statistiques sont dans PostgreSQL.")
+    print(f"{profile} · " + f"{count:,}".replace(",", " ") + " parties dans PostgreSQL.")
 
 
 def main():
@@ -154,13 +173,16 @@ def main():
     parser.add_argument("--binary", type=Path, default=ROOT / "target/release/lettrine")
     parser.add_argument("--archive", type=Path, help="Archive JSONL compressée avec Zstandard")
     parser.add_argument("--metadata", type=Path, help="Manifeste JSON contenant campaign et public")
+    parser.add_argument("--profile", default=DEFAULT_PROFILE, help="Identifiant de profil du manifeste")
     parser.add_argument("--compose-file", type=Path)
     args = parser.parse_args()
+    if not re.fullmatch(r"[a-z0-9-]{1,64}", args.profile):
+        parser.error("Identifiant de profil invalide.")
     if bool(args.archive) != bool(args.metadata):
         parser.error("--archive et --metadata sont à fournir ensemble.")
     try:
         source = archive_source(args.archive, args.metadata) if args.archive else sqlite_source(args.binary, args.db)
-        migrate(*source, args.compose_file)
+        migrate(*source, args.compose_file, args.profile)
     except (OSError, sqlite3.Error, ValueError, RuntimeError, KeyError) as exc:
         print(str(exc), file=sys.stderr)
         return 1

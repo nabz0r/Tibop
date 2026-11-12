@@ -2,9 +2,980 @@
   "items": [
     {
       "draws": 0,
+      "elo_delta": -102.0,
+      "fallbacks": 0,
+      "games": 6,
+      "language": "de",
+      "lexicon_sha256": "761f66cba307a85e0b50135fb588d0d6bc4318a5796be70360c9a42a5929aa26",
+      "llm_choices": 76,
+      "losses": 4,
+      "match_score_rate": 0.3333333333333333,
+      "matches": [
+        {
+          "llm_seat": 0,
+          "scores": [
+            533,
+            444
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            505,
+            447
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            400,
+            439
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            497,
+            399
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            419,
+            516
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            417,
+            436
+          ],
+          "seed": 926111202
+        }
+      ],
+      "mean_margin": -30.666666666666668,
+      "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
+      "model": "gemma4:latest",
+      "opponent": "Expert",
+      "paired_deals": 3,
+      "profile": "de-sdev-v1",
+      "score_interval_95": [
+        0.0614903152761605,
+        0.7923450448735121
+      ],
+      "seconds": 27.688566792,
+      "wins": 2
+    },
+    {
+      "draws": 0,
+      "elo_delta": -446.0,
+      "fallbacks": 0,
+      "games": 6,
+      "language": "de",
+      "lexicon_sha256": "761f66cba307a85e0b50135fb588d0d6bc4318a5796be70360c9a42a5929aa26",
+      "llm_choices": 73,
+      "losses": 6,
+      "match_score_rate": 0.0,
+      "matches": [
+        {
+          "llm_seat": 0,
+          "scores": [
+            293,
+            456
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            481,
+            291
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            322,
+            536
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            446,
+            254
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            286,
+            494
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            561,
+            255
+          ],
+          "seed": 926111202
+        }
+      ],
+      "mean_margin": -212.16666666666663,
+      "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
+      "model": "llama3.2:3b",
+      "opponent": "Expert",
+      "paired_deals": 3,
+      "profile": "de-sdev-v1",
+      "score_interval_95": [
+        0.0,
+        0.5615060804490177
+      ],
+      "seconds": 18.119260583,
+      "wins": 0
+    },
+    {
+      "draws": 0,
+      "elo_delta": -54.0,
+      "fallbacks": 0,
+      "games": 12,
+      "language": "en",
+      "lexicon_sha256": "452528054b24cce68199a01534e4639d451ac0da3bdac70113546ad6e13fda0e",
+      "llm_choices": 148,
+      "losses": 7,
+      "match_score_rate": 0.4166666666666667,
+      "matches": [
+        {
+          "llm_seat": 0,
+          "scores": [
+            456,
+            349
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            499,
+            353
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            403,
+            326
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            514,
+            354
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            430,
+            366
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            414,
+            390
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            318,
+            397
+          ],
+          "seed": 926111203
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            358,
+            427
+          ],
+          "seed": 926111203
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            306,
+            436
+          ],
+          "seed": 926111204
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            306,
+            431
+          ],
+          "seed": 926111204
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            386,
+            390
+          ],
+          "seed": 926111205
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            500,
+            287
+          ],
+          "seed": 926111205
+        }
+      ],
+      "mean_margin": -26.166666666666668,
+      "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
+      "model": "gemma4:latest",
+      "opponent": "Expert",
+      "paired_deals": 6,
+      "profile": "en-wespa-v1",
+      "score_interval_95": [
+        0.13946447968378445,
+        0.7589260259250596
+      ],
+      "seconds": 52.575665084,
+      "wins": 5
+    },
+    {
+      "draws": 0,
+      "elo_delta": -102.0,
+      "fallbacks": 0,
+      "games": 6,
+      "language": "en",
+      "lexicon_sha256": "452528054b24cce68199a01534e4639d451ac0da3bdac70113546ad6e13fda0e",
+      "llm_choices": 73,
+      "losses": 4,
+      "match_score_rate": 0.3333333333333333,
+      "matches": [
+        {
+          "llm_seat": 0,
+          "scores": [
+            417,
+            344
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            500,
+            308
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            361,
+            341
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            424,
+            301
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            291,
+            450
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            335,
+            332
+          ],
+          "seed": 926111202
+        }
+      ],
+      "mean_margin": -64.0,
+      "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
+      "model": "gemma3:270m",
+      "opponent": "Expert",
+      "paired_deals": 3,
+      "profile": "en-wespa-v1",
+      "score_interval_95": [
+        0.0614903152761605,
+        0.7923450448735121
+      ],
+      "seconds": 10.00707675,
+      "wins": 2
+    },
+    {
+      "draws": 0,
+      "elo_delta": -173.0,
+      "fallbacks": 0,
+      "games": 12,
+      "language": "en",
+      "lexicon_sha256": "452528054b24cce68199a01534e4639d451ac0da3bdac70113546ad6e13fda0e",
+      "llm_choices": 151,
+      "losses": 9,
+      "match_score_rate": 0.25,
+      "matches": [
+        {
+          "llm_seat": 0,
+          "scores": [
+            390,
+            339
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            596,
+            260
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            324,
+            337
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            500,
+            306
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            275,
+            417
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            507,
+            325
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            320,
+            409
+          ],
+          "seed": 926111203
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            373,
+            405
+          ],
+          "seed": 926111203
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            296,
+            379
+          ],
+          "seed": 926111204
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            328,
+            354
+          ],
+          "seed": 926111204
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            361,
+            368
+          ],
+          "seed": 926111205
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            433,
+            306
+          ],
+          "seed": 926111205
+        }
+      ],
+      "mean_margin": -88.66666666666667,
+      "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
+      "model": "qwen3:0.6b",
+      "opponent": "Expert",
+      "paired_deals": 6,
+      "profile": "en-wespa-v1",
+      "score_interval_95": [
+        0.05998829831488156,
+        0.6351832185116508
+      ],
+      "seconds": 18.220901,
+      "wins": 3
+    },
+    {
+      "draws": 0,
       "elo_delta": -559.0,
       "fallbacks": 0,
       "games": 12,
+      "language": "en",
+      "lexicon_sha256": "452528054b24cce68199a01534e4639d451ac0da3bdac70113546ad6e13fda0e",
+      "llm_choices": 151,
+      "losses": 12,
+      "match_score_rate": 0.0,
+      "matches": [
+        {
+          "llm_seat": 0,
+          "scores": [
+            361,
+            464
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            471,
+            261
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            323,
+            373
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            514,
+            241
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            310,
+            490
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            446,
+            275
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            263,
+            426
+          ],
+          "seed": 926111203
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            375,
+            334
+          ],
+          "seed": 926111203
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            290,
+            425
+          ],
+          "seed": 926111204
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            391,
+            311
+          ],
+          "seed": 926111204
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            364,
+            399
+          ],
+          "seed": 926111205
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            397,
+            319
+          ],
+          "seed": 926111205
+        }
+      ],
+      "mean_margin": -126.58333333333331,
+      "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
+      "model": "llama3.2:3b",
+      "opponent": "Expert",
+      "paired_deals": 6,
+      "profile": "en-wespa-v1",
+      "score_interval_95": [
+        0.0,
+        0.3903430336530645
+      ],
+      "seconds": 43.851265125,
+      "wins": 0
+    },
+    {
+      "draws": 0,
+      "elo_delta": 0.0,
+      "fallbacks": 0,
+      "games": 6,
+      "language": "fr",
+      "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
+      "llm_choices": 68,
+      "losses": 3,
+      "match_score_rate": 0.5,
+      "matches": [
+        {
+          "llm_seat": 0,
+          "scores": [
+            616,
+            447
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            531,
+            546
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            484,
+            420
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            471,
+            449
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            385,
+            458
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            475,
+            416
+          ],
+          "seed": 926111202
+        }
+      ],
+      "mean_margin": 15.666666666666666,
+      "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
+      "model": "qwen3.6:27b-nvfp4",
+      "opponent": "Expert entraîné",
+      "paired_deals": 3,
+      "profile": "fr-classic-v1",
+      "score_interval_95": [
+        0.12533145299844767,
+        0.8746685470015523
+      ],
+      "seconds": 147.668103292,
+      "wins": 3
+    },
+    {
+      "draws": 0,
+      "elo_delta": -102.0,
+      "fallbacks": 0,
+      "games": 6,
+      "language": "fr",
+      "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
+      "llm_choices": 66,
+      "losses": 4,
+      "match_score_rate": 0.3333333333333333,
+      "matches": [
+        {
+          "llm_seat": 0,
+          "scores": [
+            480,
+            465
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            576,
+            485
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            362,
+            412
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            430,
+            352
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            497,
+            444
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            520,
+            375
+          ],
+          "seed": 926111202
+        }
+      ],
+      "mean_margin": -49.333333333333336,
+      "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
+      "model": "gemma3:270m",
+      "opponent": "Expert entraîné",
+      "paired_deals": 3,
+      "profile": "fr-classic-v1",
+      "score_interval_95": [
+        0.0614903152761605,
+        0.7923450448735121
+      ],
+      "seconds": 13.518762208,
+      "wins": 2
+    },
+    {
+      "draws": 0,
+      "elo_delta": -110.0,
+      "fallbacks": 0,
+      "games": 12,
+      "language": "fr",
+      "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
+      "llm_choices": 137,
+      "losses": 8,
+      "match_score_rate": 0.3333333333333333,
+      "matches": [
+        {
+          "llm_seat": 0,
+          "scores": [
+            621,
+            450
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            541,
+            492
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            484,
+            420
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            487,
+            326
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            480,
+            490
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            498,
+            418
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            514,
+            367
+          ],
+          "seed": 926111203
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            446,
+            469
+          ],
+          "seed": 926111203
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            383,
+            545
+          ],
+          "seed": 926111204
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            518,
+            432
+          ],
+          "seed": 926111204
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            361,
+            425
+          ],
+          "seed": 926111205
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            469,
+            429
+          ],
+          "seed": 926111205
+        }
+      ],
+      "mean_margin": -20.583333333333332,
+      "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
+      "model": "gemma4:latest",
+      "opponent": "Expert entraîné",
+      "paired_deals": 6,
+      "profile": "fr-classic-v1",
+      "score_interval_95": [
+        0.09676933255921684,
+        0.7000116786584712
+      ],
+      "seconds": 58.032236375,
+      "wins": 4
+    },
+    {
+      "draws": 0,
+      "elo_delta": -354.0,
+      "fallbacks": 0,
+      "games": 12,
+      "language": "fr",
+      "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
+      "llm_choices": 145,
+      "losses": 11,
+      "match_score_rate": 0.08333333333333333,
+      "matches": [
+        {
+          "llm_seat": 0,
+          "scores": [
+            458,
+            537
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            638,
+            362
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            377,
+            400
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            541,
+            306
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            261,
+            547
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            621,
+            298
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            460,
+            421
+          ],
+          "seed": 926111203
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            528,
+            362
+          ],
+          "seed": 926111203
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            297,
+            562
+          ],
+          "seed": 926111204
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            522,
+            349
+          ],
+          "seed": 926111204
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            310,
+            501
+          ],
+          "seed": 926111205
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            652,
+            264
+          ],
+          "seed": 926111205
+        }
+      ],
+      "mean_margin": -197.16666666666663,
+      "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
+      "model": "qwen3:0.6b",
+      "opponent": "Expert entraîné",
+      "paired_deals": 6,
+      "profile": "fr-classic-v1",
+      "score_interval_95": [
+        0.008762028510600428,
+        0.48319049953362
+      ],
+      "seconds": 16.317010583,
+      "wins": 1
+    },
+    {
+      "draws": 0,
+      "elo_delta": -559.0,
+      "fallbacks": 0,
+      "games": 12,
+      "language": "fr",
       "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
       "llm_choices": 146,
       "losses": 12,
@@ -112,6 +1083,7 @@
       "model": "llama3.2:3b",
       "opponent": "Expert entraîné",
       "paired_deals": 6,
+      "profile": "fr-classic-v1",
       "score_interval_95": [
         0.0,
         0.3903430336530645
@@ -121,122 +1093,149 @@
     },
     {
       "draws": 0,
-      "elo_delta": -354.0,
+      "elo_delta": 0.0,
       "fallbacks": 0,
-      "games": 12,
-      "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
-      "llm_choices": 145,
-      "losses": 11,
-      "match_score_rate": 0.08333333333333333,
+      "games": 6,
+      "language": "ru",
+      "lexicon_sha256": "92016fcfd03cd722c3f8b1e19dd6ac5f9deac51610f6771a26017c9d7c0a7a73",
+      "llm_choices": 83,
+      "losses": 3,
+      "match_score_rate": 0.5,
       "matches": [
         {
           "llm_seat": 0,
           "scores": [
-            458,
-            537
+            487,
+            434
           ],
           "seed": 926111200
         },
         {
           "llm_seat": 1,
           "scores": [
-            638,
-            362
+            515,
+            459
           ],
           "seed": 926111200
         },
         {
           "llm_seat": 0,
           "scores": [
-            377,
-            400
+            477,
+            361
           ],
           "seed": 926111201
         },
         {
           "llm_seat": 1,
           "scores": [
-            541,
-            306
+            440,
+            376
           ],
           "seed": 926111201
         },
         {
           "llm_seat": 0,
           "scores": [
-            261,
-            547
+            370,
+            387
           ],
           "seed": 926111202
         },
         {
           "llm_seat": 1,
           "scores": [
-            621,
-            298
+            358,
+            433
           ],
           "seed": 926111202
-        },
-        {
-          "llm_seat": 0,
-          "scores": [
-            460,
-            421
-          ],
-          "seed": 926111203
-        },
-        {
-          "llm_seat": 1,
-          "scores": [
-            528,
-            362
-          ],
-          "seed": 926111203
-        },
-        {
-          "llm_seat": 0,
-          "scores": [
-            297,
-            562
-          ],
-          "seed": 926111204
-        },
-        {
-          "llm_seat": 1,
-          "scores": [
-            522,
-            349
-          ],
-          "seed": 926111204
-        },
-        {
-          "llm_seat": 0,
-          "scores": [
-            310,
-            501
-          ],
-          "seed": 926111205
-        },
-        {
-          "llm_seat": 1,
-          "scores": [
-            652,
-            264
-          ],
-          "seed": 926111205
         }
       ],
-      "mean_margin": -197.16666666666666,
+      "mean_margin": 17.833333333333332,
       "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
-      "model": "qwen3:0.6b",
-      "opponent": "Expert entraîné",
-      "paired_deals": 6,
+      "model": "gemma4:latest",
+      "opponent": "Expert",
+      "paired_deals": 3,
+      "profile": "ru-mattel-v1",
       "score_interval_95": [
-        0.008762028510600428,
-        0.48319049953362
+        0.12533145299844767,
+        0.8746685470015523
       ],
-      "seconds": 16.317010583,
-      "wins": 1
+      "seconds": 29.828088625,
+      "wins": 3
+    },
+    {
+      "draws": 0,
+      "elo_delta": -446.0,
+      "fallbacks": 0,
+      "games": 6,
+      "language": "ru",
+      "lexicon_sha256": "92016fcfd03cd722c3f8b1e19dd6ac5f9deac51610f6771a26017c9d7c0a7a73",
+      "llm_choices": 87,
+      "losses": 6,
+      "match_score_rate": 0.0,
+      "matches": [
+        {
+          "llm_seat": 0,
+          "scores": [
+            406,
+            464
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            438,
+            410
+          ],
+          "seed": 926111200
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            344,
+            409
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            449,
+            284
+          ],
+          "seed": 926111201
+        },
+        {
+          "llm_seat": 0,
+          "scores": [
+            339,
+            448
+          ],
+          "seed": 926111202
+        },
+        {
+          "llm_seat": 1,
+          "scores": [
+            460,
+            305
+          ],
+          "seed": 926111202
+        }
+      ],
+      "mean_margin": -96.66666666666669,
+      "method": "Expérimental. Le modèle sélectionne parmi six coups légaux de l’Expert, sans chevalet adverse. Chaque tirage est joué dans les deux sièges. L’écart Elo est régularisé. L’intervalle de Wilson utilise un effectif conservateur d’une observation par tirage.",
+      "model": "llama3.2:3b",
+      "opponent": "Expert",
+      "paired_deals": 3,
+      "profile": "ru-mattel-v1",
+      "score_interval_95": [
+        0.0,
+        0.5615060804490177
+      ],
+      "seconds": 23.279346208,
+      "wins": 0
     }
   ],
   "schema": "lettrine.llm-benchmark.v1"

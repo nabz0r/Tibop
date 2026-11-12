@@ -5,8 +5,9 @@ Un profil associe le plateau, le sac, le décompte, les conditions de fin, la no
 | Profil | État | Jetons | Chevalet | Arrêt sans pose |
 |---|---|---:|---:|---|
 | [fr-classic-v1](../data/profiles/fr-classic-v1.json) | Français, profil par défaut | 102 | 7 | 3 passes consécutives par joueur |
-| [en-wespa-v1](../data/profiles/en-wespa-v1.json) | Anglais, activable avec un lexique local | 100 | 7 | 6 tours à zéro au total |
-| [ru-mattel-v1](../data/profiles/ru-mattel-v1.json) | Russe, activable avec un lexique local | 104 | 7 | 2 passes consécutives par joueur |
+| [en-wespa-v1](../data/profiles/en-wespa-v1.json) | Anglais, ENABLE2K fourni | 100 | 7 | 6 tours à zéro au total |
+| [ru-mattel-v1](../data/profiles/ru-mattel-v1.json) | Russe, OpenRussian fourni | 104 | 7 | 2 passes consécutives par joueur |
+| [de-sdev-v1](../data/profiles/de-sdev-v1.json) | Allemand, ENZ fourni | 102 | 7 | 2 passes consécutives par joueur |
 | [ja-nihongo-v0](../data/profiles/ja-nihongo-v0.json) | Japonais, variante documentée | À vérifier | 8 au départ | À vérifier |
 
 ## Français classique
@@ -19,13 +20,19 @@ Le profil fournit Grammalecte 7.7 sous MPL-2.0. Sur le plateau, les accents sont
 
 Le profil anglais prend le duel WESPA v5.1 comme référence. Il reprend le sac de 100 jetons, la prime de 50 pour sept jetons, l’échange si le sac en contient au moins sept et six tours à zéro, y compris les passes et les échanges. À l’épuisement, il applique le décompte recommandé par WESPA. Le joueur sortant gagne le double de la valeur des lettres adverses et le score adverse reste fixe. Le règlement accepte aussi la méthode de transfert simple, qui donne le même écart de score en duel. La validation dans le moteur est automatique. [WESPA Game Rules v5.1, §§3.2 et 5](https://www.wespa.org/wp-content/uploads/2024/09/Rules-V5.1.pdf) · [Notice Hasbro](https://instructions.hasbro.com/en-us/instruction/scrabble-board-game)
 
-WESPA utilise CSW24 depuis janvier 2025. La NASPA publie un règlement distinct pour le Canada et les États-Unis et emploie NWL2023 depuis février 2024. Ces listes se chargent séparément avec les droits appropriés. Un lexique public comme ENABLE2K est une option pour les essais hors compétition, avec son nom et son empreinte propres. [Kit WESPA CSW24](https://wespa.org/docs/WESPA_Initiation_Kit_2024.pdf) · [Règlement NASPA](https://www.scrabbleplayers.org/w/Tournament_rules) · [NWL2023 et conditions développeurs](https://blog.scrabbleplayers.org/w/NWL2023) · [Notice d’ENABLE2K](https://github.com/BartMassey/wordlists/blob/main/README-enable2k.txt)
+WESPA utilise CSW24 depuis janvier 2025. La NASPA publie un règlement distinct pour le Canada et les États-Unis et emploie NWL2023 depuis février 2024. Ces listes se chargent séparément avec les droits appropriés. Le laboratoire fournit ENABLE2K, liste du domaine public, avec 169 266 formes, son nom et son empreinte propres. [Kit WESPA CSW24](https://wespa.org/docs/WESPA_Initiation_Kit_2024.pdf) · [Règlement NASPA](https://www.scrabbleplayers.org/w/Tournament_rules) · [NWL2023 et conditions développeurs](https://blog.scrabbleplayers.org/w/NWL2023) · [Notice d’ENABLE2K](https://github.com/BartMassey/wordlists/blob/main/README-enable2k.txt)
 
 ## Russe classique Mattel
 
 Le profil reprend l’édition russe du livret Mattel 51284-0627 (2004) et les 104 jetons photographiés d’un coffret Spear. Il préserve `Е` et `Ё` comme jetons distincts, avec huit `Е` à un point et un `Ё` à trois points. Le plateau fait 15 × 15, la case centrale double le premier mot, le chevalet contient sept jetons et la prime de pose complète vaut 50. Les règles de boîte permettent de piocher des remplaçants avant de remettre les jetons défaussés si le sac suffit. Le livret distingue une variante de tournoi qui exige sept jetons dans le sac. Deux tours complets de passes mettent fin à la partie. Le profil fixe ces règles de boîte, avec validation automatique. [Notice originale Mattel](https://gaga.ru/gaga/files/pdf/rules/ru/24-327307.pdf) · [Photographie du sac complet](https://www.gtoal.com/wordgames/details/russian/spears-russian-tiles2.jpg)
 
-Le livret demande de convenir d’un dictionnaire avant la partie. Pour produire une liste locale, OpenRussian offre des formes sous CC BY-SA 4.0. Une liste de jeu dérivée doit filtrer les noms propres, abréviations, préfixes, suffixes et entrées à ponctuation, et conserver `Ё` là où le texte source la distingue. Les variantes orthographiques conservées doivent figurer dans le manifeste. [Données OpenRussian](https://github.com/Badestrand/russian-dictionary)
+Le livret demande de convenir d’un dictionnaire avant la partie. Lettrine fournit 540 468 formes issues des sauvegardes OpenRussian, sous CC BY-SA 4.0. La préparation élimine les lemmes à capitale initiale, les formes ponctuées et les marques de transcription de l’accent tonique. Le manifeste décrit la source, la licence et la transformation. [Lexique russe et empreintes](../data/ru/README.md)
+
+## Allemand classique SDeV
+
+Le profil reprend le plateau de 15 × 15 et le sac allemand de 102 jetons, avec `Ä`, `Ö` et `Ü` distincts. L’eszett se joue avec `SS`. Le chevalet tient sept jetons, la prime de pose complète est de 50 points et le sac doit contenir au moins sept jetons pour un échange. Deux tours de table de passes mettent fin à la partie. En cas de sortie, le reliquat est transféré au joueur qui termine. [Règles classiques SDeV](https://scrabble-info.de/wp-content/uploads/2016/03/Allgemeine-Scrabble-Spielregeln.pdf) · [ORZ allemand 2026](https://scrabble-info.de/wp-content/uploads/2026/03/ORZ-20260315.pdf)
+
+Le laboratoire fournit ENZ, une liste de jeux de mots sous CC0, avec 590 897 formes normalisées. Les choix de vocabulaire du projet ENZ diffèrent de ceux de la liste officielle SDeV. [Lexique allemand et empreintes](../data/de/README.md) · [Liste officielle SDeV](https://scrabble-info.de/woerterliste/)
 
 ## Japonais
 
@@ -35,18 +42,16 @@ JMdict fournit des lectures en kana associées à des graphies et des sens. C’
 
 ## Lancer un profil classique
 
-Le laboratoire joue des duels. Préparer un fichier UTF-8 avec une forme normalisée par ligne, sans ponctuation, et utiliser une base de campagne distincte. L’anglais utilise les lettres A à Z. Le russe utilise les lettres cyrilliques du profil, avec `Ё` distinct de `Е`. Une liste non officielle doit être nommée comme telle.
+Le laboratoire joue des duels. Chaque profil charge son lexique fourni par défaut. Utiliser une base de campagne distincte. Pour substituer un lexique autorisé, définir `LETTRINE_WORDS` vers un fichier UTF-8 avec une forme normalisée par ligne et `LETTRINE_LEXICON` avec son nom exact. L’anglais utilise A à Z, l’allemand ajoute `Ä`, `Ö` et `Ü`, et le russe utilise son alphabet cyrillique avec `Ё` distinct de `Е`.
 
 ```sh
 LETTRINE_PROFILE=en-wespa-v1 \
-LETTRINE_WORDS=/chemin/mots-anglais.txt \
-LETTRINE_LEXICON="Lexique anglais local" \
 LETTRINE_DB=results/anglais.sqlite \
 LETTRINE_GAMES=1000 \
 cargo run --release -- run
 ```
 
-Le répertoire `data/profiles` contient les fiches JSON, que l’API expose à `/api/profiles`. L’application Android actuelle reste en français. Le moteur du laboratoire prend en charge les plateaux classiques 15 × 15 et un symbole Unicode par jeton. Le cyrillique conserve ses propres caractères. Les digrammes sur un jeton, les kana combinés et les mécaniques de variantes nécessitent une segmentation et un moteur qui les représentent explicitement.
+Le répertoire `data/profiles` contient les fiches JSON, que l’API expose à `/api/profiles`. L’application Android actuelle reste en français. Le moteur du laboratoire prend en charge les plateaux classiques 15 × 15 et un symbole Unicode par jeton. Le cyrillique et les umlauts allemands conservent leurs propres caractères. Les digrammes sur un jeton, les kana combinés et les mécaniques de variantes nécessitent une segmentation et un moteur qui les représentent explicitement.
 
 ## Ajouter un profil
 

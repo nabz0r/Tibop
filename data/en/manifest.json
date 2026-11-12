@@ -1,0 +1,10 @@
+{
+  "id": "en-enable2k-v1",
+  "language": "en",
+  "name": "ENABLE2K",
+  "license": "Public domain",
+  "source": "https://raw.githubusercontent.com/BartMassey/wordlists/af52415c13af809bd8757a40f17f46e79d09583c/enable2k.txt.gz",
+  "source_sha256": "2c1093669cd16439bdb0a693a0058626c9c9f82e59244c9b0bde89515d44d3ad",
+  "sha256": "452528054b24cce68199a01534e4639d451ac0da3bdac70113546ad6e13fda0e",
+  "word_count": 169266
+}

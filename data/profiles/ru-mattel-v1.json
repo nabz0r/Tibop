@@ -37,11 +37,11 @@
     "segmentation": "unicode_scalar"
   },
   "lexicon": {
-    "id": "ru-external",
-    "name": "Dictionnaire russe choisi par les joueurs",
-    "license": null,
-    "status": "external",
-    "path": null
+    "id": "ru-openrussian-v1",
+    "name": "OpenRussian",
+    "license": "CC-BY-SA-4.0",
+    "status": "bundled",
+    "path": "data/ru/words.txt"
   },
   "tiles": [
     {
@@ -265,6 +265,6 @@
   ],
   "notes": [
     "Règles de boîte. L’échange est limité par le nombre de jetons disponibles. La variante de tournoi du livret impose au moins sept jetons dans le sac.",
-    "Ё est un jeton distinct de Е. Un lexique russe local est nécessaire."
+    "Ё est un jeton distinct de Е. Le lexique OpenRussian fournit le vocabulaire de jeu du laboratoire."
   ]
 }

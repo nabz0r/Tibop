@@ -1,0 +1,315 @@
+{
+  "campaign": {
+    "target": 8000,
+    "seed": 20261112,
+    "lexicon": "OpenRussian",
+    "lexicon_words": 540468,
+    "lexicon_sha256": "92016fcfd03cd722c3f8b1e19dd6ac5f9deac51610f6771a26017c9d7c0a7a73",
+    "engine": "ru-mattel-v1"
+  },
+  "public": {
+    "best_score": 753,
+    "bingo_count": 7019,
+    "bingo_rate": 0.027306502752436342,
+    "completed": 8000,
+    "distinct_words": 49881,
+    "draw_rate": 0.00225,
+    "elapsed_seconds": 3.194119375,
+    "engine": "ru-mattel-v1",
+    "error": null,
+    "exchange_rate": 0.00012060145110778269,
+    "finished_reason": {
+      "passes": 1522,
+      "rack_out": 6478
+    },
+    "first_win_rate": 0.525125,
+    "levels": [
+      {
+        "draws": 8,
+        "games": 4000,
+        "id": 0,
+        "label": "Découverte",
+        "mean_score": 295.6575,
+        "rating": 814,
+        "wins": 1021
+      },
+      {
+        "draws": 11,
+        "games": 4000,
+        "id": 1,
+        "label": "Initié",
+        "mean_score": 341.30475,
+        "rating": 1016,
+        "wins": 1516
+      },
+      {
+        "draws": 9,
+        "games": 4000,
+        "id": 2,
+        "label": "Stratège",
+        "mean_score": 417.086,
+        "rating": 1392,
+        "wins": 2492
+      },
+      {
+        "draws": 8,
+        "games": 4000,
+        "id": 3,
+        "label": "Expert",
+        "mean_score": 462.43,
+        "rating": 1577,
+        "wins": 2953
+      }
+    ],
+    "lexicon": "OpenRussian",
+    "lexicon_sha256": "92016fcfd03cd722c3f8b1e19dd6ac5f9deac51610f6771a26017c9d7c0a7a73",
+    "lexicon_words": 540468,
+    "matchups": [
+      {
+        "a": 0,
+        "a_wins": 428,
+        "b": 0,
+        "b_wins": 370,
+        "draws": 2,
+        "games": 800
+      },
+      {
+        "a": 0,
+        "a_wins": 199,
+        "b": 1,
+        "b_wins": 597,
+        "draws": 4,
+        "games": 800
+      },
+      {
+        "a": 0,
+        "a_wins": 21,
+        "b": 2,
+        "b_wins": 779,
+        "draws": 0,
+        "games": 800
+      },
+      {
+        "a": 0,
+        "a_wins": 3,
+        "b": 3,
+        "b_wins": 797,
+        "draws": 0,
+        "games": 800
+      },
+      {
+        "a": 1,
+        "a_wins": 436,
+        "b": 1,
+        "b_wins": 362,
+        "draws": 2,
+        "games": 800
+      },
+      {
+        "a": 1,
+        "a_wins": 94,
+        "b": 2,
+        "b_wins": 704,
+        "draws": 2,
+        "games": 800
+      },
+      {
+        "a": 1,
+        "a_wins": 27,
+        "b": 3,
+        "b_wins": 772,
+        "draws": 1,
+        "games": 800
+      },
+      {
+        "a": 2,
+        "a_wins": 436,
+        "b": 2,
+        "b_wins": 362,
+        "draws": 2,
+        "games": 800
+      },
+      {
+        "a": 2,
+        "a_wins": 211,
+        "b": 3,
+        "b_wins": 586,
+        "draws": 3,
+        "games": 800
+      },
+      {
+        "a": 3,
+        "a_wins": 421,
+        "b": 3,
+        "b_wins": 377,
+        "draws": 2,
+        "games": 800
+      }
+    ],
+    "mean_score": 379.1195625,
+    "mean_turns": 32.130625,
+    "pair_target": 800,
+    "pass_rate": 0.03476045050477543,
+    "recent": [
+      {
+        "at": 0.07063,
+        "completed": 256
+      },
+      {
+        "at": 0.369277834,
+        "completed": 1280
+      },
+      {
+        "at": 0.782634209,
+        "completed": 2304
+      },
+      {
+        "at": 1.189054625,
+        "completed": 3328
+      },
+      {
+        "at": 1.599478667,
+        "completed": 4352
+      },
+      {
+        "at": 2.010453709,
+        "completed": 5376
+      },
+      {
+        "at": 2.461586084,
+        "completed": 6400
+      },
+      {
+        "at": 2.920006334,
+        "completed": 7424
+      }
+    ],
+    "running": false,
+    "seed": 20261112,
+    "target": 8000,
+    "turns": 257045,
+    "words": [
+      {
+        "count": 773,
+        "mean_score": 21.58861578266494,
+        "word": "ВЭ"
+      },
+      {
+        "count": 758,
+        "mean_score": 9.216358839050132,
+        "word": "ЛЬ"
+      },
+      {
+        "count": 717,
+        "mean_score": 10.746164574616458,
+        "word": "ЕЁ"
+      },
+      {
+        "count": 652,
+        "mean_score": 6.535276073619632,
+        "word": "ВС"
+      },
+      {
+        "count": 564,
+        "mean_score": 6.5212765957446805,
+        "word": "НО"
+      },
+      {
+        "count": 552,
+        "mean_score": 11.079710144927537,
+        "word": "КП"
+      },
+      {
+        "count": 528,
+        "mean_score": 10.945075757575758,
+        "word": "ДО"
+      },
+      {
+        "count": 526,
+        "mean_score": 7.3688212927756656,
+        "word": "ВТ"
+      },
+      {
+        "count": 526,
+        "mean_score": 14.482889733840304,
+        "word": "ЕЯ"
+      },
+      {
+        "count": 511,
+        "mean_score": 28.978473581213308,
+        "word": "ОШ"
+      },
+      {
+        "count": 511,
+        "mean_score": 9.318982387475538,
+        "word": "СП"
+      },
+      {
+        "count": 509,
+        "mean_score": 27.292730844793713,
+        "word": "АШ"
+      },
+      {
+        "count": 499,
+        "mean_score": 11.136272545090181,
+        "word": "АО"
+      },
+      {
+        "count": 493,
+        "mean_score": 16.310344827586206,
+        "word": "АЯ"
+      },
+      {
+        "count": 493,
+        "mean_score": 9.012170385395537,
+        "word": "ДР"
+      },
+      {
+        "count": 477,
+        "mean_score": 6.861635220125786,
+        "word": "НЕ"
+      },
+      {
+        "count": 475,
+        "mean_score": 19.957894736842107,
+        "word": "АЗ"
+      },
+      {
+        "count": 469,
+        "mean_score": 7.8528784648187635,
+        "word": "ЕР"
+      },
+      {
+        "count": 461,
+        "mean_score": 9.065075921908894,
+        "word": "АН"
+      },
+      {
+        "count": 458,
+        "mean_score": 14.237991266375547,
+        "word": "АД"
+      },
+      {
+        "count": 454,
+        "mean_score": 9.964757709251101,
+        "word": "ПО"
+      },
+      {
+        "count": 443,
+        "mean_score": 12.851015801354402,
+        "word": "ВЫ"
+      },
+      {
+        "count": 442,
+        "mean_score": 11.47737556561086,
+        "word": "ОП"
+      },
+      {
+        "count": 423,
+        "mean_score": 19.163120567375888,
+        "word": "АЙ"
+      }
+    ]
+  },
+  "archive_sha256": "1d84c6a940795ef99ffe62279344c84b4ada359d7bdb8bfaf53efb5e4be22331"
+}

@@ -1,0 +1,374 @@
+{
+  "schema": "lettrine.adaptive-calibration.v1",
+  "profile": "fr-classic-v1",
+  "lexicon": "Grammalecte 7.7",
+  "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
+  "scale": {
+    "anchors": [
+      748,
+      1016,
+      1409,
+      1640
+    ],
+    "expert": {
+      "leave_scale": 163,
+      "blank_weight": 69,
+      "s_weight": 13,
+      "turnover": 4,
+      "end_penalty": 2,
+      "width": 22
+    },
+    "experimental_floor": 700
+  },
+  "anchor_level": 2,
+  "anchor_elo": 1409,
+  "first_seed": 931271800,
+  "paired_deals_per_target": 1500,
+  "measurements": [
+    {
+      "mixture": {
+        "requested_elo": 700.0,
+        "applied_elo": 700.0,
+        "mixture_elo": 700.0,
+        "lower_level": 4,
+        "upper_level": 0,
+        "upper_fraction": 0.0,
+        "below_reference_range": true,
+        "clamped": false,
+        "calibrated": false,
+        "expert": {
+          "leave_scale": 163,
+          "blank_weight": 69,
+          "s_weight": 13,
+          "turnover": 4,
+          "end_penalty": 2,
+          "width": 22
+        }
+      },
+      "games": 3000,
+      "wins": 2,
+      "draws": 0,
+      "losses": 2998,
+      "mean_margin": -286.8983333333333,
+      "match_score_rate": 0.0006666666666666666,
+      "match_score_ci95": [
+        0.00011769273167436408,
+        0.0037666654142135486
+      ],
+      "measured_elo": 177.4143821992957,
+      "measured_elo_ci95": [
+        -9.461472771743729,
+        447.5307579551604
+      ],
+      "turns_by_tier": [
+        0,
+        0,
+        0,
+        0,
+        43707
+      ]
+    },
+    {
+      "mixture": {
+        "requested_elo": 748.0,
+        "applied_elo": 748.0,
+        "mixture_elo": 748.0,
+        "lower_level": 0,
+        "upper_level": 0,
+        "upper_fraction": 0.0,
+        "below_reference_range": false,
+        "clamped": false,
+        "calibrated": false,
+        "expert": {
+          "leave_scale": 163,
+          "blank_weight": 69,
+          "s_weight": 13,
+          "turnover": 4,
+          "end_penalty": 2,
+          "width": 22
+        }
+      },
+      "games": 3000,
+      "wins": 43,
+      "draws": 0,
+      "losses": 2957,
+      "mean_margin": -191.45166666666665,
+      "match_score_rate": 0.014333333333333333,
+      "match_score_ci95": [
+        0.009439784361177306,
+        0.021708086011692312
+      ],
+      "measured_elo": 676.0258014618678,
+      "measured_elo_ci95": [
+        603.6436103469339,
+        748.7602821230946
+      ],
+      "turns_by_tier": [
+        42460,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "mixture": {
+        "requested_elo": 900.0,
+        "applied_elo": 900.0,
+        "mixture_elo": 900.0,
+        "lower_level": 0,
+        "upper_level": 1,
+        "upper_fraction": 0.5671641791044776,
+        "below_reference_range": false,
+        "clamped": false,
+        "calibrated": false,
+        "expert": {
+          "leave_scale": 163,
+          "blank_weight": 69,
+          "s_weight": 13,
+          "turnover": 4,
+          "end_penalty": 2,
+          "width": 22
+        }
+      },
+      "games": 3000,
+      "wins": 194,
+      "draws": 6,
+      "losses": 2800,
+      "mean_margin": -148.78433333333334,
+      "match_score_rate": 0.06566666666666666,
+      "match_score_ci95": [
+        0.054208050727974584,
+        0.07934423142428974
+      ],
+      "measured_elo": 948.1466158111864,
+      "measured_elo_ci95": [
+        912.8099502397961,
+        983.5003067484204
+      ],
+      "turns_by_tier": [
+        17861,
+        23664,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "mixture": {
+        "requested_elo": 1016.0,
+        "applied_elo": 1016.0,
+        "mixture_elo": 1016.0,
+        "lower_level": 1,
+        "upper_level": 1,
+        "upper_fraction": 0.0,
+        "below_reference_range": false,
+        "clamped": false,
+        "calibrated": false,
+        "expert": {
+          "leave_scale": 163,
+          "blank_weight": 69,
+          "s_weight": 13,
+          "turnover": 4,
+          "end_penalty": 2,
+          "width": 22
+        }
+      },
+      "games": 3000,
+      "wins": 324,
+      "draws": 8,
+      "losses": 2668,
+      "mean_margin": -117.96533333333333,
+      "match_score_rate": 0.10933333333333334,
+      "match_score_ci95": [
+        0.09452793568258562,
+        0.12613459285344952
+      ],
+      "measured_elo": 1044.8470640059936,
+      "measured_elo_ci95": [
+        1016.7480948664529,
+        1072.9521246201712
+      ],
+      "turns_by_tier": [
+        0,
+        40806,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "mixture": {
+        "requested_elo": 1200.0,
+        "applied_elo": 1200.0,
+        "mixture_elo": 1200.0,
+        "lower_level": 1,
+        "upper_level": 2,
+        "upper_fraction": 0.4681933842239186,
+        "below_reference_range": false,
+        "clamped": false,
+        "calibrated": false,
+        "expert": {
+          "leave_scale": 163,
+          "blank_weight": 69,
+          "s_weight": 13,
+          "turnover": 4,
+          "end_penalty": 2,
+          "width": 22
+        }
+      },
+      "games": 3000,
+      "wins": 869,
+      "draws": 10,
+      "losses": 2121,
+      "mean_margin": -59.174,
+      "match_score_rate": 0.29133333333333333,
+      "match_score_ci95": [
+        0.2688953470057923,
+        0.31483736874809676
+      ],
+      "measured_elo": 1254.6377707058614,
+      "measured_elo_ci95": [
+        1235.309538939737,
+        1273.9667276280916
+      ],
+      "turns_by_tier": [
+        0,
+        20697,
+        18601,
+        0,
+        0
+      ]
+    },
+    {
+      "mixture": {
+        "requested_elo": 1409.0,
+        "applied_elo": 1409.0,
+        "mixture_elo": 1409.0,
+        "lower_level": 2,
+        "upper_level": 2,
+        "upper_fraction": 0.0,
+        "below_reference_range": false,
+        "clamped": false,
+        "calibrated": false,
+        "expert": {
+          "leave_scale": 163,
+          "blank_weight": 69,
+          "s_weight": 13,
+          "turnover": 4,
+          "end_penalty": 2,
+          "width": 22
+        }
+      },
+      "games": 3000,
+      "wins": 1493,
+      "draws": 14,
+      "losses": 1493,
+      "mean_margin": 0.0,
+      "match_score_rate": 0.5,
+      "match_score_ci95": [
+        0.47472931184068445,
+        0.5252706881593155
+      ],
+      "measured_elo": 1409.0,
+      "measured_elo_ci95": [
+        1391.4310188621741,
+        1426.5689811378259
+      ],
+      "turns_by_tier": [
+        0,
+        0,
+        37894,
+        0,
+        0
+      ]
+    },
+    {
+      "mixture": {
+        "requested_elo": 1500.0,
+        "applied_elo": 1500.0,
+        "mixture_elo": 1500.0,
+        "lower_level": 2,
+        "upper_level": 3,
+        "upper_fraction": 0.3939393939393939,
+        "below_reference_range": false,
+        "clamped": false,
+        "calibrated": false,
+        "expert": {
+          "leave_scale": 163,
+          "blank_weight": 69,
+          "s_weight": 13,
+          "turnover": 4,
+          "end_penalty": 2,
+          "width": 22
+        }
+      },
+      "games": 3000,
+      "wins": 1858,
+      "draws": 6,
+      "losses": 1136,
+      "mean_margin": 34.607,
+      "match_score_rate": 0.6203333333333333,
+      "match_score_ci95": [
+        0.5954960964443788,
+        0.6445558038956308
+      ],
+      "measured_elo": 1494.2594844152065,
+      "measured_elo_ci95": [
+        1476.1595321515642,
+        1512.3591152680751
+      ],
+      "turns_by_tier": [
+        0,
+        0,
+        22200,
+        14537,
+        0
+      ]
+    },
+    {
+      "mixture": {
+        "requested_elo": 1640.0,
+        "applied_elo": 1640.0,
+        "mixture_elo": 1640.0,
+        "lower_level": 3,
+        "upper_level": 3,
+        "upper_fraction": 0.0,
+        "below_reference_range": false,
+        "clamped": false,
+        "calibrated": false,
+        "expert": {
+          "leave_scale": 163,
+          "blank_weight": 69,
+          "s_weight": 13,
+          "turnover": 4,
+          "end_penalty": 2,
+          "width": 22
+        }
+      },
+      "games": 3000,
+      "wins": 2312,
+      "draws": 10,
+      "losses": 678,
+      "mean_margin": 83.83566666666667,
+      "match_score_rate": 0.7723333333333333,
+      "match_score_ci95": [
+        0.7504329336336825,
+        0.7928424197673919
+      ],
+      "measured_elo": 1621.1124895650773,
+      "measured_elo_ci95": [
+        1600.1724478953552,
+        1642.051226829832
+      ],
+      "turns_by_tier": [
+        0,
+        0,
+        0,
+        35504,
+        0
+      ]
+    }
+  ],
+  "method": "Deux sièges par tirage, sélection de politique à chaque tour. Cotes déduites du taux de points face à une référence fixe, nulles à ½. Intervalle Wilson approximatif, un tirage apparié comme unité."
+}

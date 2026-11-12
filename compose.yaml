@@ -7,6 +7,7 @@ x-pg: &pg-env
 x-ollama: &ollama-env
   LETTRINE_OLLAMA_URL: ${LETTRINE_OLLAMA_URL:-http://host.docker.internal:11434}
   LETTRINE_OLLAMA_MODEL: ${LETTRINE_OLLAMA_MODEL:-llama3.2:3b}
+  LETTRINE_OLLAMA_MODELS: ${LETTRINE_OLLAMA_MODELS:-llama3.2:3b,gemma4:latest,qwen3:0.6b}
   LETTRINE_EMBED_MODEL: ${LETTRINE_EMBED_MODEL:-qwen3-embedding:0.6b}
 
 x-jobs: &jobs
@@ -33,6 +34,7 @@ services:
       - pgvector_data:/var/lib/postgresql/data
       - ./infra/schema.sql:/docker-entrypoint-initdb.d/01-lettrine.sql:ro
       - ./infra/vector.sql:/docker-entrypoint-initdb.d/02-vector.sql:ro
+      - ./infra/languages.sql:/docker-entrypoint-initdb.d/03-languages.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lettrine -d lettrine"]
       interval: 5s
@@ -68,6 +70,7 @@ services:
     volumes:
       - ./results:/app/results:ro
       - ./android/artifacts:/app/android/artifacts:ro
+      - ./data/models:/app/data/models:ro
     environment:
       <<: [*pg-env, *ollama-env]
       LETTRINE_DB: /app/results/campaign.sqlite

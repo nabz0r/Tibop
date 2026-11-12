@@ -1,0 +1,1125 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-11-12",
+  "methodology": "Chaque point est une cote finale publiée et datée à la clôture du tournoi. Les séries sont des relevés partiels. Les échelles fédérales et l’Elo Lettrine n’ont aucun étalonnage commun. Dans game_scores, la première colonne correspond au vainqueur de la série.",
+  "scales": [
+    {
+      "id": "fisf-classic-legacy",
+      "label": "FISF Classique — ancienne cote",
+      "profile": "fr-classic-v1",
+      "source": "https://www.ffsc.fr/files/public/fichiers/archives/2019/AG.2019.Compte.rendu.AG.pdf",
+      "description": "Cotes finales publiées à l’époque. La fédération a adopté un nouveau calcul pour la saison 2019–2020."
+    },
+    {
+      "id": "fisf-classic",
+      "label": "FISF Classique — cote Elo",
+      "profile": "fr-classic-v1",
+      "source": "https://www.ffsc.fr/files/public/fichiers/reglements/classique/Classement.international.classique.2024-2025.pdf",
+      "description": "Cotes finales issues du classement international de type Elo instauré en 2019."
+    },
+    {
+      "id": "naspa-nwl",
+      "label": "NASPA NWL / OWL",
+      "profile": "en-wespa-v1",
+      "source": "https://scrabbleplayers.org/w/Ratings",
+      "description": "Cotes finales NASPA de la filière nord-américaine, notée OWL ou TWL dans les archives."
+    },
+    {
+      "id": "naspa-csw",
+      "label": "NASPA CSW",
+      "profile": "en-wespa-v1",
+      "source": "https://scrabbleplayers.org/w/Ratings",
+      "description": "Cotes finales NASPA des épreuves Collins Scrabble Words. Cette cote relève de la NASPA."
+    }
+  ],
+  "series": [
+    {
+      "player_id": "nigel-richards",
+      "name": "Nigel Richards",
+      "scale": "fisf-classic-legacy",
+      "points": [
+        {
+          "date": "2015-07-20",
+          "rating": 2121,
+          "event": "Mondial Classique · Louvain-la-Neuve",
+          "source": "https://www.ffsc.fr/tournois.php?id=13437"
+        },
+        {
+          "date": "2016-07-26",
+          "rating": 3379,
+          "event": "Mondial Classique · Agadir",
+          "source": "https://www.ffsc.fr/tournois.php?id=14580"
+        },
+        {
+          "date": "2018-07-17",
+          "rating": 4502,
+          "event": "Mondial Classique · Tremblant",
+          "source": "https://www.ffsc.fr/tournois.php?id=16738"
+        },
+        {
+          "date": "2019-07-23",
+          "event": "Mondial Classique · La Rochelle",
+          "source": "https://www.ffsc.fr/tournois.php?id=18019",
+          "rating": 4474
+        }
+      ]
+    },
+    {
+      "player_id": "schelick-ilagou-rekawe",
+      "name": "Schélick Ilagou Rekawe",
+      "scale": "fisf-classic-legacy",
+      "points": [
+        {
+          "date": "2015-07-20",
+          "rating": 2778,
+          "event": "Mondial Classique · Louvain-la-Neuve",
+          "source": "https://www.ffsc.fr/tournois.php?id=13437"
+        },
+        {
+          "date": "2016-07-26",
+          "rating": 3058,
+          "event": "Mondial Classique · Agadir",
+          "source": "https://www.ffsc.fr/tournois.php?id=14580"
+        },
+        {
+          "date": "2019-07-23",
+          "event": "Mondial Classique · La Rochelle",
+          "source": "https://www.ffsc.fr/tournois.php?id=18019",
+          "rating": 4050
+        }
+      ]
+    },
+    {
+      "player_id": "abib-alabi",
+      "name": "Abib Alabi",
+      "scale": "fisf-classic-legacy",
+      "points": [
+        {
+          "date": "2016-07-26",
+          "rating": 4018,
+          "event": "Mondial Classique · Agadir",
+          "source": "https://www.ffsc.fr/tournois.php?id=14580"
+        },
+        {
+          "date": "2018-07-17",
+          "rating": 4035,
+          "event": "Mondial Classique · Tremblant",
+          "source": "https://www.ffsc.fr/tournois.php?id=16738"
+        },
+        {
+          "date": "2019-07-23",
+          "event": "Mondial Classique · La Rochelle",
+          "source": "https://www.ffsc.fr/tournois.php?id=18019",
+          "rating": 4051
+        }
+      ]
+    },
+    {
+      "player_id": "nigel-richards",
+      "name": "Nigel Richards",
+      "scale": "fisf-classic",
+      "points": [
+        {
+          "date": "2025-07-14",
+          "rating": 1975,
+          "event": "Mondial Classique · Trois-Rivières",
+          "source": "https://www.ffsc.fr/tournois.php?id=25341"
+        }
+      ]
+    },
+    {
+      "player_id": "quentin-mallegol",
+      "name": "Quentin Mallégol",
+      "scale": "fisf-classic",
+      "points": [
+        {
+          "date": "2025-07-14",
+          "rating": 2033,
+          "event": "Mondial Classique · Trois-Rivières",
+          "source": "https://www.ffsc.fr/tournois.php?id=25341"
+        },
+        {
+          "date": "2026-07-21",
+          "rating": 2049,
+          "event": "Mondial Classique · Tunis",
+          "source": "https://www.ffsc.fr/tournois.php?id=25971"
+        }
+      ]
+    },
+    {
+      "player_id": "king-josaphat-nkouete-chewa",
+      "name": "King Josaphat Nkouete Chewa",
+      "scale": "fisf-classic",
+      "points": [
+        {
+          "date": "2025-07-14",
+          "rating": 2004,
+          "event": "Mondial Classique · Trois-Rivières",
+          "source": "https://www.ffsc.fr/tournois.php?id=25341"
+        },
+        {
+          "date": "2026-07-21",
+          "rating": 1983,
+          "event": "Mondial Classique · Tunis",
+          "source": "https://www.ffsc.fr/tournois.php?id=25971"
+        }
+      ]
+    },
+    {
+      "player_id": "gauthier-houillon",
+      "name": "Gauthier Houillon",
+      "scale": "fisf-classic",
+      "points": [
+        {
+          "date": "2024-04-01",
+          "rating": 1988,
+          "event": "Championnat de France · Plérin",
+          "source": "https://www.ffsc.fr/tournois.php?id=23746"
+        },
+        {
+          "date": "2024-09-22",
+          "rating": 2050,
+          "event": "Grand Chelem · Vichy",
+          "source": "https://www.ffsc.fr/tournois.php?id=24317"
+        },
+        {
+          "date": "2025-07-14",
+          "rating": 1987,
+          "event": "Mondial Classique · Trois-Rivières",
+          "source": "https://www.ffsc.fr/tournois.php?id=25341"
+        },
+        {
+          "date": "2026-07-21",
+          "rating": 2004,
+          "event": "Mondial Classique · Tunis",
+          "source": "https://www.ffsc.fr/tournois.php?id=25971"
+        }
+      ]
+    },
+    {
+      "player_id": "abib-alabi",
+      "name": "Abib Alabi",
+      "scale": "fisf-classic",
+      "points": [
+        {
+          "date": "2025-07-14",
+          "rating": 1958,
+          "event": "Mondial Classique · Trois-Rivières",
+          "source": "https://www.ffsc.fr/tournois.php?id=25341"
+        },
+        {
+          "date": "2026-07-21",
+          "rating": 1970,
+          "event": "Mondial Classique · Tunis",
+          "source": "https://www.ffsc.fr/tournois.php?id=25971"
+        }
+      ]
+    },
+    {
+      "player_id": "benjamin-valour",
+      "name": "Benjamin Valour",
+      "scale": "fisf-classic",
+      "points": [
+        {
+          "date": "2024-04-01",
+          "rating": 1996,
+          "event": "Championnat de France · Plérin",
+          "source": "https://www.ffsc.fr/tournois.php?id=23746"
+        },
+        {
+          "date": "2025-07-14",
+          "rating": 1955,
+          "event": "Mondial Classique · Trois-Rivières",
+          "source": "https://www.ffsc.fr/tournois.php?id=25341"
+        },
+        {
+          "date": "2026-07-21",
+          "rating": 1995,
+          "event": "Mondial Classique · Tunis",
+          "source": "https://www.ffsc.fr/tournois.php?id=25971"
+        }
+      ]
+    },
+    {
+      "player_id": "amedee-assomo",
+      "name": "Amédée Assomo",
+      "scale": "fisf-classic",
+      "points": [
+        {
+          "date": "2025-07-14",
+          "rating": 1890,
+          "event": "Mondial Classique · Trois-Rivières",
+          "source": "https://www.ffsc.fr/tournois.php?id=25341"
+        },
+        {
+          "date": "2026-07-21",
+          "rating": 1920,
+          "event": "Mondial Classique · Tunis",
+          "source": "https://www.ffsc.fr/tournois.php?id=25971"
+        }
+      ]
+    },
+    {
+      "player_id": "francois-xavier-adjovi",
+      "name": "François-Xavier Adjovi",
+      "scale": "fisf-classic",
+      "points": [
+        {
+          "date": "2025-07-14",
+          "rating": 1914,
+          "event": "Mondial Classique · Trois-Rivières",
+          "source": "https://www.ffsc.fr/tournois.php?id=25341"
+        },
+        {
+          "date": "2026-07-21",
+          "rating": 1918,
+          "event": "Mondial Classique · Tunis",
+          "source": "https://www.ffsc.fr/tournois.php?id=25971"
+        }
+      ]
+    },
+    {
+      "player_id": "fabien-doute",
+      "name": "Fabien Douté",
+      "scale": "fisf-classic",
+      "points": [
+        {
+          "date": "2024-04-01",
+          "rating": 1959,
+          "event": "Championnat de France · Plérin",
+          "source": "https://www.ffsc.fr/tournois.php?id=23746"
+        },
+        {
+          "date": "2025-07-14",
+          "rating": 2054,
+          "event": "Mondial Classique · Trois-Rivières",
+          "source": "https://www.ffsc.fr/tournois.php?id=25341"
+        }
+      ]
+    },
+    {
+      "player_id": "nigel-richards",
+      "name": "Nigel Richards",
+      "scale": "naspa-nwl",
+      "points": [
+        {
+          "date": "2014-08-13",
+          "rating": 2141,
+          "event": "National Championship · Buffalo",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000841"
+        },
+        {
+          "date": "2017-07-26",
+          "rating": 2130,
+          "event": "North American Championship · La Nouvelle-Orléans",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000841"
+        },
+        {
+          "date": "2018-08-08",
+          "rating": 2158,
+          "event": "North American Championship · Buffalo",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000841"
+        },
+        {
+          "date": "2025-08-13",
+          "rating": 2170,
+          "event": "Scrabble Players Championship · Hanover",
+          "source": "https://www.scrabbleplayers.org/tourneys/2025/xt/08/005.shtml"
+        }
+      ]
+    },
+    {
+      "player_id": "nigel-richards",
+      "name": "Nigel Richards",
+      "scale": "naspa-csw",
+      "points": [
+        {
+          "date": "2011-09-25",
+          "rating": 2156,
+          "event": "Tournoi de Toronto",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000841"
+        },
+        {
+          "date": "2017-05-22",
+          "rating": 2189,
+          "event": "Tournoi de Niagara Falls",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000841"
+        },
+        {
+          "date": "2018-08-12",
+          "rating": 2214,
+          "event": "Tournoi de Niagara Falls",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000841"
+        }
+      ]
+    },
+    {
+      "player_id": "adam-logan",
+      "name": "Adam Logan",
+      "scale": "naspa-csw",
+      "points": [
+        {
+          "date": "2024-06-29",
+          "rating": 2226,
+          "event": "Tournoi de Providence",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000406"
+        },
+        {
+          "date": "2024-07-07",
+          "rating": 2198,
+          "event": "Tournoi d’Albany",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000406"
+        },
+        {
+          "date": "2024-11-17",
+          "rating": 2168,
+          "event": "Gananoque 1000 Islands",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000406"
+        },
+        {
+          "date": "2025-03-02",
+          "rating": 2166,
+          "event": "Tournoi de Belleville",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000406"
+        },
+        {
+          "date": "2025-09-14",
+          "rating": 2177,
+          "event": "Tournoi de Toronto",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000406"
+        },
+        {
+          "date": "2025-12-14",
+          "rating": 2185,
+          "event": "Tournoi de Belleville",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000406"
+        },
+        {
+          "date": "2026-03-07",
+          "rating": 2171,
+          "event": "Tournoi de Montréal",
+          "source": "https://scrabbleplayers.org/cgi-bin/player.pl?naspa=AA000406"
+        }
+      ]
+    }
+  ],
+  "championships": [
+    {
+      "date": "1972",
+      "profile": null,
+      "event": "Premier mondial Duplicate · Cannes",
+      "winner": "Hippolyte Wouters",
+      "runner_up": "Sarah Wolfowicz",
+      "series_score": null,
+      "source": "https://www.ancien.fisf.net/images/stories/2014/plaquette_cdm_aix_2014.pdf",
+      "id": "fisf-cannes-1972",
+      "city": "Cannes",
+      "country": "FR",
+      "lat": 43.55,
+      "lon": 7.02,
+      "language": "fr",
+      "date_precision": "year",
+      "format": "duplicate"
+    },
+    {
+      "date": "1991",
+      "profile": "en-wespa-v1",
+      "event": "World Scrabble Championship · Londres",
+      "winner": "Peter Morris",
+      "runner_up": "Brian Cappelletto",
+      "series_score": null,
+      "source": "https://wespac.ghanascrabble.com/",
+      "id": "wsc-london-1991",
+      "city": "Londres",
+      "country": "GB",
+      "lat": 51.51,
+      "lon": -0.13,
+      "language": "en",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "1999",
+      "profile": "en-wespa-v1",
+      "event": "World Scrabble Championship · Melbourne",
+      "winner": "Joel Wapnick",
+      "runner_up": "Mark Nyman",
+      "series_score": null,
+      "source": "https://wespac.ghanascrabble.com/",
+      "id": "wsc-melbourne-1999",
+      "city": "Melbourne",
+      "country": "AU",
+      "lat": -37.81,
+      "lon": 144.96,
+      "language": "en",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "2005",
+      "profile": "en-wespa-v1",
+      "event": "World Scrabble Championship · Londres",
+      "winner": "Adam Logan",
+      "runner_up": "Pakorn Nemitrmansuk",
+      "series_score": null,
+      "source": "https://wespac.ghanascrabble.com/",
+      "id": "wsc-london-2005",
+      "city": "Londres",
+      "country": "GB",
+      "lat": 51.51,
+      "lon": -0.13,
+      "language": "en",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "2006",
+      "profile": "fr-classic-v1",
+      "event": "Coupe du monde de Classique · Tours",
+      "winner": "Parfait Mouanda",
+      "runner_up": "Henry-Marcel Engonge",
+      "series_score": "2–0",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "game_scores": [
+        [
+          498,
+          444
+        ],
+        [
+          476,
+          428
+        ]
+      ],
+      "id": "fisf-tours-2006",
+      "city": "Tours",
+      "country": "FR",
+      "lat": 47.39,
+      "lon": 0.69,
+      "language": "fr",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "2007",
+      "profile": "en-wespa-v1",
+      "event": "World Scrabble Championship · Mumbai",
+      "winner": "Nigel Richards",
+      "runner_up": "Ganesh Asirvatham",
+      "series_score": null,
+      "source": "https://wespac.ghanascrabble.com/",
+      "id": "wsc-mumbai-2007",
+      "city": "Mumbai",
+      "country": "IN",
+      "lat": 19.08,
+      "lon": 72.88,
+      "language": "en",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "2008",
+      "profile": "fr-classic-v1",
+      "event": "Mondial Classique · Dakar",
+      "winner": "Élisée Poka",
+      "runner_up": "Pascal Astresses",
+      "series_score": "2–0",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "game_scores": [
+        [
+          511,
+          377
+        ],
+        [
+          459,
+          388
+        ]
+      ],
+      "id": "fisf-dakar-2008",
+      "city": "Dakar",
+      "country": "SN",
+      "lat": 14.69,
+      "lon": -17.45,
+      "language": "fr",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "2011",
+      "profile": "en-wespa-v1",
+      "event": "World Scrabble Championship · Varsovie",
+      "winner": "Nigel Richards",
+      "runner_up": "Andrew Fisher",
+      "series_score": null,
+      "source": "https://wespac.ghanascrabble.com/",
+      "id": "wsc-warsaw-2011",
+      "city": "Varsovie",
+      "country": "PL",
+      "lat": 52.23,
+      "lon": 21.01,
+      "language": "en",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "2015",
+      "profile": "en-wespa-v1",
+      "event": "WESPAC · Perth",
+      "winner": "Wellington Jighere",
+      "runner_up": "Lewis Mackay",
+      "series_score": null,
+      "source": "https://wespac.ghanascrabble.com/",
+      "id": "wespac-perth-2015",
+      "city": "Perth",
+      "country": "AU",
+      "lat": -31.95,
+      "lon": 115.86,
+      "language": "en",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "2015-07-20",
+      "profile": "fr-classic-v1",
+      "event": "Mondial Classique · Louvain-la-Neuve",
+      "winner": "Nigel Richards",
+      "runner_up": "Schélick Ilagou Rekawe",
+      "series_score": "2–1",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "game_scores": [
+        [
+          370,
+          427
+        ],
+        [
+          484,
+          376
+        ],
+        [
+          565,
+          434
+        ]
+      ],
+      "id": "fisf-louvain-2015",
+      "city": "Louvain-la-Neuve",
+      "country": "BE",
+      "lat": 50.67,
+      "lon": 4.61,
+      "language": "fr",
+      "date_precision": "day",
+      "format": "classic"
+    },
+    {
+      "date": "2016-07-26",
+      "profile": "fr-classic-v1",
+      "event": "Mondial Classique · Agadir",
+      "winner": "Abib Alabi",
+      "runner_up": "Gildas Ingrid Madela",
+      "series_score": "2,5–0,5",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "game_scores": [
+        [
+          413,
+          380
+        ],
+        [
+          495,
+          495
+        ],
+        [
+          442,
+          418
+        ]
+      ],
+      "id": "fisf-agadir-2016",
+      "city": "Agadir",
+      "country": "MA",
+      "lat": 30.43,
+      "lon": -9.6,
+      "language": "fr",
+      "date_precision": "day",
+      "format": "classic"
+    },
+    {
+      "date": "2017",
+      "profile": "en-wespa-v1",
+      "event": "WESPAC · Nairobi",
+      "winner": "Akshay Bhandarkar",
+      "runner_up": "Moses Peter",
+      "series_score": null,
+      "source": "https://wespac.ghanascrabble.com/",
+      "id": "wespac-nairobi-2017",
+      "city": "Nairobi",
+      "country": "KE",
+      "lat": -1.29,
+      "lon": 36.82,
+      "language": "en",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "2018-07-17",
+      "profile": "fr-classic-v1",
+      "event": "Mondial Classique · Tremblant",
+      "winner": "Nigel Richards",
+      "runner_up": "Gueu Mathieu Zingbe",
+      "series_score": "2–1",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "game_scores": [
+        [
+          371,
+          421
+        ],
+        [
+          477,
+          367
+        ],
+        [
+          522,
+          339
+        ]
+      ],
+      "id": "fisf-tremblant-2018",
+      "city": "Mont-Tremblant",
+      "country": "CA",
+      "lat": 46.12,
+      "lon": -74.6,
+      "language": "fr",
+      "date_precision": "day",
+      "format": "classic"
+    },
+    {
+      "date": "2019-07-23",
+      "profile": "fr-classic-v1",
+      "event": "Mondial Classique · La Rochelle",
+      "winner": "Francis Desjardins",
+      "runner_up": "Élisée Poka",
+      "series_score": "2–1",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "game_scores": [
+        [
+          430,
+          317
+        ],
+        [
+          439,
+          502
+        ],
+        [
+          455,
+          440
+        ]
+      ],
+      "id": "fisf-la-rochelle-2019",
+      "city": "La Rochelle",
+      "country": "FR",
+      "lat": 46.16,
+      "lon": -1.15,
+      "language": "fr",
+      "date_precision": "day",
+      "format": "classic"
+    },
+    {
+      "date": "2021",
+      "profile": "fr-classic-v1",
+      "event": "Mondial Classique · Aix-les-Bains",
+      "winner": "Éric Salvador Tchouyo",
+      "runner_up": "Amédée Assomo",
+      "series_score": "2–1",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "game_scores": [
+        [
+          441,
+          506
+        ],
+        [
+          534,
+          418
+        ],
+        [
+          505,
+          367
+        ]
+      ],
+      "id": "fisf-aix-2021",
+      "city": "Aix-les-Bains",
+      "country": "FR",
+      "lat": 45.69,
+      "lon": 5.91,
+      "language": "fr",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "2023",
+      "profile": "fr-classic-v1",
+      "event": "Mondial Classique · Bulle",
+      "winner": "François-Xavier Adjovi",
+      "runner_up": "Ousmane Lengané",
+      "series_score": "3–0",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "game_scores": [
+        [
+          445,
+          404
+        ],
+        [
+          489,
+          476
+        ],
+        [
+          475,
+          403
+        ]
+      ],
+      "id": "fisf-bulle-2023",
+      "city": "Bulle",
+      "country": "CH",
+      "lat": 46.62,
+      "lon": 7.06,
+      "language": "fr",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "2023-07-26",
+      "profile": "en-wespa-v1",
+      "event": "WESPAC · Las Vegas",
+      "winner": "David Eldar",
+      "runner_up": "Harshan Lamabadusuriya",
+      "series_score": "4–3",
+      "source": "https://scrabbleplayers.org/tourneys/2023/20230726-wespac-champ-pr.pdf",
+      "id": "wespac-las-vegas-2023",
+      "city": "Las Vegas",
+      "country": "US",
+      "lat": 36.17,
+      "lon": -115.14,
+      "language": "en",
+      "date_precision": "day",
+      "format": "classic"
+    },
+    {
+      "date": "2024",
+      "profile": "fr-classic-v1",
+      "event": "Mondial Classique · Montauban",
+      "winner": "Fabien Douté",
+      "runner_up": "Jérôme Guérel",
+      "series_score": "3–2",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "game_scores": [
+        [
+          394,
+          411
+        ],
+        [
+          499,
+          436
+        ],
+        [
+          314,
+          633
+        ],
+        [
+          508,
+          436
+        ],
+        [
+          668,
+          323
+        ]
+      ],
+      "id": "fisf-montauban-2024",
+      "city": "Montauban",
+      "country": "FR",
+      "lat": 44.02,
+      "lon": 1.35,
+      "language": "fr",
+      "date_precision": "year",
+      "format": "classic"
+    },
+    {
+      "date": "2025-05-04",
+      "profile": "de-sdev-v1",
+      "event": "Championnat d’Allemagne · Minden",
+      "winner": "Khan Nguyen",
+      "runner_up": "Timon Boerner",
+      "series_score": "2–1",
+      "source": "https://scrabble-info.de/turniere-info/dm-info/dm-info-2025/",
+      "game_scores": [
+        [
+          430,
+          308
+        ],
+        [
+          397,
+          524
+        ],
+        [
+          499,
+          354
+        ]
+      ],
+      "id": "sdev-minden-2025",
+      "city": "Minden",
+      "country": "DE",
+      "lat": 52.29,
+      "lon": 8.92,
+      "language": "de",
+      "date_precision": "day",
+      "format": "classic"
+    },
+    {
+      "date": "2025-07-14",
+      "profile": "fr-classic-v1",
+      "event": "Mondial Classique · Trois-Rivières",
+      "winner": "Quentin Mallégol",
+      "runner_up": "King Josaphat Nkouete Chewa",
+      "series_score": "3–2",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/",
+      "id": "fisf-trois-rivieres-2025",
+      "city": "Trois-Rivières",
+      "country": "CA",
+      "lat": 46.34,
+      "lon": -72.55,
+      "language": "fr",
+      "date_precision": "day",
+      "game_scores": [
+        [
+          342,
+          455
+        ],
+        [
+          448,
+          519
+        ],
+        [
+          534,
+          510
+        ],
+        [
+          512,
+          366
+        ],
+        [
+          503,
+          451
+        ]
+      ],
+      "format": "classic"
+    },
+    {
+      "date": "2025-11-16",
+      "profile": "en-wespa-v1",
+      "event": "WESPAC · Accra",
+      "winner": "Adam Logan",
+      "runner_up": "Nigel Richards",
+      "series_score": null,
+      "source": "https://wespac.ghanascrabble.com/tsh/wespac2025/html/prizes.html",
+      "id": "wespac-accra-2025",
+      "city": "Accra",
+      "country": "GH",
+      "lat": 5.56,
+      "lon": -0.2,
+      "language": "en",
+      "date_precision": "day",
+      "format": "classic"
+    },
+    {
+      "date": "2026-05-17",
+      "profile": "de-sdev-v1",
+      "event": "Championnat d’Allemagne · Bayreuth",
+      "winner": "Alexander Dings",
+      "runner_up": "Livia Boerner",
+      "series_score": "2–1",
+      "source": "https://scrabble-info.de/dm-2026-bayreuth-newsticker/",
+      "id": "sdev-bayreuth-2026",
+      "city": "Bayreuth",
+      "country": "DE",
+      "lat": 49.95,
+      "lon": 11.58,
+      "language": "de",
+      "date_precision": "day",
+      "format": "classic"
+    },
+    {
+      "date": "2026-07-21",
+      "profile": "fr-classic-v1",
+      "event": "Mondial Classique · Tunis",
+      "winner": "Ouraga Guy Roland Boli",
+      "runner_up": "Gauthier Houillon",
+      "series_score": "3–2",
+      "source": "https://ffsc.fr/endirect/endirect.php?tournoi_id=25971",
+      "game_scores": [
+        [
+          574,
+          463
+        ],
+        [
+          472,
+          486
+        ],
+        [
+          473,
+          409
+        ],
+        [
+          408,
+          523
+        ],
+        [
+          544,
+          345
+        ]
+      ],
+      "id": "fisf-tunis-2026",
+      "city": "Tunis",
+      "country": "TN",
+      "lat": 36.8,
+      "lon": 10.18,
+      "language": "fr",
+      "date_precision": "day",
+      "format": "classic"
+    }
+  ],
+  "chronology": [
+    {
+      "id": "butts",
+      "date": "1938",
+      "date_precision": "year",
+      "title": "Alfred Mosher Butts conçoit le jeu",
+      "description": "Les prototypes Lexiko et Criss-Cross Words précèdent la version commercialisée. Butts s’appuie sur la fréquence des lettres dans les journaux.",
+      "language": "en",
+      "source": "https://playscrabble.com/news-blog/history-of-scrabble-from-1938-to-present-day-play-scrabble"
+    },
+    {
+      "id": "brunot",
+      "date": "1948",
+      "date_precision": "year",
+      "title": "James Brunot lance Scrabble",
+      "description": "Brunot reprend les droits de fabrication, introduit la prime de 50 points pour les sept lettres et la marque est enregistrée.",
+      "language": "en",
+      "source": "https://playscrabble.com/news-blog/history-of-scrabble-from-1938-to-present-day-play-scrabble"
+    },
+    {
+      "id": "duplicate",
+      "date": "1972",
+      "date_precision": "year",
+      "title": "Premiers mondiaux Duplicate",
+      "description": "À Cannes, cinq joueurs participent à l’épreuve née de la formule d’Hippolyte Wouters.",
+      "language": "fr",
+      "source": "https://fisf.net/missions-historique/"
+    },
+    {
+      "id": "fisf-foundation",
+      "date": "1978",
+      "date_precision": "year",
+      "title": "Création de la FISF",
+      "description": "La Belgique, la France, la Suisse et le Québec fondent la fédération internationale francophone.",
+      "language": "fr",
+      "source": "https://fisf.net/missions-historique/"
+    },
+    {
+      "id": "ods-publication",
+      "date": "1989-08-14",
+      "date_precision": "day",
+      "title": "Présentation publique de la première édition de l’ODS",
+      "description": "Le dictionnaire commun est présenté aux championnats du monde de Namur.",
+      "language": "fr",
+      "source": "https://fisf.net/lofficiel-du-scrabble/"
+    },
+    {
+      "id": "ods-first-edition",
+      "date": "1990-01-01",
+      "date_precision": "day",
+      "title": "La première édition de l’ODS entre en vigueur",
+      "description": "La fédération se dote d’un lexique commun édité avec Larousse.",
+      "language": "fr",
+      "source": "https://fisf.net/lofficiel-du-scrabble/"
+    },
+    {
+      "id": "wsc-first-edition",
+      "date": "1991",
+      "date_precision": "year",
+      "title": "Premier World Scrabble Championship",
+      "description": "Peter Morris gagne la première édition du palmarès anglophone, disputée à Londres.",
+      "language": "en",
+      "source": "https://wespac.ghanascrabble.com/"
+    },
+    {
+      "id": "fr-classic-first-edition",
+      "date": "2006",
+      "date_precision": "year",
+      "title": "Première Coupe du monde de Classique francophone",
+      "description": "Parfait Mouanda remporte l’épreuve à Tours devant Henry-Marcel Engonge.",
+      "language": "fr",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-de-monde/"
+    },
+    {
+      "id": "naspa-sanctioning",
+      "date": "2009-07-01",
+      "date_precision": "day",
+      "title": "La NASPA reprend le classement nord-américain",
+      "description": "La NASPA reprend les cotes et l’organisation des tournois homologués en Amérique du Nord.",
+      "language": "en",
+      "source": "https://scrabbleplayers.org/w/Ratings"
+    },
+    {
+      "id": "wespac-perth",
+      "date": "2015",
+      "date_precision": "year",
+      "title": "WESPA Championship à Perth",
+      "description": "Wellington Jighere bat Lewis Mackay lors du WESPAC.",
+      "language": "en",
+      "source": "https://wespac.ghanascrabble.com/"
+    },
+    {
+      "id": "africa-classic",
+      "date": "2016",
+      "date_precision": "year",
+      "title": "Premier championnat d’Afrique de Classique",
+      "description": "Le Togo accueille la nouvelle épreuve continentale.",
+      "language": "fr",
+      "source": "https://fisf.net/competitions/scrabble-classique/championnat-dafrique-de-scrabble-classique/"
+    },
+    {
+      "id": "fisf-rating-reform",
+      "date": "2019-09",
+      "date_precision": "month",
+      "title": "Nouveau calcul de la cote FISF",
+      "description": "La saison 2019–2020 inaugure un calcul inspiré de l’Elo, avec des cotes recalculées sur les deux saisons précédentes.",
+      "language": "fr",
+      "source": "https://www.ffsc.fr/files/public/fichiers/archives/2019/AG.2019.Compte.rendu.AG.pdf"
+    },
+    {
+      "id": "ods9",
+      "date": "2024-01-01",
+      "date_precision": "day",
+      "title": "Entrée en vigueur de l’ODS 9",
+      "description": "La neuvième édition devient la référence des compétitions francophones.",
+      "language": "fr",
+      "source": "https://fisf.net/lofficiel-du-scrabble/"
+    },
+    {
+      "id": "wespa-rjr",
+      "date": "2025-01-01",
+      "date_precision": "day",
+      "title": "La WESPA passe au système RJR",
+      "description": "Cette méthode dérivée de Glicko associe une cote à un indice d’incertitude.",
+      "language": "en",
+      "source": "https://www.wespa.org/wp-content/uploads/2024/10/WESPA-Rating-V4-Executive-Summary.pdf"
+    },
+    {
+      "id": "europe-classic",
+      "date": "2025",
+      "date_precision": "year",
+      "title": "Premier championnat d’Europe de Classique francophone",
+      "description": "L’épreuve rejoint le calendrier international de la FISF.",
+      "language": "fr",
+      "source": "https://fisf.net/comissions/scrabble-classique/"
+    }
+  ],
+  "geography": {
+    "datum": "WGS84",
+    "precision": "city",
+    "description": "Coordonnées approximatives du centre de la ville hôte. Le pays est indiqué par son code ISO 3166-1 alpha-2."
+  }
+}

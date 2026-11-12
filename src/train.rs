@@ -178,3 +178,22 @@ pub fn train(engine: &Engine, output: &Path) -> Result<()> {
     println!("{}", serde_json::to_string_pretty(&heldout_stats)?);
     Ok(())
 }
+
+pub fn reference(engine: &Engine, policy: ExpertPolicy, pairs: u32, output: &Path) -> Result<()> {
+    if !(2..=200_000).contains(&pairs) {
+        anyhow::bail!("entre 2 et 200 000 tirages appariés");
+    }
+    let workers = std::thread::available_parallelism()?
+        .get()
+        .saturating_sub(2)
+        .clamp(1, 12) as u32;
+    let start = std::time::Instant::now();
+    let seed = 810_060_000;
+    let outcome = compare(engine, policy, seed, pairs, workers)?;
+    let result = json!({"schema":"lettrine.reference-match.v1","profile":engine.profile.id,"lexicon_sha256":engine.digest,
+        "reference":"Expert de référence","challenger":"Expert entraîné","policy":policy,
+        "first_seed":seed,"elapsed_seconds":start.elapsed().as_secs_f64(),"result":outcome.summary()});
+    fs::write(output, serde_json::to_vec_pretty(&result)?)?;
+    println!("{}", serde_json::to_string_pretty(&result)?);
+    Ok(())
+}

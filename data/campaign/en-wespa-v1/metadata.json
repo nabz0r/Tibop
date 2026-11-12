@@ -1,0 +1,331 @@
+{
+  "campaign": {
+    "target": 12000,
+    "seed": 20261112,
+    "lexicon": "ENABLE2K",
+    "lexicon_words": 169266,
+    "lexicon_sha256": "452528054b24cce68199a01534e4639d451ac0da3bdac70113546ad6e13fda0e",
+    "engine": "en-wespa-v1"
+  },
+  "public": {
+    "best_score": 704,
+    "bingo_count": 14773,
+    "bingo_rate": 0.043615739811282875,
+    "completed": 12000,
+    "distinct_words": 41044,
+    "draw_rate": 0.00325,
+    "elapsed_seconds": 3.420856209,
+    "engine": "en-wespa-v1",
+    "error": null,
+    "exchange_rate": 0.0003572398644259953,
+    "finished_reason": {
+      "passes": 686,
+      "rack_out": 11314
+    },
+    "first_win_rate": 0.5335833333333333,
+    "levels": [
+      {
+        "draws": 18,
+        "games": 6000,
+        "id": 0,
+        "label": "Découverte",
+        "mean_score": 267.566,
+        "rating": 755,
+        "wins": 1447
+      },
+      {
+        "draws": 37,
+        "games": 6000,
+        "id": 1,
+        "label": "Initié",
+        "mean_score": 308.3023333333333,
+        "rating": 1012,
+        "wins": 2306
+      },
+      {
+        "draws": 15,
+        "games": 6000,
+        "id": 2,
+        "label": "Stratège",
+        "mean_score": 374.7128333333333,
+        "rating": 1403,
+        "wins": 3706
+      },
+      {
+        "draws": 8,
+        "games": 6000,
+        "id": 3,
+        "label": "Expert",
+        "mean_score": 423.9236666666667,
+        "rating": 1630,
+        "wins": 4502
+      }
+    ],
+    "lexicon": "ENABLE2K",
+    "lexicon_sha256": "452528054b24cce68199a01534e4639d451ac0da3bdac70113546ad6e13fda0e",
+    "lexicon_words": 169266,
+    "matchups": [
+      {
+        "a": 0,
+        "a_wins": 632,
+        "b": 0,
+        "b_wins": 562,
+        "draws": 6,
+        "games": 1200
+      },
+      {
+        "a": 0,
+        "a_wins": 237,
+        "b": 1,
+        "b_wins": 957,
+        "draws": 6,
+        "games": 1200
+      },
+      {
+        "a": 0,
+        "a_wins": 16,
+        "b": 2,
+        "b_wins": 1184,
+        "draws": 0,
+        "games": 1200
+      },
+      {
+        "a": 0,
+        "a_wins": 0,
+        "b": 3,
+        "b_wins": 1200,
+        "draws": 0,
+        "games": 1200
+      },
+      {
+        "a": 1,
+        "a_wins": 644,
+        "b": 1,
+        "b_wins": 543,
+        "draws": 13,
+        "games": 1200
+      },
+      {
+        "a": 1,
+        "a_wins": 140,
+        "b": 2,
+        "b_wins": 1056,
+        "draws": 4,
+        "games": 1200
+      },
+      {
+        "a": 1,
+        "a_wins": 22,
+        "b": 3,
+        "b_wins": 1177,
+        "draws": 1,
+        "games": 1200
+      },
+      {
+        "a": 2,
+        "a_wins": 662,
+        "b": 2,
+        "b_wins": 534,
+        "draws": 4,
+        "games": 1200
+      },
+      {
+        "a": 2,
+        "a_wins": 270,
+        "b": 3,
+        "b_wins": 927,
+        "draws": 3,
+        "games": 1200
+      },
+      {
+        "a": 3,
+        "a_wins": 684,
+        "b": 3,
+        "b_wins": 514,
+        "draws": 2,
+        "games": 1200
+      }
+    ],
+    "mean_score": 343.62620833333335,
+    "mean_turns": 28.225666666666665,
+    "pair_target": 1200,
+    "pass_rate": 0.017882659990316144,
+    "recent": [
+      {
+        "at": 0.069219209,
+        "completed": 256
+      },
+      {
+        "at": 0.398491375,
+        "completed": 1280
+      },
+      {
+        "at": 0.705331042,
+        "completed": 2304
+      },
+      {
+        "at": 0.997984875,
+        "completed": 3328
+      },
+      {
+        "at": 1.295946334,
+        "completed": 4352
+      },
+      {
+        "at": 1.584319959,
+        "completed": 5376
+      },
+      {
+        "at": 1.8608450840000001,
+        "completed": 6400
+      },
+      {
+        "at": 2.140259709,
+        "completed": 7424
+      },
+      {
+        "at": 2.423420959,
+        "completed": 8448
+      },
+      {
+        "at": 2.710373375,
+        "completed": 9472
+      },
+      {
+        "at": 2.995603,
+        "completed": 10496
+      },
+      {
+        "at": 3.282069084,
+        "completed": 11520
+      }
+    ],
+    "running": false,
+    "seed": 20261112,
+    "target": 12000,
+    "turns": 338708,
+    "words": [
+      {
+        "count": 1068,
+        "mean_score": 6.74625468164794,
+        "word": "AI"
+      },
+      {
+        "count": 1044,
+        "mean_score": 6.051724137931035,
+        "word": "IT"
+      },
+      {
+        "count": 1014,
+        "mean_score": 25.40631163708087,
+        "word": "QAT"
+      },
+      {
+        "count": 941,
+        "mean_score": 27.34856535600425,
+        "word": "EX"
+      },
+      {
+        "count": 940,
+        "mean_score": 5.190425531914894,
+        "word": "IN"
+      },
+      {
+        "count": 836,
+        "mean_score": 27.66866028708134,
+        "word": "AX"
+      },
+      {
+        "count": 796,
+        "mean_score": 4.899497487437186,
+        "word": "LI"
+      },
+      {
+        "count": 789,
+        "mean_score": 4.6248415716096325,
+        "word": "NU"
+      },
+      {
+        "count": 775,
+        "mean_score": 21.46451612903226,
+        "word": "JO"
+      },
+      {
+        "count": 692,
+        "mean_score": 11.186416184971097,
+        "word": "AA"
+      },
+      {
+        "count": 684,
+        "mean_score": 8.77046783625731,
+        "word": "ET"
+      },
+      {
+        "count": 667,
+        "mean_score": 10.45727136431784,
+        "word": "OE"
+      },
+      {
+        "count": 658,
+        "mean_score": 5.407294832826747,
+        "word": "TI"
+      },
+      {
+        "count": 650,
+        "mean_score": 8.15846153846154,
+        "word": "EN"
+      },
+      {
+        "count": 638,
+        "mean_score": 18.50783699059561,
+        "word": "EF"
+      },
+      {
+        "count": 632,
+        "mean_score": 18.76107594936709,
+        "word": "AW"
+      },
+      {
+        "count": 601,
+        "mean_score": 10.906821963394343,
+        "word": "AE"
+      },
+      {
+        "count": 598,
+        "mean_score": 6.533444816053512,
+        "word": "ER"
+      },
+      {
+        "count": 593,
+        "mean_score": 19.58347386172007,
+        "word": "EH"
+      },
+      {
+        "count": 571,
+        "mean_score": 28.57443082311734,
+        "word": "OX"
+      },
+      {
+        "count": 570,
+        "mean_score": 20.342105263157894,
+        "word": "AY"
+      },
+      {
+        "count": 565,
+        "mean_score": 24.831858407079647,
+        "word": "QUA"
+      },
+      {
+        "count": 563,
+        "mean_score": 25.285968028419184,
+        "word": "AZO"
+      },
+      {
+        "count": 556,
+        "mean_score": 30.347122302158272,
+        "word": "XI"
+      }
+    ]
+  },
+  "archive_sha256": "f023ac7d4b91eabad62905103d907e49451c60495002a58a358ffeae1d359de0"
+}

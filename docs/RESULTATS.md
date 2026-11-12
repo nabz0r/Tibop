@@ -55,3 +55,35 @@ L’Expert entraîné obtient 51,93 % des points de match sur 12 000 duels ré
 | `qwen3:0.6b` | Expert entraîné | 1–0–11 | −354 | 145 |
 
 Chaque pilote réutilise six tirages dans les deux sièges, avec le même lexique et le même adversaire. Chaque modèle choisit parmi les six meilleurs placements présélectionnés par le moteur. Les écarts Elo sont régularisés et l’incertitude est large. Ces résultats décrivent le banc pilote, avec son prompt et son budget. Llama reste le modèle de commentaire du studio et Qwen Embedding le modèle d’indexation. [Données des pilotes](../data/models/llm-benchmarks.json)
+
+## Index des mots, ouvertures et cases bonus
+
+Le studio agrège les placements en PostgreSQL par profil de langue. L’index utilise le mot principal inscrit dans le journal de simulation. Les raccords sont compris dans le score total du coup et ne sont pas comptés comme des occurrences supplémentaires. Une ouverture est le premier placement de la partie, même si un échange ou une passe l’a précédé. Un bingo correspond au nombre de jetons posés prévu par le profil.
+
+| Profil | Parties | Tours | Placements | Mots distincts | Bingos |
+|---|---:|---:|---:|---:|---:|
+| Français | 100 000 | 2 754 615 | 2 727 121 | 106 131 | 228 188 |
+| Anglais | 12 000 | 338 708 | 332 530 | 41 044 | 14 773 |
+| Allemand | 8 000 | 231 136 | 226 050 | 44 754 | 12 205 |
+| Russe | 8 000 | 257 045 | 248 079 | 49 881 | 7 019 |
+
+En français, un placement qui active au moins une case bonus rapporte 30,98 points en moyenne. La moyenne des autres placements est de 11,63. Les coups qui activent une case mot triple rapportent 37,47 points en moyenne. Le score comprend le placement complet, ses raccords et l’éventuelle prime de bingo. L’écart observé dépend aussi du choix du bot, du chevalet et de la géométrie du plateau. Il mesure une association et ne permet pas d’isoler les points dus au multiplicateur.
+
+La carte compte les jetons nouvellement placés dans chaque case. La moyenne d’une case utilise le score du coup complet à chacune de ses activations. Un coup peut donc contribuer aux statistiques de plusieurs cases et de plusieurs types de bonus. La fréquence des actions utilise l’ensemble des tours. Le taux de bingos de l’index utilise les placements seuls.
+
+```bash
+python3 tools/index_moves.py
+python3 tools/index_moves.py --profile en-wespa-v1 --db results/en-wespa-v1.sqlite
+python3 tools/index_moves.py --profile de-sdev-v1 --db results/de-sdev-v1.sqlite
+python3 tools/index_moves.py --profile ru-mattel-v1 --db results/ru-mattel-v1.sqlite
+```
+
+Le premier exemple lit l’archive française de référence. Une archive d’une autre langue se lit avec `--profile`, `--archive` et `--metadata`. Les enregistrements de provenance contiennent le profil, la graine, le nom de la source et l’empreinte du lexique. Relancer l’index remplace les agrégats du profil sélectionné dans une transaction. [Script d’indexation](../tools/index_moves.py) · [Schéma](../infra/move_analytics.sql)
+
+## Réplication, recherche avancée et probabilités
+
+Le vérificateur indépendant a relu les 100 000 duels français et recalculé les 2 754 615 tours. Il contrôle les placements, les mots croisés, les primes et les scores de fin. L’Expert entraîné a ensuite obtenu 52,08 % des points sur une réplication séparée de 100 000 duels contre l’Expert de référence, en 43,1 secondes sur le Mac. [Vérification](../data/campaign/verification-fr.json) · [Réplication](../data/models/reference-holdout-fr.json)
+
+La recherche avancée de N A B échantillonne uniquement les lettres inconnues et peut résoudre exactement des fins de partie lorsque le sac est vide. Sur 2 000 duels français réservés contre l’Expert entraîné, elle obtient 55,58 % des points, avec un intervalle de 53,79 à 57,36 %. Ce test compare deux politiques simulées. L’Elo humain demande des adversaires communs dans le même lexique. [Rapport de recherche avancée](../data/models/peak-fr-v1.json)
+
+Les courbes de rejeu estiment les chances à partir des écarts de points observés dans les duels à niveau égal, du stade de partie et de l’écart Elo entre références. La calibration est vérifiée sur un lot réservé par langue. Les jetons piochés sont reconstruits depuis les chevalets enregistrés. La probabilité de tirer un joker utilise l’inventaire inconnu avant le coup. [Calibrage](../data/models/win-model.json)

@@ -2,16 +2,17 @@
 
 const $ = (id) => document.getElementById(id);
 const links = Array.from(document.querySelectorAll("[data-view]"));
+const defaultProfile = "fr-classic-v1";
+const profileNames = { fr: "Français", en: "English", de: "Deutsch", ru: "Русский", "ja-JP": "日本語" };
 const levelNames = ["Découverte", "Initié", "Stratège", "Expert"];
 const matchModes = { solo: "Solo", local: "Multijoueur local", bluetooth: "Bluetooth" };
-const number = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
-const integer = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
-const percent = new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 1 });
-const precisePercent = new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 2 });
-const signed = new Intl.NumberFormat("fr-FR", { signDisplay: "exceptZero", maximumFractionDigits: 1 });
+const defaultChallengeModel = "llama3.2:3b";
 const pageSize = 20;
+let number, integer, percent, precisePercent, signed;
 const state = {
   view: "vue",
+  profile: new URLSearchParams(location.search).get("profile") || defaultProfile,
+  profiles: [],
   offset: 0,
   importOffset: 0,
   search: "",
@@ -23,11 +24,17 @@ const state = {
   importRequest: 0,
   detailRequest: 0,
   reviewRequest: 0,
+  policyRequest: 0,
+  policyTimer: null,
   refreshing: false,
+  statsRequest: 0,
   importing: false,
   stats: null,
+  metricsKey: null,
   model: null,
   benchmarks: null,
+  commentaryBenchmarks: null,
+  studies: null,
   detail: null,
   move: 0,
   reviewCache: new Map(),
@@ -38,6 +45,88 @@ const state = {
   liveStream: null,
   liveFile: null,
 };
+const profileLinks = [...document.querySelectorAll('a[href^="/api/export"], a[href="/api/models"]')]
+  .map((link) => [link, link.getAttribute("href")]);
+
+function profileUrl(path, query) {
+  const url = new URL(path, location.origin);
+  for (const [key, value] of new URLSearchParams(query)) url.searchParams.set(key, value);
+  url.searchParams.set("profile", state.profile);
+  return url.pathname + url.search;
+}
+
+function localizeProfile() {
+  const profile = state.profiles.find((item) => item.id === state.profile);
+  const english = profile ? profile.language === "en" : state.profile.startsWith("en-");
+  setLanguage(english ? "en" : "fr");
+  const locale = english ? "en-GB" : "fr-FR";
+  number = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+  integer = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+  percent = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
+  precisePercent = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 });
+  signed = new Intl.NumberFormat(locale, { signDisplay: "exceptZero", maximumFractionDigits: 1 });
+  for (const [link, path] of profileLinks) link.href = profileUrl(path);
+  $("source-archives").hidden = state.profile !== defaultProfile;
+  if (telemetrySnapshot) renderTelemetry(telemetrySnapshot);
+}
+
+function chooseProfile(id) {
+  if (id === state.profile) return;
+  const profile = state.profiles.find((item) => item.id === id);
+  if (!profile?.lexicon?.path) return;
+  const previous = state.stats;
+  state.profile = id;
+  state.stats = null;
+  state.model = null;
+  state.benchmarks = null;
+  state.commentaryBenchmarks = null;
+  state.studies = null;
+  state.offset = 0;
+  state.search = "";
+  $("games-query").value = "";
+  if (id !== defaultProfile && state.source === "archives") state.source = "simulations";
+  ++state.gameRequest;
+  ++state.detailRequest;
+  state.detail = null;
+  if ($("game-dialog").open) $("game-dialog").close();
+  const url = new URL(location.href);
+  url.searchParams.set("profile", id);
+  if (url.hash.startsWith("#parties?game=")) url.hash = "#parties";
+  history.replaceState(null, "", url);
+  localizeProfile();
+  $("profile-select").value = id;
+  $("trained-panel").hidden = true;
+  $("commentary-tests").hidden = true;
+  $("llm-benchmarks").replaceChildren();
+  $("llm-elo-placeholder").hidden = false;
+  $("corpus-results").replaceChildren();
+  $("corpus-status").hidden = true;
+  renderStats({ lexicon: profile.lexicon.name, ollama_model: previous?.ollama_model, ollama_models: previous?.ollama_models });
+  setView();
+  refreshStats();
+}
+
+async function loadProfiles() {
+  try {
+    const profiles = await get("/api/profiles");
+    if (!Array.isArray(profiles)) return;
+    state.profiles = profiles;
+    const order = ["fr", "en", "de", "ru", "ja-JP"];
+    const sorted = [...profiles].sort((a, b) => order.indexOf(a.language) - order.indexOf(b.language));
+    const choices = sorted.map((profile) => {
+      const available = !!profile.lexicon?.path && profile.status !== "draft";
+      const name = profileNames[profile.language] || profile.name;
+      const option = new Option(name + (available ? "" : " · " + t("Profil en préparation")), profile.id);
+      option.disabled = !available;
+      return option;
+    });
+    $("profile-select").replaceChildren(...choices);
+    if (!choices.some((item) => item.value === state.profile && !item.disabled)) chooseProfile(defaultProfile);
+    $("profile-select").value = state.profile;
+  } catch {
+    // The default profile is still accessible if discovery is temporarily unavailable.
+  }
+}
 
 function asNumber(value) {
   if (value === null || value === undefined || value === "") return null;
@@ -55,6 +144,13 @@ function node(tag, className = "", text = "") {
   if (className) element.className = className;
   if (text !== "") element.textContent = text;
   return element;
+}
+
+function setTip(element, text) {
+  element.classList.add("has-tip");
+  element.dataset.tip = text;
+  element.title = text;
+  if (!element.matches("a, button, input, select, svg, [tabindex]")) element.tabIndex = 0;
 }
 
 function output(id, value) {
@@ -80,9 +176,9 @@ function emptyTable(container, columns, text) {
 }
 
 function levelName(id) {
-  return state.stats?.levels?.find((level) => Number(level.id) === Number(id))?.label
+  return t(state.stats?.levels?.find((level) => Number(level.id) === Number(id))?.label
     ?? levelNames[Number(id)]
-    ?? String(id ?? "—");
+    ?? String(id ?? "—"));
 }
 
 function levelLabel(id, className = "level-label") {
@@ -107,17 +203,19 @@ function renderLevels(levels) {
   const ordered = levels.slice().sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
   const maxRating = Math.max(1800, ...ordered.map((level) => Number(level.rating) || 0));
   const highlights = ordered.map((level) => {
-    const row = node("div", "level-row");
+    const row = node("a", "level-row");
+    row.href = "#parties?level=" + encodeURIComponent(level.id);
     row.dataset.level = String(level.id);
-    row.setAttribute("aria-label", level.label + ", " + format(level.rating, integer) + " Elo");
+    row.setAttribute("aria-label", levelName(level.id) + ", " + format(level.rating, integer) + " Elo");
+    setTip(row, t("Elo relatif aux adversaires de la campagne de référence."));
     row.append(levelLabel(level.id), bar((level.rating ?? 0) / maxRating), node("span", "level-rating", format(level.rating, integer)));
     return row;
   });
-  replaceRows($("overview-levels"), highlights, "En attente des premiers résultats.");
+  replaceRows($("overview-levels"), highlights, t("En attente des premiers résultats."));
 
   const table = $("meta-levels");
   if (!ordered.length) {
-    emptyTable(table, 6, "En attente des premiers résultats.");
+    emptyTable(table, 6, t("En attente des premiers résultats."));
     return;
   }
   const rows = ordered.map((level) => {
@@ -142,11 +240,11 @@ function renderWords(words) {
     row.append(node("span", "word-score", format(meanScore) + " pts"));
     return row;
   });
-  replaceRows($("meta-words"), rows, "En attente des premiers résultats.");
+  replaceRows($("meta-words"), rows, t("En attente des premiers résultats."));
 }
 
 function renderMatchups(pairs) {
-  const rows = pairs.map(({ a, b, games, a_wins: aWins, b_wins: bWins, draws }) => {
+  const rows = pairs.map(({ a, b, games, a_wins: aWins, b_wins: bWins, draws, confidence_interval_95: interval }) => {
     const row = node("article", "matchup-row");
     const labels = node("div", "matchup-labels");
     labels.append(levelLabel(a), levelLabel(b));
@@ -160,14 +258,17 @@ function renderMatchups(pairs) {
     }
     const summary = node("div", "matchup-stats");
     summary.append(
-      node("span", "", format(aWins, integer) + " victoires"),
-      node("span", "", format(draws, integer) + " nuls · " + format(games, integer) + " parties"),
-      node("span", "", format(bWins, integer) + " victoires"),
+      node("span", "", format(aWins, integer) + t(" victoires")),
+      node("span", "", format(draws, integer) + t(" nuls · ") + format(games, integer) + t(" parties")),
+      node("span", "", format(bWins, integer) + t(" victoires")),
     );
-    row.append(labels, stack, summary);
+    const detail = node("p", "matchup-evidence", "n = " + format(games, integer) + " · " + t("Victoires par côté") + " " + format(aWins / games, percent) + " / " + format(bWins / games, percent));
+    if (Array.isArray(interval)) detail.append(document.createTextNode(" · " + t("Intervalle à 95 % · ") + interval.map((value) => format(value, precisePercent)).join(t(" à "))));
+    setTip(detail, t("Les deux côtés et les nulles sont comptés sur le même ensemble de duels."));
+    row.append(labels, stack, summary, detail);
     return row;
   });
-  replaceRows($("meta-matchups"), rows, "En attente des premières confrontations.");
+  replaceRows($("meta-matchups"), rows, t("En attente des premières confrontations."));
 }
 
 function elapsed(value) {
@@ -185,7 +286,7 @@ function renderStats(stats) {
   const completed = Number(stats.completed) || 0;
   const target = Number(stats.target) || 0;
   const campaignState = stats.running ? "running" : target > 0 && completed >= target ? "done" : "idle";
-  const campaignLabel = { running: "En cours", done: "Terminée", idle: completed ? "En pause" : "En attente" }[campaignState];
+  const campaignLabel = { running: t("En cours"), done: t("Terminée"), idle: completed ? t("En pause") : t("En attente") }[campaignState];
   const runProgress = $("run-progress");
   runProgress.max = Math.max(1, target);
   runProgress.value = Math.min(completed, runProgress.max);
@@ -197,24 +298,41 @@ function renderStats(stats) {
   output("metric-score", completed ? format(stats.mean_score) : "—");
   output("metric-best", completed ? format(stats.best_score, integer) : "—");
   output("metric-turns", completed ? format(stats.mean_turns) : "—");
-  output("metric-bingos", completed ? format(stats.bingo_rate, percent) : "—");
-  output("metric-first", completed ? format(stats.first_win_rate, percent) : "—");
-  output("metric-meta-bingos", completed ? format(stats.bingo_rate, percent) : "—");
-  output("metric-exchanges", completed ? format(stats.exchange_rate, percent) : "—");
-  output("metric-passes", completed ? format(stats.pass_rate, percent) : "—");
+  output("metric-bingos", format(stats.bingo_count, integer));
+  output("kpi-bingo-context", stats.turns ? t("sur ") + format(stats.turns, integer) + t(" tours") : t("Poses de sept lettres"));
+  $("kpi-best").href = stats.best_game?.id ? "#parties?game=" + encodeURIComponent(stats.best_game.id) : "#parties?sort=peak";
+  setTip($("kpi-score"), t("Moyenne des scores finaux par joueur. Ouvrez le détail par niveau."));
+  setTip($("kpi-best"), t("Plus haut score individuel d’une partie. Ouvrez le duel correspondant."));
+  setTip($("kpi-turns"), t("Nombre total de tours divisé par les parties. Ouvrez les duels classés par longueur."));
+  setTip($("kpi-bingos"), t("Nombre de coups posant sept jetons. Ouvrez les comptes et leur dénominateur."));
+  renderAnalysisSummary(stats);
   output("admin-state", campaignLabel);
   output("admin-storage", { postgresql: "PostgreSQL", sqlite: "SQLite" }[stats.storage] ?? "—");
   output("admin-count", format(completed, integer));
   output("admin-elapsed", elapsed(stats.elapsed_seconds));
   output("admin-lexicon", stats.lexicon || "—");
   output("admin-lexicon-count", format(stats.lexicon_words, integer));
-  output("sidebar-lexicon", stats.lexicon || "Scrabble francophone");
-  output("local-model", stats.ollama_model || "Llama local");
+  output("sidebar-lexicon", stats.lexicon || t("Scrabble francophone"));
+  output("local-model", stats.ollama_model || t("Llama local"));
+  setChallengeModels(stats);
   const levels = completed ? stats.levels ?? [] : [];
+  const maxElo = Math.max(700, ...levels.map((level) => Number(level.rating) || 0));
+  $("live-target").min = String(stats.adaptive?.min ?? 700);
+  $("policy-elo").min = $("live-target").min;
+  if (maxElo > 700) {
+    $("live-target").max = String(stats.adaptive?.max ?? maxElo);
+    $("policy-elo").max = $("live-target").max;
+  }
+  output("policy-elo-value", format($("policy-elo").value, integer));
+  refreshLiveForm();
   const pairs = (stats.matchups ?? []).filter((pair) => pair.games > 0);
-  renderLevels(levels);
-  renderMatchups(pairs);
-  renderWords(stats.words ?? []);
+  const metricsKey = state.profile + ":" + JSON.stringify([completed, levels, pairs, stats.words]);
+  if (metricsKey !== state.metricsKey) {
+    state.metricsKey = metricsKey;
+    renderLevels(levels);
+    renderMatchups(pairs);
+    renderWords(stats.words ?? []);
+  }
 }
 
 async function readResult(response) {
@@ -232,41 +350,49 @@ async function get(url) {
 }
 
 async function refreshStats() {
-  if (state.refreshing) return;
-  state.refreshing = true;
+  const profile = state.profile;
+  if (state.refreshing === profile) return;
+  const request = ++state.statsRequest;
+  state.refreshing = profile;
   $("refresh").disabled = true;
   try {
-    const stats = await get("/api/stats");
+    const stats = await get(profileUrl("/api/stats"));
+    if (request !== state.statsRequest) return;
     const previous = state.stats?.completed;
     state.stats = stats;
     renderStats(stats);
     $("connection").parentElement.dataset.state = "online";
-    output("connection", "Service local");
-    output("last-sync", "Actualisé à " + new Date().toLocaleTimeString("fr-FR", { timeStyle: "medium" }));
-    if (previous !== undefined && previous !== stats.completed && state.view === "parties" && state.source === "simulations" && !state.offset && !state.search && !$("game-dialog").open) {
+    output("connection", t("Service local"));
+    output("last-sync", t("Actualisé à ") + new Date().toLocaleTimeString(uiLocale, { timeStyle: "medium" }));
+    if (state.view === "vue") loadCommentaryBenchmarks();
+    if (previous !== stats.completed && state.view === "parties" && state.source === "simulations" && !state.offset && !state.search && !$("game-dialog").open) {
       loadGames();
     }
   } catch {
+    if (request !== state.statsRequest) return;
     $("connection").parentElement.dataset.state = "offline";
-    output("connection", "Service indisponible");
-    output("last-sync", "Le service local est momentanément indisponible.");
+    output("connection", t("Service indisponible"));
+    output("last-sync", t("Le service local est momentanément indisponible."));
     $("run-status").dataset.state = "offline";
-    output("run-status-label", "Hors ligne");
+    output("run-status-label", t("Hors ligne"));
   } finally {
-    state.refreshing = false;
-    $("refresh").disabled = false;
+    if (request === state.statsRequest) {
+      state.refreshing = false;
+      $("refresh").disabled = false;
+    }
   }
 }
 
 async function loadModel() {
   if (state.model) return;
+  const profile = state.profile;
   try {
-    const model = await get("/api/models");
-    if (!model.holdout) return;
+    const model = await get(profileUrl("/api/models"));
+    if (profile !== state.profile || !model.holdout) return;
     state.model = model;
     output("trained-elo", format(model.holdout.elo_delta, signed) + " Elo");
     output("trained-match-rate", format(model.holdout.match_score_rate, precisePercent));
-    output("trained-games", format(model.holdout.games, integer) + " duels de test");
+    output("trained-games", format(model.holdout.games, integer) + t(" duels de test"));
     $("trained-track").replaceChildren(bar(model.holdout.match_score_rate));
     $("trained-panel").hidden = false;
   } catch {
@@ -277,24 +403,25 @@ async function loadModel() {
 function benchmarkRow(data) {
   const row = node("div", "llm-test");
   const head = node("div", "model-head");
-  const title = data.model || "Modèle local";
+  const title = data.model || t("Modèle local");
   const elo = asNumber(data.elo_delta);
-  head.append(node("strong", "", title + " · Test de jeu"));
-  if (elo !== null) head.append(node("strong", "model-elo", format(elo, signed) + " Elo estimés"));
-  const score = node("p", "", format(data.games, integer) + " parties face à " + (data.opponent || "l’Expert") + " · Score de match " + format(data.match_score_rate, precisePercent));
+  head.append(node("strong", "", title + t(" · Test de jeu")));
+  if (elo !== null) head.append(node("strong", "model-elo", format(elo, signed) + t(" Elo estimés")));
+  const score = node("p", "", format(data.games, integer) + t(" parties face à ") + (data.opponent || t("l’Expert")) + t(" · Score de match ") + format(data.match_score_rate, precisePercent));
   row.append(head, score);
   if (Array.isArray(data.score_interval_95)) {
-    row.append(node("p", "", "Intervalle à 95 % · " + data.score_interval_95.map((value) => format(value, precisePercent)).join(" à ")));
+    row.append(node("p", "", t("Intervalle à 95 % · ") + data.score_interval_95.map((value) => format(value, precisePercent)).join(t(" à "))));
   }
-  row.append(node("p", "", "Sélection expérimentale · " + format(data.llm_choices, integer) + " coups choisis · " + format(data.fallbacks, integer) + " replis sur le moteur"));
+  row.append(node("p", "", t("Sélection expérimentale · ") + format(data.llm_choices, integer) + t(" coups choisis · ") + format(data.fallbacks, integer) + t(" replis sur le moteur")));
   return row;
 }
 
 async function loadBenchmarks() {
   if (state.benchmarks) return;
+  const profile = state.profile;
   try {
-    const result = await get("/api/llm-benchmarks");
-    if (!Array.isArray(result.items) || !result.items.length) return;
+    const result = await get(profileUrl("/api/llm-benchmarks"));
+    if (profile !== state.profile || !Array.isArray(result.items) || !result.items.length) return;
     state.benchmarks = result.items;
     $("llm-elo-placeholder").hidden = true;
     $("llm-benchmarks").replaceChildren(...result.items.map(benchmarkRow));
@@ -303,12 +430,79 @@ async function loadBenchmarks() {
   }
 }
 
+function modelDuration(value) {
+  const ms = asNumber(value);
+  if (ms === null) return "—";
+  return ms >= 1000 ? format(ms / 1000) + " s" : format(ms, integer) + " ms";
+}
+
+function benchmarkCount(value, total) {
+  const count = asNumber(value);
+  return count === null ? "—" : format(count, integer) + "/" + format(total, integer);
+}
+
+async function loadCommentaryBenchmarks() {
+  if (state.commentaryBenchmarks) return;
+  const profile = state.profile;
+  state.commentaryBenchmarks = [];
+  try {
+    const result = await get(profileUrl("/api/commentary-benchmarks"));
+    if (profile !== state.profile || !Array.isArray(result.items) || !result.items.length) return;
+    state.commentaryBenchmarks = result.items;
+    const rows = result.items.map((item) => {
+      const row = node("tr");
+      const title = node("th", "", item.model);
+      title.scope = "row";
+      row.append(title,
+        td(benchmarkCount(item.valid, item.cases), "numeric"),
+        td(benchmarkCount(item.grounded, item.cases), "numeric"),
+        td(modelDuration(item.p50_ms), "numeric"),
+        td(modelDuration(item.p95_ms), "numeric"));
+      return row;
+    });
+    $("commentary-benchmarks").replaceChildren(...rows);
+    $("commentary-tests").hidden = false;
+  } catch {
+    // Benchmark output is optional.
+  } finally {
+    if (profile === state.profile && !state.commentaryBenchmarks?.length) state.commentaryBenchmarks = null;
+  }
+}
+
+async function loadStudies() {
+  if (state.studies) return;
+  const profile = state.profile;
+  const container = $("study-list");
+  replaceRows(container, [], t("En attente des premières études."));
+  try {
+    const result = await get(profileUrl("/api/studies"));
+    if (profile !== state.profile || !Array.isArray(result.items)) return;
+    state.studies = result.items;
+    const rows = result.items.map((study) => {
+      const row = node("article", "study-row");
+      const title = node("div", "study-heading");
+      title.append(node("h3", "", study.title), node("span", "", [study.date, study.kind].filter(Boolean).join(" · ")));
+      row.append(title, node("p", "", study.summary));
+      if (typeof study.artifact === "string" && study.artifact.startsWith("/api/")) {
+        const link = node("a", "text-link", t("Données JSON") + " ↓");
+        link.href = profileUrl(study.artifact);
+        link.download = "";
+        row.append(link);
+      }
+      return row;
+    });
+    replaceRows(container, rows, t("Aucune étude enregistrée pour ce profil."));
+  } catch {
+    if (profile === state.profile) replaceRows(container, [], t("Historique des recherches indisponible."));
+  }
+}
+
 function gameLabel(id) {
-  return "Partie " + String(id);
+  return t("Partie ") + String(id);
 }
 
 function winnerLabel(game) {
-  if (game.winner === null || game.winner === -1 || game.winner === "draw") return "Égalité";
+  if (game.winner === null || game.winner === -1 || game.winner === "draw") return t("Égalité");
   const index = asNumber(game.winner);
   return index === null ? "—" : playerName(game, index);
 }
@@ -318,11 +512,11 @@ function scoreLabel(game) {
 }
 
 function originLabel(game) {
-  return game.source === "android" || game.origin === "android" ? "Android" : "Fichier";
+  return game.source === "android" || game.origin === "android" ? "Android" : t("Fichier");
 }
 
 function importMetadata(game) {
-  return [originLabel(game), matchModes[game.mode], game.lexicon].filter(Boolean).join(" · ");
+  return [originLabel(game), t(matchModes[game.mode]), game.lexicon].filter(Boolean).join(" · ");
 }
 
 function gameRow(game, imported = false) {
@@ -330,31 +524,65 @@ function gameRow(game, imported = false) {
   const identity = td("");
   identity.append(node("span", "game-id", "#" + String(game.id)));
   if (imported) identity.append(node("span", "game-seed", importMetadata(game)));
-  else if (game.seed !== null && game.seed !== undefined) identity.append(node("span", "game-seed", "Graine " + String(game.seed)));
+  else if (game.seed !== null && game.seed !== undefined) identity.append(node("span", "game-seed", t("Graine ") + String(game.seed)));
   const players = td("");
   (game.scores ?? []).forEach((_, index) => {
     if (index) players.append(node("span", "level-versus", "×"));
     players.append(imported ? node("span", "level-chip", playerName(game, index)) : levelLabel(game.levels?.[index], "level-chip"));
   });
   const action = td("");
-  const button = node("button", "button secondary", "Rejouer");
+  const button = node("button", "button secondary", t("Rejouer"));
   button.type = "button";
-  button.setAttribute("aria-label", "Rejouer la partie " + String(game.id));
+  button.setAttribute("aria-label", t("Rejouer la partie ") + String(game.id));
   button.addEventListener("click", () => openGame(game.id, imported));
   action.append(button);
   row.append(identity, players, td(scoreLabel(game), "numeric"), td(format(game.turns, integer), "numeric"), td(winnerLabel(game)), action);
   return row;
 }
 
+function matchCard(game) {
+  const card = node("article", "match-card");
+  const top = node("div", "match-card-top");
+  top.append(node("strong", "", "#" + game.id), node("span", "", t("Graine ") + game.seed));
+  const seats = node("div", "match-card-seats");
+  (game.levels ?? []).forEach((level, seat) => {
+    const side = node("div", "match-seat match-seat-" + seat);
+    const rating = state.stats?.levels?.find((item) => Number(item.id) === Number(level))?.rating;
+    const name = node("span", "match-level", levelName(level));
+    const score = node("strong", "", format(game.scores?.[seat], integer));
+    const label = node("span", "match-elo", rating != null ? format(rating, integer) + " Elo" : "");
+    side.append(name, score, label);
+    seats.append(side);
+  });
+  const bar = node("div", "match-scorebar");
+  bar.setAttribute("aria-hidden", "true");
+  const [a, b] = (game.scores ?? [0, 0]).map((score) => Math.max(0, Number(score) || 0));
+  bar.style.setProperty("--seat-a", (a + b ? a / (a + b) * 100 : 50) + "%");
+  const foot = node("div", "match-card-footer");
+  const result = node("div", "match-result");
+  const winner = asNumber(game.winner);
+  const outcome = winner === null ? t("Égalité") : t("Joueur ") + (winner + 1) + t(" gagne");
+  result.append(node("strong", "", outcome), node("span", "", format(game.turns, integer) + t(" tours")));
+  const replay = node("button", "button secondary compact", t("Rejouer"));
+  replay.type = "button";
+  replay.setAttribute("aria-label", t("Rejouer la partie ") + game.id);
+  replay.addEventListener("click", () => openGame(game.id));
+  foot.append(result, replay);
+  card.append(top, seats, bar, foot);
+  return card;
+}
+
 function updatePages(source, offset, total, length) {
-  const range = length > 0 ? format(offset + 1, integer) + "–" + format(offset + length, integer) + " sur " : "";
-  output(source + "-count", range + format(total, integer) + (total === 1 ? " partie" : " parties"));
+  const range = length > 0 ? format(offset + 1, integer) + "–" + format(offset + length, integer) + t(" sur ") : "";
+  output(source + "-count", range + format(total, integer) + (total === 1 ? t(" partie") : t(" parties")));
   $(source + "-prev").disabled = offset === 0;
   $(source + "-next").disabled = offset + length >= total || length === 0;
 }
 
 function pageError(source, message) {
-  emptyTable($(source + "-rows"), 6, message);
+  const rows = $(source + "-rows");
+  if (source === "games") replaceRows(rows, [], message);
+  else emptyTable(rows, 6, message);
   output(source + "-count", "—");
   $(source + "-prev").disabled = true;
   $(source + "-next").disabled = true;
@@ -366,16 +594,20 @@ async function loadGames() {
   if (state.level !== "") query.set("level", state.level);
   if (state.search) query.set("q", state.search);
   if (state.elite) query.set("elite", "1");
+  const [sort, order] = $("games-sort").value.split(":");
+  if (sort !== "recent" || order !== "desc") {
+    query.set("sort", sort);
+    query.set("order", order);
+  }
   try {
-    const result = await get("/api/games?" + query);
+    const result = await get(profileUrl("/api/games", query));
     if (request !== state.gameRequest) return;
     const games = result.items ?? [];
-    if (games.length) $("games-rows").replaceChildren(...games.map((game) => gameRow(game)));
-    else emptyTable($("games-rows"), 6, "Aucune partie ne correspond à ces filtres.");
+    replaceRows($("games-rows"), games.map(matchCard), t("Aucune partie ne correspond à ces filtres."));
     updatePages("games", state.offset, Number(result.total) || 0, games.length);
   } catch {
     if (request !== state.gameRequest) return;
-    pageError("games", "Impossible de charger les parties. Réessayez avec le bouton Filtrer.");
+    pageError("games", t("Impossible de charger les parties. Réessayez avec le bouton Filtrer."));
   }
 }
 
@@ -387,11 +619,11 @@ async function loadImports() {
     if (request !== state.importRequest) return;
     const games = result.items ?? [];
     if (games.length) $("imports-rows").replaceChildren(...games.map((game) => gameRow(game, true)));
-    else emptyTable($("imports-rows"), 6, "Les parties ajoutées dans Administration apparaîtront ici.");
+    else emptyTable($("imports-rows"), 6, t("Les parties ajoutées dans Administration apparaîtront ici."));
     updatePages("imports", state.importOffset, Number(result.total) || 0, games.length);
   } catch {
     if (request !== state.importRequest) return;
-    pageError("imports", "Impossible de charger les parties importées.");
+    pageError("imports", t("Impossible de charger les parties importées."));
   }
 }
 
@@ -413,6 +645,20 @@ function setView() {
     if (game && /^\d+$/.test(game)) {
       setGameSource("simulations");
       openGame(game, false, Number.isInteger(turn) ? turn : undefined);
+    } else if (position.get("live") === "1") {
+      setGameSource("live");
+    } else if (position.has("level") || position.has("sort")) {
+      state.offset = 0;
+      state.search = "";
+      state.elite = false;
+      state.level = position.get("level") ?? "";
+      $("games-query").value = "";
+      $("games-elite").checked = false;
+      $("games-level").disabled = false;
+      $("games-level").value = state.level;
+      const sort = position.get("sort") || "recent";
+      $("games-sort").value = [...$("games-sort").options].some((option) => option.value === sort + ":desc") ? sort + ":desc" : "recent:desc";
+      setGameSource("simulations");
     } else {
       setGameSource(state.source);
     }
@@ -420,6 +666,15 @@ function setView() {
   if (selected === "vue") {
     loadModel();
     loadBenchmarks();
+    loadCommentaryBenchmarks();
+    loadStudies();
+  }
+  if (selected === "decouverte") loadLegacy();
+  if (selected === "meta") {
+    loadAnalysis();
+    const section = new URLSearchParams(query).get("section");
+    const target = { rating: "rating-title", bingos: "metric-meta-bingos" }[section];
+    if (target) requestAnimationFrame(() => $(target).scrollIntoView({ block: "center" }));
   }
   if (changed) window.scrollTo(0, 0);
 }
@@ -439,12 +694,12 @@ const cells = Array.from({ length: 225 }, (_, index) => node("div", "board-cell"
 $("board").append(...cells);
 
 function moveLabel(move) {
-  if (!move) return "Position de départ";
-  if (move.type === "invalid") return move.word ? move.word + " (refusé)" : "Coup refusé";
+  if (!move) return t("Position de départ");
+  if (move.type === "invalid") return move.word ? move.word + t(" (refusé)") : t("Coup refusé");
   if (move.word) return move.word;
-  if (["pass", "skip"].includes(move.type)) return "Passe";
-  if (["exchange", "swap"].includes(move.type)) return "Échange";
-  return "Placement";
+  if (["pass", "skip"].includes(move.type)) return t("Passe");
+  if (["exchange", "swap"].includes(move.type)) return t("Échange");
+  return t("Placement");
 }
 
 function tileIndex(tile) {
@@ -456,6 +711,9 @@ function tileIndex(tile) {
 
 function renderBoard(step, preview) {
   const moves = state.detail?.moves ?? [];
+  const game = state.detail;
+  const profile = state.profiles.find((item) => game?.language ? item.language === game.language : item.id === state.profile);
+  const points = profile?.tiles ? new Map(profile.tiles.map((tile) => [tile.symbol, tile.points])) : null;
   const board = new Map();
   const fresh = new Set();
   const placedCount = preview ? step - 1 : step;
@@ -481,15 +739,15 @@ function renderBoard(step, preview) {
     cell.classList.toggle("preview-tile", !!preview && fresh.has(index));
     if (tile) {
       const letter = String(tile.letter ?? "").toUpperCase();
-      cell.replaceChildren(document.createTextNode(letter), node("small", "", String(tile.blank ? 0 : tilePoints[letter] ?? "")));
+      cell.replaceChildren(document.createTextNode(letter), node("small", "", String(tile.blank ? 0 : points?.get(letter) ?? tilePoints[letter] ?? "")));
     } else if (index === 112) {
       cell.textContent = "★";
     } else {
       cell.textContent = "";
     }
   }
-  const position = preview ? ", variante " + preview.word : ", après le coup " + step;
-  $("board").setAttribute("aria-label", "Plateau du Scrabble" + position + ", " + board.size + " lettres");
+  const position = preview ? t(", variante ") + preview.word : t(", après le coup ") + step;
+  $("board").setAttribute("aria-label", t("Plateau du Scrabble") + position + ", " + board.size + t(" lettres"));
 }
 
 function reviewField(label, value) {
@@ -503,33 +761,38 @@ function renderReview(review) {
   result.hidden = !review;
   if (!review) return;
   const summary = [
-    reviewField("Coup joué", format(review.played_score, integer) + " pts"),
-    reviewField(state.detail?.archive ? "Maximum indiqué" : "Meilleur score", format(review.best_score, integer) + " pts"),
-    reviewField("Écart", format(review.points_left, integer) + " pts"),
+    reviewField(t("Coup joué"), [review.played_word, format(review.played_score, integer) + " pts"].filter(Boolean).join(" · ")),
+    reviewField(state.detail?.archive ? t("Maximum indiqué") : t("Meilleur score"), format(review.best_score, integer) + " pts"),
+    reviewField(t("Écart"), format(review.points_left, integer) + " pts"),
   ];
-  if (asNumber(review.played_rank) !== null) summary.push(reviewField("Rang du coup", "#" + format(review.played_rank, integer)));
+  if (review.best_word) summary.push(reviewField(t("Meilleur coup publié"), review.best_word));
+  if (asNumber(review.played_rank) !== null) summary.push(reviewField(t("Rang du coup"), "#" + format(review.played_rank, integer)));
   if (review.position_rack) {
     const rack = Array.isArray(review.position_rack) ? review.position_rack.join(" ") : String(review.position_rack);
-    summary.push(reviewField("Chevalet avant le coup", rack));
+    summary.push(reviewField(t("Chevalet avant le coup"), rack));
   }
-  if (asNumber(review.legal_moves) !== null) summary.push(reviewField("Placements légaux", format(review.legal_moves, integer)));
-  if (asNumber(review.samples) !== null) summary.push(reviewField("Tirages simulés", format(review.samples, integer)));
+  if (asNumber(review.legal_moves) !== null) summary.push(reviewField(t("Placements légaux"), format(review.legal_moves, integer)));
+  if (asNumber(review.samples) !== null) summary.push(reviewField(t("Tirages simulés"), format(review.samples, integer)));
   $("review-summary").replaceChildren(...summary);
   const options = (review.alternatives ?? []).map((choice) => {
     const row = node("li");
     const button = node("button", "review-option");
     button.type = "button";
     button.setAttribute("aria-pressed", String(state.preview === choice));
+    setTip(button, t("Afficher cette variante sur le plateau à la place du coup joué."));
     const details = node("span", "review-choice");
     const played = state.detail?.moves?.[state.move - 1];
     details.append(node("strong", "", choice.word || moveLabel(played)));
-    const leave = choice.leave === "" ? "Chevalet vidé" : choice.leave ? "Reliquat " + choice.leave : "";
-    const notes = [choice.played ? "Joué" : "", leave].filter(Boolean);
+    const leave = choice.leave === "" ? t("Chevalet vidé") : choice.leave ? t("Reliquat ") + choice.leave : "";
+    const notes = [choice.played ? t("Joué") : "", leave].filter(Boolean);
     if (notes.length) details.append(node("small", "", notes.join(" · ")));
     const scores = node("span", "review-choice-scores");
     scores.append(node("strong", "", format(choice.score, integer) + " pts"));
+    if (asNumber(choice.score) !== null && asNumber(review.played_score) !== null) {
+      scores.append(node("small", "review-delta", t("Écart de points") + " " + format(choice.score - review.played_score, signed)));
+    }
     if (asNumber(choice.evaluation) !== null) {
-      const margin = "Écart estimé " + format(choice.evaluation, signed);
+      const margin = t("Écart estimé ") + format(choice.evaluation, signed);
       const uncertainty = choice.uncertainty > 0 ? " ± " + format(choice.uncertainty) : "";
       scores.append(node("small", "", margin + uncertainty));
     }
@@ -557,36 +820,91 @@ function refreshReviewPanel() {
   if (restricted) return;
   $("review-run").hidden = archive;
   $("position-challenge").hidden = archive;
+  $("policy-controls").hidden = archive || !move;
+  setTip($("policy-controls").firstElementChild, t("Choix du moteur à cet Elo, sur ce même chevalet."));
   if (archive) {
-    output("review-status", move ? "Maximum signalé dans le relevé d’origine." : "Sélectionnez un coup à examiner.");
+    output("review-status", move ? t("Maximum signalé dans le relevé d’origine.") : t("Sélectionnez un coup à examiner."));
     renderReview(move && asNumber(move.top_score) !== null ? {
       played_score: move.score,
+      played_word: moveLabel(move),
       best_score: move.top_score,
+      best_word: move.top_word,
       points_left: move.top_score - move.score,
-      method: "Valeurs publiées pour le lexique historique " + state.detail.dictionary + ".",
+      position_rack: move.rack,
+      method: t("Valeurs publiées pour le lexique historique ") + state.detail.dictionary + ".",
     } : null);
-    if (move && asNumber(move.top_score) === null) output("review-status", "Le relevé ne renseigne pas de maximum pour ce coup.");
+    if (move && asNumber(move.top_score) === null) output("review-status", t("Le relevé ne renseigne pas de maximum pour ce coup."));
     return;
   }
   const cached = state.reviewCache.get(state.move);
   $("review-run").disabled = !move;
-  $("review-run").textContent = cached ? "Recalculer" : "Analyser";
-  output("review-status", cached ? "Sélectionnez une variante pour la placer sur le plateau." : move ? "Comparez ce coup aux placements disponibles." : "Sélectionnez un coup à examiner.");
+  $("review-run").textContent = cached ? t("Recalculer") : t("Analyser");
+  output("review-status", cached ? t("Sélectionnez une variante pour la placer sur le plateau.") : move ? t("Comparez ce coup aux placements disponibles.") : t("Sélectionnez un coup à examiner."));
   renderReview(cached);
   renderChallenge();
 }
 
+function setChallengeModels(stats) {
+  const models = Array.isArray(stats.ollama_models) ? stats.ollama_models.filter((tag) => typeof tag === "string" && tag) : [];
+  const tags = [...new Set(models.length ? models : [stats.ollama_model].filter(Boolean))];
+  const select = $("challenge-select");
+  const previous = select.value;
+  if (tags.length === select.options.length && tags.every((tag, i) => tag === select.options[i].value)) return;
+  select.replaceChildren(...tags.map((tag) => new Option(tag, tag)));
+  const preferred = [previous, defaultChallengeModel, stats.ollama_model].find((tag) => tags.includes(tag));
+  if (preferred) select.value = preferred;
+  renderChallenge();
+}
+
+function challengeKey(turn, model) {
+  return turn + ":" + model;
+}
+
+function setPolicyStatus(message) {
+  $("policy-status").hidden = !message;
+  output("policy-status", message);
+}
+
+async function previewPolicy() {
+  stopReplay();
+  clearTimeout(state.policyTimer);
+  const { detail, move: step } = state;
+  const move = detail?.moves?.[step - 1];
+  if (!move || detail.archive || detail.imported || detail.live) return;
+  const request = ++state.policyRequest;
+  const elo = $("policy-elo").value;
+  $("policy-run").disabled = true;
+  setPolicyStatus(t("Calcul de la variante…"));
+  try {
+    const position = await get(profileUrl("/api/games/" + encodeURIComponent(detail.id) + "/policy", { turn: move.turn ?? step, elo }));
+    if (request !== state.policyRequest || detail !== state.detail || step !== state.move) return;
+    state.preview = position;
+    for (const item of $("review-options").querySelectorAll("button")) item.setAttribute("aria-pressed", "false");
+    renderBoard(step, position);
+    updateReplayCaption();
+    const difference = asNumber(position.score) === null ? "" : " · " + t("Écart de points") + " " + format(position.score - move.score, signed);
+    setPolicyStatus(format(position.target_elo ?? elo, integer) + " Elo" + difference);
+  } catch (error) {
+    if (request === state.policyRequest && detail === state.detail) setPolicyStatus(error.message || t("Variante indisponible pour cet Elo."));
+  } finally {
+    if (request === state.policyRequest) $("policy-run").disabled = false;
+  }
+}
+
 function renderChallenge() {
-  const data = state.challengeCache.get(state.move);
+  const select = $("challenge-select");
+  const model = select.value;
+  const data = state.challengeCache.get(challengeKey(state.move, model));
   const pending = state.pendingChallenge;
   const active = pending?.detail === state.detail;
-  $("challenge-run").disabled = !state.move || active;
-  $("challenge-run").textContent = data?.commentary ? "Relancer Llama" : "Challenger avec Llama";
-  const status = active && pending.step === state.move ? "Llama examine le coup…" : data?.error;
+  select.disabled = !model;
+  $("challenge-run").disabled = !state.move || !model || active;
+  $("challenge-run").textContent = data?.commentary ? t("Relancer l’analyse") : t("Challenger le coup");
+  const status = active ? t("Analyse en cours avec ") + pending.model + "…" : data?.error || (!model ? t("Aucun modèle d’analyse configuré.") : "");
   $("challenge-status").hidden = !status;
   output("challenge-status", status || "");
   $("challenge-result").hidden = !data?.commentary;
-  output("challenge-model", data?.model || "Llama");
+  output("challenge-model", data?.model || model);
   output("challenge-commentary", data?.commentary || "");
 }
 
@@ -594,18 +912,20 @@ async function challengeMove() {
   stopReplay();
   const { detail, move: step } = state;
   const move = detail?.moves?.[step - 1];
-  if (!move || detail.archive || detail.imported || state.pendingChallenge?.detail === detail) return;
-  const pending = { detail, step };
+  const model = $("challenge-select").value;
+  if (!move || !model || detail.archive || detail.imported || detail.live || state.pendingChallenge?.detail === detail) return;
+  const key = challengeKey(step, model);
+  const pending = { detail, model };
   state.pendingChallenge = pending;
-  state.challengeCache.delete(step);
+  state.challengeCache.delete(key);
   renderChallenge();
-  const turn = encodeURIComponent(move.turn ?? step);
+  const query = new URLSearchParams({ turn: move.turn ?? step, model });
   try {
-    const result = await get("/api/games/" + encodeURIComponent(detail.id) + "/challenge?turn=" + turn);
-    if (detail === state.detail) state.challengeCache.set(step, result);
+    const result = await get(profileUrl("/api/games/" + encodeURIComponent(detail.id) + "/challenge", query));
+    if (detail === state.detail) state.challengeCache.set(key, result);
   } catch (error) {
     if (detail === state.detail) {
-      state.challengeCache.set(step, { error: error.message || "Llama est indisponible sur ce Mac." });
+      state.challengeCache.set(key, { error: error.message || t("Le modèle est indisponible sur ce Mac.") });
     }
   } finally {
     if (state.pendingChallenge === pending) state.pendingChallenge = null;
@@ -621,10 +941,10 @@ async function reviewMove() {
   if (!move) return;
   const request = ++state.reviewRequest;
   $("review-run").disabled = true;
-  output("review-status", "Calcul des placements disponibles…");
+  output("review-status", t("Calcul des placements disponibles…"));
   const turn = encodeURIComponent(move.turn ?? step);
   try {
-    const review = await get("/api/games/" + encodeURIComponent(detail.id) + "/review?turn=" + turn);
+    const review = await get(profileUrl("/api/games/" + encodeURIComponent(detail.id) + "/review", { turn }));
     if (detail !== state.detail || !$("game-dialog").open) return;
     state.reviewCache.set(step, review);
     if (request !== state.reviewRequest || state.move !== step) return;
@@ -632,41 +952,55 @@ async function reviewMove() {
   } catch {
     if (request !== state.reviewRequest || detail !== state.detail || state.move !== step) return;
     $("review-run").disabled = false;
-    output("review-status", "Analyse indisponible pour ce coup. Réessayez.");
+    output("review-status", t("Analyse indisponible pour ce coup. Réessayez."));
   }
 }
 
 function updateReplayCaption() {
   const moves = state.detail?.moves ?? [];
   const current = moves[state.move - 1];
-  let caption = state.move ? "Coup " + state.move + " / " + moves.length + " · " + moveLabel(current) : "Position de départ";
-  if (state.preview) caption += " · Variante " + (state.preview.word || moveLabel(current)) + " (" + format(state.preview.score, integer) + " pts)";
+  let caption = state.move ? t("Coup ") + state.move + " / " + moves.length + " · " + moveLabel(current) : t("Position de départ");
+  if (state.preview) caption += t(" · Variante ") + (state.preview.word || moveLabel(current)) + " (" + format(state.preview.score, integer) + " pts)";
   output("replay-caption", caption);
 }
 
 function playerName(game, seat) {
   const level = asNumber(game.levels?.[seat]);
-  return game.names?.[seat] ?? game.players?.[seat] ?? (level !== null && level >= 0 ? levelName(level) : "Joueur " + (Number(seat) + 1));
+  return game.names?.[seat] ?? game.players?.[seat] ?? game.labels?.[seat] ?? (level !== null && level >= 0 ? levelName(level) : t("Joueur ") + (Number(seat) + 1));
+}
+
+function letterRack(label, value) {
+  const rack = Array.isArray(value) ? value.join("") : String(value ?? "");
+  const line = node("div", "position-rack");
+  const tiles = node("span", "rack-tiles");
+  tiles.setAttribute("aria-label", rack.replaceAll("?", uiLocale === "en" ? " blank " : " joker "));
+  tiles.append(...Array.from(rack, (letter) => node("span", "", letter)));
+  line.append(node("span", "", label), rack ? tiles : node("span", "", "—"));
+  return line;
 }
 
 function positionDetails(moves) {
   const game = state.detail;
   const current = moves[state.move - 1];
+  const telemetry = game.timeline?.get(state.move) ?? current;
   const elements = [];
   if (current) {
-    if (current.rack) {
-      const rack = Array.isArray(current.rack) ? current.rack.join("") : String(current.rack);
-      const rackLine = node("div", "position-rack");
-      const rackTiles = node("span", "rack-tiles");
-      rackTiles.setAttribute("aria-label", rack.replaceAll("?", " joker "));
-      rackTiles.append(...Array.from(rack, (letter) => node("span", "", letter)));
-      rackLine.append(node("span", "", "Chevalet avant le coup"), rackTiles);
-      elements.push(rackLine);
+    if (telemetry?.rack != null) elements.push(letterRack(t("Chevalet avant le coup"), telemetry.rack));
+    if (telemetry?.draw != null) {
+      const draw = letterRack(t("Jetons piochés"), telemetry.draw);
+      const explanation = typeof game.timelineMethod === "object" && game.timelineMethod?.draw;
+      setTip(draw, t(explanation || "Jetons effectivement reçus après ce tour."));
+      elements.push(draw);
     }
-    if (asNumber(current.bag_before) !== null) {
-      elements.push(node("p", "", "Sac avant le coup · " + format(current.bag_before, integer) + " jetons"));
+    if (asNumber(telemetry?.blank_draw_probability) !== null) {
+      elements.push(node("p", "", t("Chance de piocher un joker · ") + format(telemetry.blank_draw_probability, percent)));
     }
-    if (current.coordinate) elements.push(node("p", "", "Position · " + current.coordinate));
+    if (asNumber(telemetry?.bag_after) !== null) {
+      elements.push(node("p", "", t("Sac après le coup · ") + format(telemetry.bag_after, integer) + t(" jetons")));
+    } else if (asNumber(current.bag_before) !== null) {
+      elements.push(node("p", "", t("Sac avant le coup · ") + format(current.bag_before, integer) + t(" jetons")));
+    }
+    if (current.coordinate) elements.push(node("p", "", t("Position · ") + current.coordinate));
   }
   const seats = game.scores?.length || game.names?.length || game.players?.length || game.levels?.length || 2;
   const totals = moves.slice(0, state.move).reduce((scores, move) => {
@@ -681,12 +1015,106 @@ function positionDetails(moves) {
   }
   elements.push(score);
   if (state.move === moves.length && game.adjustments?.some((score) => score)) {
-    elements.push(node("p", "", "Ajustements finaux · " + game.adjustments.map((score) => (score > 0 ? "+" : "") + format(score, integer)).join(" / ")));
+    elements.push(node("p", "", t("Ajustements finaux · ") + game.adjustments.map((score) => (score > 0 ? "+" : "") + format(score, integer)).join(" / ")));
   }
   $("position-state").replaceChildren(...elements);
 }
 
+function svgElement(name, attributes) {
+  const element = document.createElementNS("http://www.w3.org/2000/svg", name);
+  for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
+  return element;
+}
+
+function renderPlot(target, rows, turns, current, bounds, label, values, tip, tickFormat) {
+  const holder = $(target);
+  const focused = holder.contains(document.activeElement);
+  const chart = svgElement("svg", { viewBox: "0 0 252 76", role: "group", "aria-label": label, tabindex: "0" });
+  const explanation = svgElement("title", {});
+  explanation.textContent = tip;
+  chart.append(explanation);
+  chart.addEventListener("click", (event) => {
+    const { left, width } = chart.getBoundingClientRect();
+    jumpToMove(Math.round(((event.clientX - left) / width * 252 - 32) / 214 * turns));
+  });
+  chart.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      jumpToMove(state.move + (event.key === "ArrowLeft" ? -1 : 1));
+    }
+  });
+  const [min, max] = bounds;
+  const x = (turn) => 32 + 214 * turn / Math.max(turns, 1);
+  const y = (value) => 63 - 56 * (Math.min(max, Math.max(min, value)) - min) / Math.max(max - min, 1);
+  for (const value of [min, (min + max) / 2, max]) {
+    const line = y(value);
+    chart.append(svgElement("line", { class: "plot-grid", x1: 32, x2: 246, y1: line, y2: line }));
+    const tick = svgElement("text", { x: 28, y: line + 2, "text-anchor": "end" });
+    tick.textContent = tickFormat(value);
+    chart.append(tick);
+  }
+  for (const turn of [0, turns]) {
+    const tick = svgElement("text", { x: x(turn), y: 74, "text-anchor": turn ? "end" : "start" });
+    tick.textContent = format(turn, integer);
+    chart.append(tick);
+  }
+  const cursor = x(current);
+  chart.append(svgElement("line", { class: "plot-cursor", x1: cursor, x2: cursor, y1: 7, y2: 63 }));
+  for (const seat of [0, 1]) {
+    const points = rows.flatMap((row) => {
+      const value = asNumber(values(row)?.[seat]);
+      return value === null ? [] : [[x(row.turn), y(value)]];
+    });
+    if (points.length) chart.append(svgElement("polyline", { class: "plot-player-" + seat, points: points.join(" "), fill: "none" }));
+    const selected = asNumber(values(rows[current] ?? {})?.[seat]);
+    if (selected !== null) chart.append(svgElement("circle", { class: "plot-dot-" + seat, cx: cursor, cy: y(selected), r: 3 }));
+  }
+  holder.replaceChildren(chart);
+  if (focused) chart.focus({ preventScroll: true });
+}
+
+function renderTimeline(moves) {
+  const game = state.detail;
+  const panel = $("match-timeline");
+  panel.hidden = !moves.length || !!(game.archive || game.imported) || game.scores?.length !== 2;
+  if (panel.hidden) return;
+  const rows = [{ turn: 0, scores: [0, 0] }];
+  const running = [0, 0];
+  moves.forEach((move, index) => {
+    const turn = index + 1;
+    running[move.player] += Number(move.score) || 0;
+    const telemetry = game.timeline?.get(turn) ?? move;
+    rows.push({ turn, scores: telemetry.scores ?? [...running], probability: telemetry.win_probability });
+  });
+  const turns = Math.max(game.turns || 0, moves.length);
+  const scores = rows.flatMap((row) => row.scores);
+  const current = rows[state.move];
+  const chances = rows.some((row) => Array.isArray(row.probability));
+  $("chance-panel").hidden = !chances;
+  const legend = [0, 1].map((seat) => {
+    const item = node("span", "timeline-player plot-key-" + seat);
+    const probability = asNumber(current.probability?.[seat]);
+    item.append(node("strong", "", playerName(game, seat)), node("span", "", format(current.scores[seat], integer) + " pts" + (probability === null ? "" : " · " + format(probability, percent))));
+    if (seat === 0 && game.targetElo) {
+      const tier = eloTier(game.targetElo);
+      const badge = node("span", "elo-tier", t(tier.label));
+      badge.dataset.tier = tier.id;
+      item.append(badge);
+    }
+    return item;
+  });
+  $("timeline-legend").replaceChildren(...legend);
+  renderPlot("score-chart", rows, turns, state.move, [Math.min(0, ...scores), Math.max(1, ...scores)], t("Score cumulé"), (row) => row.scores, t("Score de chaque joueur après chaque tour. Cliquez ou utilisez les flèches pour parcourir la partie."), (value) => format(value, integer));
+  if (chances) renderPlot("chance-chart", rows, turns, state.move, [0, 1], t("Chances de victoire"), (row) => row.probability, t("Estimation du moteur après chaque coup. Cliquez ou utilisez les flèches pour parcourir la partie."), (value) => Math.round(value * 100) + "%");
+  const method = typeof game.timelineMethod === "string" ? game.timelineMethod : game.timelineMethod?.win;
+  output("timeline-method", chances ? t(method || "Probabilités estimées à chaque coup.") : "");
+}
+
 function replayAt(step) {
+  ++state.policyRequest;
+  clearTimeout(state.policyTimer);
+  $("policy-run").disabled = false;
+  setPolicyStatus("");
   const moves = state.detail?.moves ?? [];
   state.move = Math.max(0, Math.min(moves.length, step));
   state.preview = null;
@@ -707,6 +1135,7 @@ function replayAt(step) {
     }
   });
   positionDetails(moves);
+  renderTimeline(moves);
   refreshReviewPanel();
 }
 
@@ -714,7 +1143,7 @@ function stopReplay() {
   clearInterval(state.playTimer);
   state.playTimer = null;
   $("replay-play").setAttribute("aria-pressed", "false");
-  $("replay-play").setAttribute("aria-label", "Lire la partie");
+  $("replay-play").setAttribute("aria-label", t("Lire la partie"));
   $("replay-play").firstElementChild.textContent = "▶";
 }
 
@@ -732,7 +1161,7 @@ function toggleReplay() {
   if (!total) return;
   if (state.move >= total) replayAt(0);
   $("replay-play").setAttribute("aria-pressed", "true");
-  $("replay-play").setAttribute("aria-label", "Mettre en pause");
+  $("replay-play").setAttribute("aria-label", t("Mettre en pause"));
   $("replay-play").firstElementChild.textContent = "Ⅱ";
   state.playTimer = setInterval(() => {
     replayAt(state.move + 1);
@@ -773,13 +1202,14 @@ async function openGame(id, imported = false, step) {
   output("game-title", gameLabel(id));
   output("game-subtitle", "");
   $("game-source").hidden = true;
-  output("game-loading", "Chargement de la partie…");
+  output("game-loading", t("Chargement de la partie…"));
   $("game-loading").hidden = false;
   $("game-replay").hidden = true;
   const dialog = $("game-dialog");
   if (!dialog.open) dialog.showModal();
   try {
-    const game = await get((imported ? "/api/imports/" : "/api/games/") + encodeURIComponent(id));
+    const path = (imported ? "/api/imports/" : "/api/games/") + encodeURIComponent(id);
+    const game = await get(imported ? path : profileUrl(path));
     if (request !== state.detailRequest || !dialog.open) return;
     state.detail = { ...game, id, imported };
     const players = (game.scores ?? []).map((_, seat) => playerName(game, seat)).join(" × ");
@@ -790,16 +1220,34 @@ async function openGame(id, imported = false, step) {
       source.hidden = false;
     }
     buildReplay(state.detail, step);
+    if (!imported) loadGameTimeline(state.detail);
   } catch {
     if (request !== state.detailRequest || !dialog.open) return;
-    output("game-loading", "Impossible de charger cette partie.");
+    output("game-loading", t("Impossible de charger cette partie."));
+  }
+}
+
+async function loadGameTimeline(game) {
+  try {
+    const timeline = await get(profileUrl("/api/games/" + encodeURIComponent(game.id) + "/timeline"));
+    if (state.detail !== game || !Array.isArray(timeline.items)) return;
+    game.timeline = new Map(timeline.items.map((item) => [item.turn, item]));
+    game.timelineMethod = typeof timeline.method === "string" ? { win: timeline.method, draw: timeline.draw_method } : timeline.method;
+    positionDetails(game.moves);
+    renderTimeline(game.moves);
+  } catch {
+    // Running scores remain available from the replay log.
   }
 }
 
 function sourceLink(url, title) {
-  if (!url) return null;
-  const parsed = new URL(url, location.href);
-  if (parsed.protocol !== "https:") return null;
+  if (typeof url !== "string" || !url.startsWith("https://")) return null;
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
   const link = node("a", "text-link", title + " ↗");
   link.href = parsed.href;
   link.target = "_blank";
@@ -810,7 +1258,7 @@ function sourceLink(url, title) {
 function renderCorpusResult(item) {
   const article = node("article", "corpus-result");
   const body = String(item.body ?? "");
-  article.append(node("h3", "", item.title || "Document"));
+  article.append(node("h3", "", item.title || t("Document")));
   if (body.length > 300) {
     const details = node("details");
     details.append(node("summary", "", body.slice(0, 285).trimEnd() + "…"), node("p", "", body));
@@ -819,8 +1267,8 @@ function renderCorpusResult(item) {
     article.append(node("p", "", body));
   }
   if (item.source?.startsWith("/#parties?")) {
-    const link = node("a", "text-link", "Ouvrir la position →");
-    link.href = item.source.slice(1);
+    const link = node("a", "text-link", t("Ouvrir la position →"));
+    link.href = state.profile === defaultProfile ? item.source.slice(1) : "/?profile=" + defaultProfile + item.source.slice(1);
     article.append(link);
   } else if (item.source?.startsWith("https://")) {
     article.append(sourceLink(item.source, "Source"));
@@ -839,15 +1287,15 @@ async function searchCorpus(event) {
   const results = $("corpus-results");
   button.disabled = true;
   status.hidden = false;
-  output("corpus-status", "Recherche en cours…");
+  output("corpus-status", t("Recherche en cours…"));
   results.replaceChildren();
   try {
     const result = await get("/api/search?" + new URLSearchParams({ q: query }));
     const items = Array.isArray(result.items) ? result.items : [];
-    output("corpus-status", items.length ? format(items.length, integer) + (items.length === 1 ? " résultat" : " résultats") : "Aucun résultat. Essayez un autre thème.");
+    output("corpus-status", items.length ? format(items.length, integer) + (items.length === 1 ? t(" résultat") : t(" résultats")) : t("Aucun résultat. Essayez un autre thème."));
     results.replaceChildren(...items.map(renderCorpusResult));
   } catch (error) {
-    output("corpus-status", error.message || "Recherche indisponible pour le moment.");
+    output("corpus-status", error.message || t("Recherche indisponible pour le moment."));
   } finally {
     button.disabled = false;
   }
@@ -919,15 +1367,21 @@ function openExpert(archiveGame) {
 
 function renderArchiveGame(game) {
   const item = node("article", "archive-row");
+  const marks = node("div", "archive-marks");
+  for (const name of game.players) {
+    const initials = name.split(/\s+/).slice(0, 2).map((word) => word[0]).join("");
+    marks.append(node("span", "master-mark", initials));
+  }
+  marks.setAttribute("aria-hidden", "true");
   const summary = node("div");
   summary.append(node("h3", "", game.title), node("p", "", game.players.join(" × ")));
   const metadata = [game.dictionary, format(game.turns?.length, integer) + " coups", scoreLabel({ scores: game.final_scores ?? game.archive_score_totals })].filter(Boolean);
   summary.append(node("p", "archive-meta", metadata.join(" · ")));
-  const button = node("button", "button secondary", "Rejouer");
+  const button = node("button", "button secondary", t("Étudier les coups"));
   button.type = "button";
-  button.setAttribute("aria-label", "Rejouer " + game.title);
+  button.setAttribute("aria-label", t("Étudier les coups de ") + game.title);
   button.addEventListener("click", () => openExpert(game));
-  item.append(summary, button);
+  item.append(marks, summary, button);
   return item;
 }
 
@@ -943,7 +1397,7 @@ function renderReference(reference) {
   const scores = node("ol", "reference-scores");
   for (const [index, [a, b]] of (reference.match_scores ?? []).entries()) {
     const round = node("li");
-    round.append(node("span", "", "Partie " + (index + 1)), node("strong", "", format(a, integer) + " – " + format(b, integer)));
+    round.append(node("span", "", t("Partie ") + (index + 1)), node("strong", "", format(a, integer) + " – " + format(b, integer)));
     scores.append(round);
   }
   item.append(scores);
@@ -952,7 +1406,7 @@ function renderReference(reference) {
     const play = node("div", "reference-highlight");
     const title = node("h4", "", highlight.word + " en " + highlight.coordinate + " · " + format(highlight.score, integer) + " points");
     play.append(title, node("p", "", highlight.analysis));
-    const link = sourceLink(highlight.source, "Analyse du coup");
+    const link = sourceLink(highlight.source, t("Analyse du coup"));
     if (link) play.append(link);
     item.append(play);
   }
@@ -988,6 +1442,28 @@ function showLiveStatus(message) {
   output("live-status", message);
 }
 
+function refreshLiveForm() {
+  const adaptive = $("live-mode").value === "adaptive";
+  $("live-a-wrap").hidden = adaptive;
+  $("live-target-wrap").hidden = !adaptive;
+  output("live-target-value", format($("live-target").value, integer));
+  const tier = eloTier(Number($("live-target").value));
+  $("live-tier").dataset.tier = tier.id;
+  output("live-tier", "NAB · " + t(tier.label));
+  setTip($("live-tier"), t("Progression visuelle sur l’échelle Elo du laboratoire."));
+}
+
+function eloTier(elo) {
+  const ratings = (state.stats?.levels ?? []).map((level) => asNumber(level.rating)).filter((rating) => rating !== null).sort((a, b) => a - b);
+  const anchors = ratings.length === 4 ? ratings : [748, 1016, 1409, 1627];
+  const boundaries = anchors.slice(1).map((rating, index) => (rating + anchors[index]) / 2);
+  const tiers = [
+    { id: "sprout", label: "Pousse" }, { id: "wood", label: "Bois" },
+    { id: "jade", label: "Jade" }, { id: "obsidian", label: "Obsidienne" },
+  ];
+  return tiers[boundaries.filter((threshold) => elo >= threshold).length];
+}
+
 function resetLive() {
   state.liveStream?.close();
   state.liveStream = null;
@@ -1001,8 +1477,10 @@ function resetLive() {
 function renderLive(data) {
   const game = state.detail;
   if (data.type === "start") {
-    state.detail = { live: true, seed: data.seed, levels: data.levels, scores: [0, 0], moves: [] };
-    output("game-subtitle", data.levels.map(levelName).join(" × ") + " · Graine " + data.seed);
+    const labels = data.levels.map(levelName);
+    if (data.target_elo != null) labels[data.adaptive_seat ?? 0] = "NAB · " + format(data.target_elo, integer);
+    state.detail = { live: true, seed: data.seed, levels: data.levels, labels, targetElo: data.target_elo, timelineMethod: data.method, scores: [0, 0], moves: [] };
+    output("game-subtitle", labels.join(" × ") + " · " + t("Graine ") + data.seed);
     showLiveStatus("En direct · 0 / " + data.turns);
     state.detail.turns = data.turns;
     buildReplay(state.detail);
@@ -1010,16 +1488,17 @@ function renderLive(data) {
     const previous = game.moves.length;
     game.moves.push({ ...data, type: data.action });
     game.scores = data.scores;
-    showLiveStatus("En direct · " + data.turn + " / " + game.turns + " · " + scoreLabel(game));
+    showLiveStatus(t("En direct · ") + data.turn + " / " + game.turns + " · " + scoreLabel(game));
     buildReplay(game, state.move === previous ? undefined : state.move);
   } else if (data.type === "done" && game?.live) {
     state.liveStream?.close();
     state.liveStream = null;
     const finished = data.game;
-    state.detail = { ...finished, live: true };
-    output("game-subtitle", finished.levels.map(levelName).join(" × ") + " · Graine " + finished.seed + " · " + scoreLabel(finished));
-    showLiveStatus("Duel terminé · " + (finished.winner === null ? "Égalité" : "Joueur " + (finished.winner + 1) + " gagne"));
-    const file = { ...finished, external_id: "live-" + finished.seed + "-" + finished.levels.join("-") };
+    state.detail = { ...finished, live: true, labels: game.labels, targetElo: game.targetElo, timelineMethod: game.timelineMethod, timeline: new Map(game.moves.map((move) => [move.turn, move])) };
+    output("game-subtitle", game.labels.join(" × ") + " · " + t("Graine ") + finished.seed + " · " + scoreLabel(finished));
+    showLiveStatus(t("Duel terminé · ") + (finished.winner === null ? t("Égalité") : t("Joueur ") + (finished.winner + 1) + t(" gagne")));
+    const externalId = ["live", state.profile, finished.seed, ...finished.levels, game.targetElo ?? "fixed"].join("-");
+    const file = { ...finished, profile: state.profile, target_elo: game.targetElo, external_id: externalId };
     state.liveFile = URL.createObjectURL(new Blob([JSON.stringify(file)], { type: "application/json" }));
     const link = $("live-export");
     link.href = state.liveFile;
@@ -1038,17 +1517,18 @@ function openLive(event) {
   state.reviewCache.clear();
   state.challengeCache.clear();
   state.preview = null;
-  output("game-title", "Duel en direct");
+  output("game-title", t("Duel en direct"));
   output("game-subtitle", "");
   $("game-source").hidden = true;
-  output("game-loading", "Préparation du duel…");
+  output("game-loading", t("Préparation du duel…"));
   $("game-loading").hidden = false;
   $("game-replay").hidden = true;
   const dialog = $("game-dialog");
   if (!dialog.open) dialog.showModal();
   const query = new URLSearchParams({ a: $("live-a").value, b: $("live-b").value });
+  if ($("live-mode").value === "adaptive") query.set("elo", $("live-target").value);
   if ($("live-seed").value !== "") query.set("seed", $("live-seed").value);
-  const stream = new EventSource("/api/live?" + query);
+  const stream = new EventSource(profileUrl("/api/live", query));
   state.liveStream = stream;
   stream.onmessage = (message) => {
     if (state.liveStream === stream && dialog.open) renderLive(JSON.parse(message.data));
@@ -1057,8 +1537,8 @@ function openLive(event) {
     if (state.liveStream !== stream || !dialog.open) return;
     stream.close();
     state.liveStream = null;
-    if (state.detail?.live) showLiveStatus("Diffusion interrompue.");
-    else output("game-loading", "Impossible de démarrer le duel.");
+    if (state.detail?.live) showLiveStatus(t("Diffusion interrompue."));
+    else output("game-loading", t("Impossible de démarrer le duel."));
   };
 }
 
@@ -1075,13 +1555,13 @@ async function importGames(event) {
   const file = input.files?.[0];
   if (state.importing || !file) return;
   if (file.size > 32 * 1024 * 1024) {
-    showImportStatus("error", "Le fichier dépasse la limite de 32 Mio.");
+    showImportStatus("error", t("Le fichier dépasse la limite de 32 Mio."));
     return;
   }
   state.importing = true;
   input.disabled = true;
   $("import-submit").disabled = true;
-  showImportStatus("busy", "Import en cours…");
+  showImportStatus("busy", t("Import en cours…"));
   const contentType = /\.(jsonl|ndjson)$/i.test(file.name) ? "application/x-ndjson" : "application/json";
   try {
     const response = await fetch("/api/import", {
@@ -1092,15 +1572,15 @@ async function importGames(event) {
     const result = await readResult(response);
     const imported = Number(result.imported) || 0;
     const duplicates = Number(result.duplicates) || 0;
-    const message = imported ? format(imported, integer) + (imported === 1 ? " partie importée" : " parties importées") : "Aucune nouvelle partie";
-    const skipped = duplicates ? " · " + format(duplicates, integer) + (duplicates === 1 ? " doublon ignoré" : " doublons ignorés") : "";
+    const message = imported ? format(imported, integer) + (imported === 1 ? t(" partie importée") : t(" parties importées")) : t("Aucune nouvelle partie");
+    const skipped = duplicates ? " · " + format(duplicates, integer) + (duplicates === 1 ? t(" doublon ignoré") : t(" doublons ignorés")) : "";
     showImportStatus("success", message + skipped + ".");
     input.value = "";
-    output("import-filename", "Aucun fichier choisi");
+    output("import-filename", t("Aucun fichier choisi"));
     state.importOffset = 0;
     if (state.view === "parties" && state.source === "imports") loadImports();
   } catch (error) {
-    showImportStatus("error", error.message || (error.status === 413 ? "Le fichier dépasse la limite de 32 Mio." : "Import impossible. Vérifiez le fichier et réessayez."));
+    showImportStatus("error", error.message || (error.status === 413 ? t("Le fichier dépasse la limite de 32 Mio.") : t("Import impossible. Vérifiez le fichier et réessayez.")));
   } finally {
     state.importing = false;
     input.disabled = false;
@@ -1113,11 +1593,15 @@ $("source-archives").addEventListener("click", () => setGameSource("archives"));
 $("source-imports").addEventListener("click", () => setGameSource("imports"));
 $("source-live").addEventListener("click", () => setGameSource("live"));
 $("live-form").addEventListener("submit", openLive);
+$("live-mode").addEventListener("change", refreshLiveForm);
+$("live-target").addEventListener("input", refreshLiveForm);
+$("profile-select").addEventListener("change", (event) => chooseProfile(event.target.value));
 $("corpus-search").addEventListener("submit", searchCorpus);
+$("heat-mode").addEventListener("change", renderHeat);
 $("view-imports-link").addEventListener("click", () => { state.source = "imports"; });
 $("import-file").addEventListener("change", (event) => {
   $("import-submit").disabled = !event.target.files?.length;
-  output("import-filename", event.target.files?.[0]?.name || "Aucun fichier choisi");
+  output("import-filename", event.target.files?.[0]?.name || t("Aucun fichier choisi"));
   showImportStatus("", "");
 });
 $("import-form").addEventListener("submit", importGames);
@@ -1132,6 +1616,10 @@ $("games-filters").addEventListener("submit", (event) => {
 $("games-elite").addEventListener("change", (event) => {
   if (event.target.checked) $("games-level").value = "";
   $("games-level").disabled = event.target.checked;
+});
+$("games-sort").addEventListener("change", () => {
+  state.offset = 0;
+  loadGames();
 });
 $("games-prev").addEventListener("click", () => {
   state.offset = Math.max(0, state.offset - pageSize);
@@ -1159,10 +1647,20 @@ $("game-dialog").addEventListener("close", () => {
 });
 $("review-run").addEventListener("click", reviewMove);
 $("challenge-run").addEventListener("click", challengeMove);
+$("challenge-select").addEventListener("change", renderChallenge);
+$("policy-elo").addEventListener("input", (event) => output("policy-elo-value", format(event.target.value, integer)));
+$("policy-elo").addEventListener("change", () => {
+  clearTimeout(state.policyTimer);
+  state.policyTimer = setTimeout(previewPolicy, 300);
+});
+$("policy-run").addEventListener("click", previewPolicy);
 $("refresh").addEventListener("click", refreshStats);
 window.addEventListener("hashchange", setView);
+localizeProfile();
 setView();
 refreshStats();
+loadProfiles();
+refreshTelemetry();
 
 async function poll() {
   await refreshStats();

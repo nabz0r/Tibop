@@ -3,6 +3,7 @@ WORKDIR /src
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 COPY Cargo.toml Cargo.lock ./
 COPY src/ src/
+COPY infra/languages.sql infra/participants.sql infra/move_analytics.sql infra/
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/src/target \

@@ -1,13 +1,17 @@
+mod adaptive;
 mod engine;
 mod import;
 mod llm_benchmark;
 mod metrics;
+mod peak;
 mod pg;
 mod profiles;
 mod review;
 mod run;
 mod server;
 mod store;
+mod telemetry;
+mod timeline;
 mod train;
 
 use anyhow::{Result, bail};
@@ -73,9 +77,6 @@ async fn main() -> Result<()> {
         }
         "benchmark-llm" => {
             let engine = load_engine()?;
-            if engine.profile.language != "fr" {
-                bail!("le banc Llama v1 est en français");
-            }
             let pairs = env::args().nth(2).unwrap_or_else(|| "6".into()).parse()?;
             let output = PathBuf::from(
                 env::args()
@@ -89,6 +90,74 @@ async fn main() -> Result<()> {
                 pairs,
             )
             .await?;
+        }
+        "calibrate" => {
+            let engine = load_engine()?;
+            let conn = store::open(&db, false)?;
+            let stats = store::get::<serde_json::Value>(&conn, "public")?.unwrap_or_default();
+            let mut elo = store::elo_anchors(&stats);
+            let expert = server::model_policy(&engine.digest);
+            if expert != engine::BASE_EXPERT {
+                elo[3] += 13;
+            }
+            let mut scale = adaptive::StrengthScale::new(elo, expert)?;
+            if elo[0] > 700 {
+                scale = scale.with_experimental_floor(700)?;
+            }
+            let pairs = env::args()
+                .nth(2)
+                .unwrap_or_else(|| "1500".into())
+                .parse()?;
+            let output = env::args().nth(3).unwrap_or_else(|| {
+                format!("data/models/adaptive-{}-v1.json", engine.profile.language)
+            });
+            let report = adaptive::calibrate(
+                &engine,
+                &scale,
+                &[
+                    700.0,
+                    f64::from(elo[0]),
+                    900.0,
+                    1050.0,
+                    1200.0,
+                    1350.0,
+                    1500.0,
+                    f64::from(elo[3]),
+                ],
+                2,
+                931271800,
+                pairs,
+            )?;
+            std::fs::write(output, serde_json::to_vec_pretty(&report)?)?;
+        }
+        "benchmark-peak" => {
+            let engine = load_engine()?;
+            let expert = server::model_policy(&engine.digest);
+            let pairs = env::args()
+                .nth(2)
+                .unwrap_or_else(|| "1000".into())
+                .parse()?;
+            let output = env::args()
+                .nth(3)
+                .unwrap_or_else(|| "results/peak-test.json".into());
+            let report = peak::benchmark(&engine, expert, peak::DEFAULT_CONFIG, 982900000, pairs)?;
+            std::fs::write(output, serde_json::to_vec_pretty(&report)?)?;
+        }
+        "benchmark-reference" => {
+            let engine = load_engine()?;
+            let pairs = env::args()
+                .nth(2)
+                .unwrap_or_else(|| "50000".into())
+                .parse()?;
+            let output = env::args()
+                .nth(3)
+                .unwrap_or_else(|| "data/models/reference-holdout-fr.json".into());
+            train::reference(
+                &engine,
+                server::model_policy(&engine.digest),
+                pairs,
+                &PathBuf::from(output),
+            )?;
         }
         "serve" => {
             let engine = load_engine()?;

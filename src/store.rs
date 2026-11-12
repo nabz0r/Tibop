@@ -158,6 +158,9 @@ pub fn detail(conn: &Connection, id: u32) -> Result<Option<Vec<u8>>> {
 
 #[derive(Default, Deserialize)]
 pub struct Filter {
+    pub profile: Option<String>,
+    pub sort: Option<String>,
+    pub order: Option<String>,
     pub limit: Option<u32>,
     pub offset: Option<u32>,
     pub level: Option<u8>,
@@ -166,6 +169,26 @@ pub struct Filter {
     pub format: Option<String>,
 }
 impl Filter {
+    pub fn ordering(&self, elo: [i32; 4]) -> String {
+        let direction = if self.order.as_deref() == Some("asc") {
+            "ASC"
+        } else {
+            "DESC"
+        };
+        let field = match self.sort.as_deref() {
+            Some("score" | "points") => "(score_a+score_b)".to_string(),
+            Some("peak") => {
+                "(CASE WHEN score_a>=score_b THEN score_a ELSE score_b END)".to_string()
+            }
+            Some("turns") => "turns".to_string(),
+            Some("elo") => format!(
+                "((CASE a WHEN 0 THEN {} WHEN 1 THEN {} WHEN 2 THEN {} ELSE {} END)+(CASE b WHEN 0 THEN {} WHEN 1 THEN {} WHEN 2 THEN {} ELSE {} END))",
+                elo[0], elo[1], elo[2], elo[3], elo[0], elo[1], elo[2], elo[3]
+            ),
+            _ => return format!("id {direction}"),
+        };
+        format!("{field} {direction}, id DESC")
+    }
     pub fn bindings(&self) -> (Option<u8>, bool, Option<i64>) {
         let number = self.q.as_deref().filter(|q| !q.trim().is_empty()).map(|q| {
             q.trim()
@@ -278,4 +301,14 @@ pub fn export(
         write(buffer)?;
     }
     Ok(())
+}
+
+pub fn elo_anchors(stats: &Value) -> [i32; 4] {
+    let fallback = [750, 1010, 1410, 1630];
+    std::array::from_fn(|i| {
+        stats["levels"][i]["rating"]
+            .as_i64()
+            .map(|x| x as i32)
+            .unwrap_or(fallback[i])
+    })
 }

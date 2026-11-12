@@ -35,11 +35,11 @@
     "segmentation": "unicode_scalar"
   },
   "lexicon": {
-    "id": "csw24",
-    "name": "Collins Scrabble Words 2024",
-    "license": null,
-    "status": "licensed_external",
-    "path": null
+    "id": "en-enable2k-v1",
+    "name": "ENABLE2K",
+    "license": "Public domain",
+    "status": "bundled",
+    "path": "data/en/words.txt"
   },
   "tiles": [
     {
@@ -224,6 +224,7 @@
     }
   ],
   "notes": [
-    "Profil de duel avec validation automatique. La recommandation WESPA ajoute le double de la valeur du reliquat au joueur qui finit. Un lexique anglais local est nécessaire."
+    "Profil de duel inspiré de WESPA, avec validation automatique et décompte de reliquat recommandé par WESPA.",
+    "ENABLE2K est un lexique de jeu du domaine public. Le lexique WESPA de compétition CSW24 se charge séparément avec l’autorisation appropriée."
   ]
 }

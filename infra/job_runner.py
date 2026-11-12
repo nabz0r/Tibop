@@ -86,12 +86,16 @@ def challenge(payload):
     model = payload["model"]
     response = ollama(
         "/api/chat",
-        {"model": model, "messages": payload["messages"], "options": payload.get("options", {}), "stream": False},
+        {"model": model, "messages": payload["messages"], "options": payload.get("options", {}),
+         "stream": False, "think": payload.get("think", False), "keep_alive": payload.get("keep_alive", "2m")},
     )
     commentary = response.get("message", {}).get("content", "").strip()
     if not commentary:
         raise RuntimeError("Ollama n’a renvoyé aucun commentaire.")
-    return {"state": "done", "model": model, "commentary": commentary}
+    return {"state": "done", "model": model, "commentary": commentary, "usage": {
+        "prompt_tokens": int(response.get("prompt_eval_count", 0)),
+        "output_tokens": int(response.get("eval_count", 0)),
+    }}
 
 
 def markdown_documents():
@@ -235,6 +239,10 @@ def heartbeat(role):
 def finish(client, message_id, job_id, result):
     with client.pipeline(transaction=True) as transaction:
         transaction.set(f"lettrine:job:{job_id}", json.dumps(result, ensure_ascii=False), ex=RESULT_TTL)
+        if usage := result.get("usage"):
+            transaction.hincrby("lettrine:ollama:usage", "requests", 1)
+            for key in ("prompt_tokens", "output_tokens"):
+                transaction.hincrby("lettrine:ollama:usage", key, max(0, usage.get(key, 0)))
         transaction.xack(STREAM, GROUP, message_id)
         transaction.xdel(STREAM, message_id)
         transaction.execute()

@@ -1,0 +1,14 @@
+{
+  "id": "de-enz-v1",
+  "language": "de",
+  "name": "ENZ German Wordlist",
+  "license": "CC0-1.0",
+  "sources": [
+    {
+      "url": "https://raw.githubusercontent.com/enz/german-wordlist/1071d87d9535b57b80ec076c699f2578a28ee9dc/words",
+      "sha256": "20095928ca70974fb5d86e44f10181cee16e2831b0d4b1a4ddd12c261aebc5e9"
+    }
+  ],
+  "sha256": "761f66cba307a85e0b50135fb588d0d6bc4318a5796be70360c9a42a5929aa26",
+  "word_count": 590897
+}

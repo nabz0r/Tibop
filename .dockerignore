@@ -12,3 +12,5 @@
 !infra/
 !infra/**
 data/campaign/*.zst
+data/campaign/**/*.zst
+docs/media/

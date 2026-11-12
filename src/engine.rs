@@ -310,6 +310,10 @@ impl Engine {
                         .0
                 }
                 2 => places[rng.random_range(0..places.len().min(3))].0,
+                4 => {
+                    let upper = places.len().min(32);
+                    places[rng.random_range((upper * 3 / 4).min(upper - 1)..upper)].0
+                }
                 _ => {
                     places
                         .iter()
@@ -440,6 +444,69 @@ impl Engine {
         levels: [u8; 2],
         policies: [ExpertPolicy; 2],
     ) -> Result<Game> {
+        self.play_seeded_by(generator, state, id, seed, levels, |seat, _| {
+            (levels[seat as usize], policies[seat as usize])
+        })
+    }
+
+    pub fn play_seeded_by(
+        &self,
+        generator: &mut KurniaMoveGenerator,
+        state: &mut GameState,
+        id: u32,
+        seed: u32,
+        levels: [u8; 2],
+        mut policy_for_turn: impl FnMut(u8, u16) -> (u8, ExpertPolicy),
+    ) -> Result<Game> {
+        self.play_seeded_with(
+            generator,
+            state,
+            id,
+            seed,
+            levels,
+            |engine, state, generator, rng, turn| {
+                let (level, policy) = policy_for_turn(state.turn, turn);
+                Ok(engine.choose_level(generator, state, level, policy, rng))
+            },
+        )
+    }
+
+    pub(crate) fn choose_level(
+        &self,
+        generator: &mut KurniaMoveGenerator,
+        state: &GameState,
+        level: u8,
+        policy: ExpertPolicy,
+        rng: &mut impl Rng,
+    ) -> Play {
+        self.generate(
+            generator,
+            &state.board_tiles,
+            &state.current_player().rack,
+            match level {
+                3 => policy.width + 2,
+                4 => 32,
+                _ => [18, 10, 5][level as usize],
+            },
+        );
+        self.choose(generator, state, level, policy, rng)
+    }
+
+    pub fn play_seeded_with(
+        &self,
+        generator: &mut KurniaMoveGenerator,
+        state: &mut GameState,
+        id: u32,
+        seed: u32,
+        levels: [u8; 2],
+        mut select: impl FnMut(
+            &Self,
+            &GameState,
+            &mut KurniaMoveGenerator,
+            &mut Xoshiro256PlusPlus,
+            u16,
+        ) -> Result<Play>,
+    ) -> Result<Game> {
         let mut rng = Xoshiro256PlusPlus::seed_from_u64(u64::from(seed));
         state.reset_and_draw_tiles(&self.config, &mut rng);
         let mut moves = Vec::with_capacity(30);
@@ -447,19 +514,7 @@ impl Engine {
         let mut outgoing = None;
         for turn in 1..=200 {
             let player = state.turn;
-            let level = levels[player as usize];
-            let policy = policies[player as usize];
-            self.generate(
-                generator,
-                &state.board_tiles,
-                &state.current_player().rack,
-                if level == 3 {
-                    policy.width + 2
-                } else {
-                    [18, 10, 5][level as usize]
-                },
-            );
-            let play = self.choose(generator, state, level, policy, &mut rng);
+            let play = select(self, state, generator, &mut rng, turn)?;
             let (word, tiles, direction) = self.describe(&state.board_tiles, &play);
             let (kind, score, exchanged) = match &play {
                 Play::Place { score, .. } => {

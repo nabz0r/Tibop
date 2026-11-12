@@ -1,4 +1,7 @@
-use crate::engine::{Engine, ExpertPolicy};
+use crate::{
+    engine::{Engine, ExpertPolicy},
+    profiles::RackOutScoring,
+};
 use anyhow::{Context, Result, bail};
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256PlusPlus;
@@ -22,14 +25,29 @@ async fn pick(
     model: &str,
     context: Value,
     count: usize,
+    language: &str,
 ) -> Result<usize> {
+    let instruction = match language {
+        "en" => {
+            "You are playing a word board game. Choose one legal option and return only JSON with the pick index. Maximize your chances of winning. Immediate points matter, but keeping a balanced rack, an S or a blank can help with many tiles left. Going out matters in the endgame."
+        }
+        "de" => {
+            "Du spielst ein Wortbrettspiel. Wähle einen legalen Zug und antworte nur als JSON mit dem Index pick. Maximiere deine Gewinnchance. Achte auf direkte Punkte, passende Restbuchstaben, Joker und das Leeren der Bank am Spielende."
+        }
+        "ru" => {
+            "Вы играете в настольную игру со словами. Выберите допустимый ход и верните только JSON с индексом pick. Максимизируйте шанс победы. Учитывайте очки сейчас, оставшиеся буквы, джокер и возможность закончить игру."
+        }
+        _ => {
+            "Tu joues une partie de Scrabble. Choisis une option légale en renvoyant uniquement un JSON avec le champ pick (l'indice). Maximise les chances de gagner. Le score compte immédiatement. Conserver une bonne combinaison, un S ou un joker est utile quand il reste beaucoup de lettres. En fin de partie, vider le chevalet peut décider du résultat."
+        }
+    };
     let response: Value = client.post(format!("{}/api/chat",endpoint.trim_end_matches('/')))
         .json(&json!({
-            "model":model,"stream":false,"think":false,"keep_alive":"5m",
+            "model":model,"stream":false,"think":false,"keep_alive":"90s",
             "format":{"type":"object","properties":{"pick":{"type":"integer","minimum":0,"maximum":count-1}},"required":["pick"],"additionalProperties":false},
             "options":{"temperature":0,"num_ctx":2048,"num_predict":18},
             "messages":[
-                {"role":"system","content":"Tu joues une partie de Scrabble. Choisis une option légale en renvoyant uniquement un JSON avec le champ pick (l'indice). Maximise les chances de gagner. Le score compte immédiatement. Conserver une bonne combinaison, un S ou un joker est utile quand il reste beaucoup de lettres. En fin de partie, vider le chevalet peut décider du résultat."},
+                {"role":"system","content":instruction},
                 {"role":"user","content":context.to_string()}
             ]
         })).send().await?.error_for_status()?.json().await?;
@@ -58,7 +76,7 @@ pub async fn benchmark(
         env::var("LETTRINE_OLLAMA_URL").unwrap_or_else(|_| "http://127.0.0.1:11434".into());
     let model = env::var("LETTRINE_OLLAMA_MODEL").unwrap_or_else(|_| "llama3.2:3b".into());
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(12))
+        .timeout(Duration::from_secs(35))
         .build()?;
     let started = Instant::now();
     let mut wins = 0;
@@ -127,7 +145,16 @@ pub async fn benchmark(
                             .collect();
                         let context = json!({"score_moi":score(&state,ai),"score_adverse":score(&state,1-ai),
                             "sac":state.bag.len(),"plateau":board,"options":list});
-                        match pick(&client, &endpoint, &model, context, candidates.len()).await {
+                        match pick(
+                            &client,
+                            &endpoint,
+                            &model,
+                            context,
+                            candidates.len(),
+                            &engine.profile.language,
+                        )
+                        .await
+                        {
                             Ok(i) => selected = candidates[i].clone(),
                             Err(e) => {
                                 fallbacks += 1;
@@ -163,7 +190,20 @@ pub async fn benchmark(
             });
             let mut scores = [score(&state, 0) - residue[0], score(&state, 1) - residue[1]];
             if let Some(i) = outgoing {
-                scores[i] += residue[0] + residue[1];
+                let remainder = residue[0] + residue[1];
+                match engine
+                    .profile
+                    .rules
+                    .as_ref()
+                    .expect("profile validé")
+                    .rack_out_scoring
+                {
+                    RackOutScoring::TransferResidue => scores[i] += remainder,
+                    RackOutScoring::DoubleResidue => {
+                        scores[1 - i] += remainder;
+                        scores[i] += 2 * remainder;
+                    }
+                }
             }
             let margin = scores[ai] - scores[1 - ai];
             wins += u32::from(margin > 0);
@@ -190,7 +230,8 @@ pub async fn benchmark(
     let radius = 1.96 * (rate * (1.0 - rate) / n + z2 / (4.0 * n * n)).sqrt() / (1.0 + z2 / n);
     let mut report = json!({
         "schema":"lettrine.llm-benchmark.v1","items":[{
-            "model":model,"opponent":"Expert entraîné","games":games,"paired_deals":pairs,
+            "model":model,"profile":engine.profile.id,"language":engine.profile.language,
+            "opponent":if engine.profile.language=="fr" { "Expert entraîné" } else { "Expert" },"games":games,"paired_deals":pairs,
             "wins":wins,"draws":draws,"losses":games-wins-draws,"match_score_rate":rate,
             "elo_delta":(400.0*(corrected/(1.0-corrected)).log10()).round(),
             "score_interval_95":[(center-radius).max(0.0),(center+radius).min(1.0)],
@@ -210,7 +251,7 @@ pub async fn benchmark(
         results.extend(
             items
                 .iter()
-                .filter(|item| item["model"] != model && item["lexicon_sha256"] == engine.digest)
+                .filter(|item| item["model"] != model || item["lexicon_sha256"] != engine.digest)
                 .cloned(),
         );
     }

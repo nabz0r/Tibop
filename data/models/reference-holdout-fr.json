@@ -1,0 +1,31 @@
+{
+  "challenger": "Expert entraîné",
+  "elapsed_seconds": 43.126945375,
+  "first_seed": 810060000,
+  "lexicon_sha256": "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a",
+  "policy": {
+    "blank_weight": 69,
+    "end_penalty": 2,
+    "leave_scale": 163,
+    "s_weight": 13,
+    "turnover": 4,
+    "width": 22
+  },
+  "profile": "fr-classic-v1",
+  "reference": "Expert de référence",
+  "result": {
+    "confidence_interval_95": [
+      0.5185444089474414,
+      0.5230455910525587
+    ],
+    "draws": 331,
+    "elo_delta": 14.0,
+    "games": 100000,
+    "losses": 47755,
+    "match_score_rate": 0.520795,
+    "mean_margin": 5.80951,
+    "paired_deals": 50000,
+    "wins": 51914
+  },
+  "schema": "lettrine.reference-match.v1"
+}
