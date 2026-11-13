@@ -35,7 +35,15 @@ Les **1 200 parties de stress** ont mélangé placements, passes et échanges su
 
 Les 366 dates à partir du 13 novembre 2026 ont toutes accepté une pose d’une lettre. Le nombre médian de possibilités est de 21. Le tutoriel valide toujours CHATS pour 11 points.
 
-Le test de stockage sur Android 8 a reproduit une perte d’historique lorsque deux instances de l’application terminaient des parties avec la même ancienne copie des archives. Après correction, quatre instances concurrentes ont archivé 48 parties distinctes. Les 48 archives sont présentes une seule fois, chaque calcul d’Elo repart du résultat précédent et les autres parties en cours sont intactes.
+Le test de stockage sur Android 8 a reproduit une perte d’historique lorsque deux instances de l’application terminaient des parties avec la même ancienne copie des archives. Après correction, le même test est passé sur Android 8 et 16. Quatre instances concurrentes ont archivé 48 parties distinctes à chaque essai. Les 48 archives sont présentes une seule fois, chaque calcul d’Elo repart du résultat précédent et les autres parties en cours sont intactes.
+
+### Duels en ligne et tournoi
+
+Le serveur de test a joué **328 duels** sur HTTP, dont 164 classiques et 164 miroirs. Les 656 coups ont été contrôlés par un calcul de score indépendant, avec 492 vérifications de renvois et de demandes concurrentes. Le compteur de l’ancienne version avançait aussi après les miroirs et ne visitait que 82 des 164 plateaux quand chaque classique était suivi d’un miroir. Après correction, le parcours visite les 164 plateaux.
+
+Sur Docker, **55 week-ends simulés** avec trois joueurs ont produit 165 tournois complets et 495 placements. Ils couvrent les 164 positions du catalogue et vérifient le classement et le déblocage de la carte après trois manches. Après la clôture, le serveur accepte le renvoi d’un coup enregistré et refuse tout nouveau coup. La récompense reste acquise le week-end suivant. Les 24 tests Rust passent.
+
+Sur le réseau local, **21 parties web** ont produit 545 tours. Les 1 203 aperçus de score correspondent au calcul de référence. Dans chacun des 15 essais où le même coup est envoyé simultanément, le serveur n’a accepté qu’une seule pose.
 
 ## Reproduire
 
@@ -45,6 +53,8 @@ Installer Java 17, Python 3 et le SDK Android 36, puis lancer depuis le dépôt.
 ./tools/android_gameplay/run.sh 40 20261113 4
 ./tools/android_gameplay/run.sh 250 20261114 8 400
 ./tools/android_gameplay/run-storage.sh emulator-5586
+cargo test --release --locked social::tests::mirror_swaps_racks_once_without_changing_the_board_or_leaking_play
+cargo test --release --locked social::tournament::tests::weekend_ranks_only_complete_friends_and_rejects_new_closed_scores
 ```
 
 Les trois premiers arguments sont le nombre de tirages, la graine et le nombre de workers. Le quatrième, facultatif, indique le nombre de parties de stress par taille de table et active la vérification de 366 défis. Le programme compile les classes de jeu Android et prépare le lexique avec le même script que le build. Il imprime aussi son empreinte SHA-256 et l’activation des poids Maître. Le script de stockage utilise `adb` et `d8` du SDK Android et crée des fichiers temporaires sur l’appareil indiqué. Les essais sur écran tactile et la rétention se mesurent séparément.
