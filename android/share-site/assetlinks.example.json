@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "fr.lettrine.game",
+      "sha256_cert_fingerprints": [
+        "49:7A:8F:AC:F9:89:AA:AF:6E:18:F0:D5:D7:13:16:20:B9:6F:9A:11:B8:66:0D:67:28:14:77:B2:76:A9:76:DC"
+      ]
+    }
+  }
+]

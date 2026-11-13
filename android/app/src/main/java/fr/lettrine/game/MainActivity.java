@@ -149,6 +149,7 @@ public final class MainActivity extends Activity {
             toast("Une sauvegarde locale n’a pas pu être lue.");
         }
         showHome();
+        receiveChallenge(getIntent());
         worker.submit(() -> {
             try {
                 Lexicon loaded = Lexicon.load(this);
@@ -183,6 +184,26 @@ public final class MainActivity extends Activity {
                 });
             }
         });
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        receiveChallenge(intent);
+    }
+
+    private void receiveChallenge(Intent intent) {
+        if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
+        ChallengeLink invitation = ChallengeLink.parse(intent.getDataString());
+        if (invitation == null) {
+            toast(getString(R.string.daily_invitation_invalid));
+            return;
+        }
+        if (lexicon == null && lexiconError == null) {
+            showHome();
+            pendingChallenge = () -> openDailyChallenge(invitation);
+        } else if (ready()) {
+            openDailyChallenge(invitation);
+        }
     }
 
     @Override public void onConfigurationChanged(Configuration configuration) {
@@ -372,7 +393,7 @@ public final class MainActivity extends Activity {
         String status = completed ? DailyResult.bestLabel(ui, today.bestScore()) : getString(R.string.daily_home_open);
         content.addView(DailyChallengeCard.create(ui, DailyResult.dateLabel(homeDate), status,
                 DailyResult.streakLabel(ui, today.streak()), getString(completed ? R.string.daily_replay : R.string.daily_play),
-                () -> openChallenge(this::openDailyChallenge)));
+                () -> openChallenge(() -> openDailyChallenge(null))));
         MatchCodec.State ongoing = state();
         if (ongoing != null && ongoing.end() == null && (!mode.equals("bluetooth") || bluetoothReady)) {
             ui.gap(content, 13);
@@ -428,9 +449,14 @@ public final class MainActivity extends Activity {
                 position, true, this::showHome);
     }
 
-    private void openDailyChallenge() {
-        LocalDate date = LocalDate.now();
+    private void openDailyChallenge(ChallengeLink invitation) {
+        LocalDate today = LocalDate.now();
+        LocalDate date = invitation == null ? today : invitation.date();
         DailyChallenge challenge = DailyChallenge.forDate(date, lexicon);
+        if (invitation != null && !invitation.matches(challenge, lexicon)) {
+            toast(getString(R.string.daily_invitation_incompatible));
+            return;
+        }
         if (challenge == null) {
             toast(getString(R.string.daily_unavailable));
             return;
@@ -439,10 +465,14 @@ public final class MainActivity extends Activity {
         practiceBack = this::showHome;
         top("Lettrine", this::leavePractice, null);
         ui.gap(content, 5);
-        content.addView(DailyChallengeCard.heading(ui, DailyResult.dateLabel(date),
-                getString(R.string.daily_goal, challenge.openingWord())));
+        String title = getString(invitation == null ? R.string.daily_title : R.string.daily_invitation_title);
+        String goal = getString(R.string.daily_goal, challenge.openingWord());
+        if (invitation != null) goal = getString(R.string.daily_invitation_goal,
+                DailyResult.points(ui, invitation.score())) + "\n" + goal;
+        content.addView(DailyChallengeCard.heading(ui, title, DailyResult.dateLabel(date), goal));
         ui.gap(content, 11);
-        DailyResult dailyResult = new DailyResult(ui, dailyProgress, challenge);
+        DailyResult dailyResult = new DailyResult(ui, date.equals(today) ? dailyProgress : null,
+                challenge, lexicon, invitation);
         content.addView(new PracticePanel(ui, challenge.position(), lexicon, false, dailyResult).view());
     }
 

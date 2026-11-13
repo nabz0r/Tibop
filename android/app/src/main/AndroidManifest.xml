@@ -10,11 +10,20 @@
         android:fullBackupContent="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:supportsRtl="true" tools:targetApi="33">
+        <provider android:name=".ScoreCardProvider" android:authorities="${applicationId}.scorecards"
+            android:exported="false" android:grantUriPermissions="true" />
         <activity android:name=".MainActivity" android:exported="true"
+            android:launchMode="singleTop"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="lettrine" android:host="defi" android:pathPrefix="/v1/" />
             </intent-filter>
         </activity>
     </application>

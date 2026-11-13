@@ -6,6 +6,7 @@
 /android/**/build/
 *.jks
 *.keystore
+*.p12
 .env
 __pycache__/
 *.pyc

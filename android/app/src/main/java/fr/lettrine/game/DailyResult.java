@@ -1,7 +1,8 @@
 package fr.lettrine.game;
 
 import android.content.ActivityNotFoundException;
-import android.content.Intent;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -19,6 +20,9 @@ final class DailyResult {
 
     private final ViewKit ui;
     private final DailyProgress progress;
+    private final DailyChallenge challenge;
+    private final Lexicon lexicon;
+    private final ChallengeLink invitation;
     private final LocalDate date;
     private final String opening;
     private final LinearLayout summary;
@@ -26,12 +30,18 @@ final class DailyResult {
     private final TextView word;
     private final TextView best;
     private final TextView streak;
-    private final TextView share;
-    private DailyProgress.Snapshot saved;
+    private final TextView comparison;
+    private final LinearLayout sharing;
+    private ChallengeLink outgoing;
+    private int shareStreak;
 
-    DailyResult(ViewKit ui, DailyProgress progress, DailyChallenge challenge) {
+    DailyResult(ViewKit ui, DailyProgress progress, DailyChallenge challenge, Lexicon lexicon,
+                ChallengeLink invitation) {
         this.ui = ui;
         this.progress = progress;
+        this.challenge = challenge;
+        this.lexicon = lexicon;
+        this.invitation = invitation;
         date = challenge.date();
         opening = label(R.string.daily_board, challenge.openingWord(),
                 square(challenge.openingStart()), square(challenge.openingEnd()));
@@ -59,48 +69,83 @@ final class DailyResult {
         details.addView(streak);
         ui.weight(stats, details);
         summary.addView(stats);
-        share = ui.button(label(R.string.daily_share), true, this::share);
+        comparison = ui.body("");
+        if (invitation != null) {
+            ui.gap(summary, 7);
+            summary.addView(comparison);
+        }
+        sharing = ui.column();
+        TextView share = ui.button(label(R.string.daily_share), true, this::share);
         share.setMinHeight(ui.dp(48));
+        sharing.addView(share);
+        TextView copy = ui.textButton(label(R.string.daily_share_link), this::copy);
+        copy.setMinHeight(ui.dp(48));
+        sharing.addView(copy);
     }
 
     View summary() { return summary; }
 
-    View shareButton() { return share; }
+    View shareButton() { return sharing; }
 
     String boardDescription() { return opening; }
 
     void show(FrenchGame.Preview move) {
         boolean played = move != null;
-        saved = null;
+        outgoing = null;
         summary.setVisibility(played ? View.VISIBLE : View.GONE);
-        share.setVisibility(View.GONE);
+        sharing.setVisibility(View.GONE);
         if (!played) return;
 
         score.setText(String.valueOf(move.score()));
         score.setContentDescription(points(ui, move.score()));
         word.setText(move.word());
-        DailyProgress.Snapshot snapshot = progress.snapshot(date);
-        try {
-            saved = progress.complete(date, move.score());
-            snapshot = saved;
-            share.setVisibility(View.VISIBLE);
-        } catch (IOException exception) {
-            toast(R.string.daily_save_error);
+        int bestScore = move.score();
+        shareStreak = 0;
+        best.setVisibility(View.GONE);
+        streak.setVisibility(View.GONE);
+        if (progress != null) {
+            try {
+                DailyProgress.Snapshot saved = progress.complete(date, move.score());
+                bestScore = saved.bestScore();
+                shareStreak = saved.streak();
+                best.setText(bestLabel(ui, bestScore));
+                best.setVisibility(View.VISIBLE);
+                streak.setText(streakLabel(ui, shareStreak));
+                streak.setVisibility(View.VISIBLE);
+            } catch (IOException exception) {
+                toast(R.string.daily_save_error);
+            }
         }
-        best.setVisibility(snapshot.bestScore() == null ? View.GONE : View.VISIBLE);
-        if (snapshot.bestScore() != null) best.setText(bestLabel(ui, snapshot.bestScore()));
-        streak.setText(streakLabel(ui, snapshot.streak()));
+        if (invitation != null) {
+            int difference = move.score() - invitation.score();
+            comparison.setText(difference == 0 ? label(R.string.daily_invitation_tie) : label(
+                    difference > 0 ? R.string.daily_invitation_beat : R.string.daily_invitation_short,
+                    points(ui, Math.abs(difference))));
+        }
+        outgoing = ChallengeLink.create(challenge, lexicon, bestScore);
+        sharing.setVisibility(View.VISIBLE);
     }
 
     private void share() {
-        if (saved == null) return;
+        if (outgoing == null) return;
+        String formattedDate = SHARE_DATE.format(date);
+        String points = points(ui, outgoing.score());
+        String title = label(R.string.daily_share);
         String message = label(R.string.daily_share_text, SHARE_DATE.format(date),
-                points(ui, saved.bestScore()), streakLabel(ui, saved.streak()));
-        Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, message);
+                points, outgoing.uri());
         try {
-            ui.context.startActivity(Intent.createChooser(send, label(R.string.daily_share)));
-        } catch (ActivityNotFoundException exception) {
+            ScoreCard.share(ui, formattedDate, points, shareStreak == 0 ? "" : streakLabel(ui, shareStreak), message, title);
+        } catch (ActivityNotFoundException | IOException exception) {
             toast(R.string.daily_share_error);
+        }
+    }
+
+    private void copy() {
+        if (outgoing == null) return;
+        ClipboardManager clipboard = ui.context.getSystemService(ClipboardManager.class);
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(ClipData.newPlainText(label(R.string.daily_share), outgoing.uri()));
+            if (android.os.Build.VERSION.SDK_INT < 33) toast(R.string.daily_share_link_copied);
         }
     }
 
@@ -118,7 +163,7 @@ final class DailyResult {
         return ui.context.getString(R.string.daily_streak, count);
     }
 
-    private static String points(ViewKit ui, int value) {
+    static String points(ViewKit ui, int value) {
         return ui.context.getResources().getQuantityString(R.plurals.practice_points, value, value);
     }
 

@@ -26,7 +26,7 @@ final class DailyChallengeCard {
         content.setPadding(ui.dp(20), ui.dp(18), ui.dp(3), ui.dp(18));
         content.addView(ui.text(date, 13, ui.palette.fresh(), ui.medium));
         ui.gap(content, 5);
-        content.addView(title(ui, 32, ui.palette.heroInk()));
+        content.addView(title(ui, ui.context.getString(R.string.daily_title), 32, ui.palette.heroInk()));
         ui.gap(content, 6);
         content.addView(ui.text(status, 14, ui.palette.heroInk(), ui.regular));
         ui.gap(content, 9);
@@ -59,13 +59,13 @@ final class DailyChallengeCard {
         return card;
     }
 
-    static View heading(ViewKit ui, String date, String status) {
+    static View heading(ViewKit ui, String heading, String date, String status) {
         LinearLayout card = ui.card();
         LinearLayout row = ui.row();
         LinearLayout copy = ui.column();
         copy.addView(ui.text(date, 12, ui.palette.accent(), ui.medium));
         ui.gap(copy, 3);
-        copy.addView(title(ui, 28, ui.palette.ink()));
+        copy.addView(title(ui, heading, 28, ui.palette.ink()));
         ui.weight(row, copy);
         ui.space(row, 12);
         ImageView art = artwork(ui);
@@ -80,8 +80,8 @@ final class DailyChallengeCard {
         return card;
     }
 
-    private static TextView title(ViewKit ui, int size, int color) {
-        TextView title = ui.text(ui.context.getString(R.string.daily_title), size, color, ui.serif);
+    private static TextView title(ViewKit ui, String label, int size, int color) {
+        TextView title = ui.text(label, size, color, ui.serif);
         if (Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
         return title;
     }
