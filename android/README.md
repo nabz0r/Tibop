@@ -1,11 +1,13 @@
 # Lettrine pour Android
 
-L’[APK 0.6.0](artifacts/lettrine.apk) fonctionne hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe. Le [bundle 0.6.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK 0.7.0](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe. Le [bundle 0.7.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Jouer
 
 - **Défi du jour** propose une nouvelle position selon la date locale, même en mode avion. Validez un coup légal pour compter la journée dans votre série. Vous pouvez rejouer pour améliorer le record du jour.
 - **Bats mon score** partage une carte PNG avec la date, le score et, lorsqu’elle s’applique, la série. Le lien associé mène à une [page d’invitation](https://nabz0r.github.io/scrabnble/defi/) avec le bouton **Ouvrir dans Lettrine**. L’application retrouve le même plateau et le même chevalet, puis compare le coup du destinataire au score partagé. **Copier le lien** est disponible pour les messageries qui séparent les images du texte. Une invitation pour une autre date se joue hors série.
+- **Profil** réunit le pseudo, la photo, le pays, l’âge et le sexe, tous facultatifs. Les exploits se débloquent à partir de vos parties et de vos défis. La photo, le pays, l’âge et le sexe restent sur cet appareil.
+- **Amis** propose une invitation à usage unique, des duels à un coup sur un plateau commun, la revanche et un classement calculé sur les duels terminés entre membres de votre cercle d’amis. Les deux joueurs peuvent jouer à des moments différents. Le score de l’adversaire est dévoilé une fois les deux coups envoyés.
 - **Premier défi** ouvre une position courte depuis l’accueil. Prolongez le mot sur le plateau, validez votre pose, puis comparez votre score à la proposition de NAB. Vous pouvez retenter le défi à tout moment.
 - **Entre amis** accueille deux à quatre joueurs sur le même appareil. Le chevalet est masqué à chaque changement de joueur. Les parties solo et locales en cours sont sauvegardées après chaque tour.
 - **Bluetooth** relie deux appareils préalablement associés dans Android. L’un choisit **Héberger** et l’autre choisit l’appareil hôte. Les deux APK doivent embarquer le même lexique. Une coupure interrompt la partie.
@@ -44,6 +46,12 @@ Ce build produit un [Android App Bundle signé](artifacts/lettrine.aab) pour `fr
 
 Dans la Play Console, créer la version sur le canal de test souhaité, configurer Play App Signing au premier envoi, puis importer le bundle. Le certificat SHA-256 de la clé d’envoi est `6F:7A:E3:53:5D:E5:FA:76:CE:43:0D:C2:C6:44:7B:B6:8F:6B:8F:FF:DB:75:10:24:52:90:7E:99:DF:0E:1E:2A`. Les APK distribués par Play porteront le certificat de signature de l’application affiché par la console. Pour passer de l’APK du dépôt à la version Play, exporter d’abord l’historique puis désinstaller l’APK direct. Android exige la même signature pour une mise à jour en place. La série et la partie en cours sont locales à l’installation. [Signature Play](https://support.google.com/googleplay/android-developer/answer/9842756) · [Préparation d’une version](https://support.google.com/googleplay/android-developer/answer/9859348)
 
+## Amis et duels en bêta
+
+Le service des amis est séparé du studio. Pour le démarrer sur le serveur de la bêta, exécuter `docker compose -f compose.social.yaml up -d --build`. La base sociale est stockée dans le volume `social_data`. Publier le service derrière un domaine HTTPS en adaptant [l’exemple Nginx](../infra/social-nginx.conf.example). Le proxy limite les inscriptions anonymes et les appels, et expose seulement `/api/social/`. Les joueurs d’un même groupe renseignent la même origine HTTPS dans **Amis → Serveur des amis**. `LETTRINE_SOCIAL_URL` permet de fournir cette origine par défaut lors de la compilation des deux livrables. Le lien public d’amitié mène à la [page d’invitation](https://nabz0r.github.io/scrabnble/amis/) et peut aussi être collé dans l’onglet Amis.
+
+Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion Google, créer un client OAuth Web et des clients Android pour `fr.lettrine.game` avec les certificats des distributions à tester. Passer l’identifiant du client Web au serveur avec `LETTRINE_GOOGLE_CLIENT_ID`. Le serveur valide la signature Google, le destinataire du jeton et le nonce avant d’associer le compte. Le profil local, les parties hors ligne et l’Elo restent sur l’appareil. La connexion Google peut restaurer le compte social sur un autre appareil. [Connexion Google sur Android](https://developer.android.com/identity/sign-in/credential-manager-siwg-implementation) · [Validation du jeton Google](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token)
+
 ## Vérification de la version 0.2.0
 
 - Android 8 et 16 sur émulateur. Mise à jour depuis la version 0.1.0, conservation de la partie en cours et de l’historique, inférence en mode avion en partie et en relecture. L’inférence a aussi été vérifiée sur Android 16 avec des pages mémoire de 16 Kio.
@@ -72,5 +80,11 @@ Dans la Play Console, créer la version sur le canal de test souhaité, configur
 - La mise à jour directe depuis la 0.5.0 a conservé les archives sur émulateurs Android 8 et 16. Une application de test a reçu la carte PNG de 1 080 × 1 080 pixels et son lien, avec un accès en lecture limité à la carte partagée.
 - Depuis Chrome Android, la page HTTPS et son bouton **Ouvrir dans Lettrine** ont lancé la position attendue, avec le plateau et le chevalet du défi. En mode avion, l’invitation a fonctionné au démarrage et quand Lettrine était déjà ouverte. Les cas de victoire, d’égalité, de score inférieur et d’invitation incompatible ont été vérifiés.
 - Les 22 tests Android passent. Le bundle signé a été validé avec `bundletool`. Les APK générés depuis le bundle se sont installés sur Android 16 avec des pages de 16 Kio. Le défi, le partage et l’inférence du modèle embarqué ont fonctionné en mode avion.
+
+## Vérification de la version 0.7.0
+
+- Les 26 tests Android et les 19 tests Rust passent. Le serveur de test a conservé l’amitié et le duel en cours après redémarrage. L’API a été vérifiée pour l’invitation à usage unique, la légalité des coups, les résultats, le classement, la revanche et le blocage.
+- Sur Android 16, Chrome a ouvert un lien public d’amitié jusqu’à la confirmation dans Lettrine, avec un serveur de test. Deux appareils ont joué à des moments différents. Le résultat de 17 à 15 est apparu dans le classement et la revanche a ouvert une nouvelle position. Le profil local a été vérifié en mode avion, notamment la validation de l’âge, l’import et le retrait de la photo, et la persistance après redémarrage.
+- Le bundle signé a été validé avec `bundletool` et les APK qui en sont issus ont été installés sur Android 16 avec des pages de 16 Kio. Le défi du jour et le partage de carte fonctionnent toujours en mode avion. La connexion à un compte Google réel requiert la configuration OAuth du projet.
 
 L’APK joue en français avec le moteur embarqué. Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.

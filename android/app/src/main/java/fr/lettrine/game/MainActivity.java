@@ -20,6 +20,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
@@ -64,9 +65,11 @@ public final class MainActivity extends Activity {
     private static final int ENABLE_BLUETOOTH = 42;
     private static final int EXPORT_FILE = 43;
     private static final int APP_SETTINGS = 44;
+    private static final int PROFILE_PHOTO = 45;
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
 
-    private enum Screen { HOME, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW, PRACTICE }
+    private enum Screen { HOME, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW, PRACTICE,
+        SOCIAL, SOCIAL_DUEL, PROFILE }
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -78,6 +81,11 @@ public final class MainActivity extends Activity {
     private ViewKit ui;
     private GameStore store;
     private DailyProgress dailyProgress;
+    private ProfileStore profileStore;
+    private ProfilePanel profilePanel;
+    private SocialClient socialClient;
+    private CancellationSignal googleSignIn;
+    private String pendingSocialInvite;
     private Lexicon lexicon;
     private FrenchGame game;
     private MatchCodec.State guestState;
@@ -126,6 +134,8 @@ public final class MainActivity extends Activity {
         super.onCreate(state);
         preferences = getSharedPreferences("preferences", MODE_PRIVATE);
         dailyProgress = new DailyProgress(this);
+        profileStore = new ProfileStore(this);
+        socialClient = new SocialClient(this, this::socialBaseUrl, profileStore::nickname);
         skin = Math.max(0, Math.min(Palette.THEMES.length - 1, preferences.getInt("skin", 0)));
         ui = new ViewKit(this, Palette.THEMES[skin]);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
@@ -193,6 +203,15 @@ public final class MainActivity extends Activity {
 
     private void receiveChallenge(Intent intent) {
         if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
+        Uri uri = intent.getData();
+        if (uri != null && "lettrine".equals(uri.getScheme()) && "amis".equals(uri.getAuthority())) {
+            String token = SocialPanel.invitationToken(intent.getDataString());
+            if (token != null) {
+                pendingSocialInvite = token;
+                showSocial();
+            } else toast(getString(R.string.social_navigation_invite_invalid));
+            return;
+        }
         ChallengeLink invitation = ChallengeLink.parse(intent.getDataString());
         if (invitation == null) {
             toast(getString(R.string.daily_invitation_invalid));
@@ -235,6 +254,8 @@ public final class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        if (googleSignIn != null) googleSignIn.cancel();
+        socialClient.close();
         if (Build.VERSION.SDK_INT >= 33 && backCallback != null) {
             getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
         }
@@ -261,6 +282,8 @@ public final class MainActivity extends Activity {
             case DETAIL -> showHistory();
             case REVIEW -> reviewBack.run();
             case PRACTICE -> leavePractice();
+            case SOCIAL_DUEL -> showSocial();
+            case SETTINGS -> showProfile();
             case BLUETOOTH -> {
                 if (link != null && state() == null) closeLink();
                 showHome();
@@ -282,6 +305,11 @@ public final class MainActivity extends Activity {
         if (explanationDialog != null) explanationDialog.dismiss();
         cancelReview();
         if (next != Screen.HOME) pendingChallenge = null;
+        if (next != Screen.PROFILE) profilePanel = null;
+        if (next != Screen.SOCIAL && googleSignIn != null) {
+            googleSignIn.cancel();
+            googleSignIn = null;
+        }
         screen = next;
         if (Build.VERSION.SDK_INT >= 33) {
             if (next == Screen.HOME && backCallback != null) {
@@ -332,8 +360,9 @@ public final class MainActivity extends Activity {
             nav.setBackgroundColor(ui.palette.paper());
             nav.setPadding(ui.dp(10), ui.dp(2), ui.dp(10), ui.dp(2));
             ui.weight(nav, navItem("Jouer", next == Screen.HOME, this::showHome));
+            ui.weight(nav, navItem(getString(R.string.social_navigation_friends), next == Screen.SOCIAL, this::showSocial));
             ui.weight(nav, navItem("Historique", next == Screen.HISTORY, this::showHistory));
-            ui.weight(nav, navItem("Réglages", next == Screen.SETTINGS, this::showSettings));
+            ui.weight(nav, navItem(getString(R.string.social_navigation_profile), next == Screen.PROFILE, this::showProfile));
             shell.addView(nav, new LinearLayout.LayoutParams(-1, -2));
         }
         setContentView(frame);
@@ -1351,8 +1380,8 @@ public final class MainActivity extends Activity {
     }
 
     private void showSettings() {
-        page(Screen.SETTINGS, true);
-        top("Lettrine", null, null);
+        page(Screen.SETTINGS, false);
+        top("Lettrine", this::showProfile, null);
         heading("Réglages", "");
         LinearLayout settings = ui.card();
         Switch audio = new Switch(this);
@@ -1367,6 +1396,9 @@ public final class MainActivity extends Activity {
         });
         settings.addView(audio);
         content.addView(settings);
+        ui.gap(content, 12);
+        content.addView(ui.option("↗", getString(R.string.social_navigation_endpoint),
+                socialBaseUrl().isEmpty() ? "" : Uri.parse(socialBaseUrl()).getHost(), this::editSocialEndpoint));
         ui.gap(content, 18);
         content.addView(ui.micro("APPARENCE", ui.palette.accent()));
         ui.gap(content, 8);
@@ -1387,6 +1419,119 @@ public final class MainActivity extends Activity {
                     (notice == null || notice.trim().isEmpty() ? "Lexique intégré au moment de la compilation." : notice)
                             + "\n\nEmpreinte SHA-256 : " + lexicon.hash).setPositiveButton("Fermer", null).show()));
         }
+    }
+
+    private void showProfile() {
+        page(Screen.PROFILE, true);
+        top("Lettrine", null, ui.textButton("Réglages", this::showSettings));
+        heading(getString(R.string.profile_title), "");
+        profilePanel = new ProfilePanel(ui, profileStore, store, dailyProgress, this::chooseProfilePhoto);
+        content.addView(profilePanel.view());
+    }
+
+    private void chooseProfilePhoto() {
+        try {
+            startActivityForResult(ProfilePanel.photoPicker(), PROFILE_PHOTO);
+        } catch (android.content.ActivityNotFoundException exception) {
+            toast("Le sélecteur de photos est indisponible.");
+        }
+    }
+
+    private String socialBaseUrl() { return preferences.getString("social_endpoint", BuildConfig.SOCIAL_BASE_URL); }
+
+    private void editSocialEndpoint() {
+        EditText field = new EditText(this);
+        field.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI);
+        field.setSingleLine(true);
+        field.setHint(R.string.social_navigation_endpoint_hint);
+        field.setText(socialBaseUrl());
+        AlertDialog change = dialog(getString(R.string.social_navigation_endpoint),
+                getString(R.string.social_navigation_endpoint_help)).setView(field)
+                .setNegativeButton("Annuler", null)
+                .setNeutralButton(R.string.social_navigation_endpoint_default, (d, action) -> {
+                    preferences.edit().remove("social_endpoint").apply();
+                    refreshSocialEndpoint();
+                })
+                .setPositiveButton("Enregistrer", null).create();
+        change.setOnShowListener(d -> change.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+            String address = field.getText().toString().strip();
+            if (!address.isEmpty() && !SocialClient.validBase(address)) {
+                field.setError(getString(R.string.social_navigation_endpoint_invalid));
+                return;
+            }
+            preferences.edit().putString("social_endpoint", address).apply();
+            change.dismiss();
+            refreshSocialEndpoint();
+        }));
+        change.show();
+    }
+
+    private void refreshSocialEndpoint() {
+        CancellationSignal request = googleSignIn;
+        googleSignIn = null;
+        if (request != null) request.cancel();
+        if (screen == Screen.SOCIAL || pendingSocialInvite != null) showSocial();
+        else showSettings();
+    }
+
+    private void showSocial() {
+        page(Screen.SOCIAL, true);
+        top("Lettrine", null, ui.textButton(getString(R.string.social_navigation_endpoint), this::editSocialEndpoint));
+        heading(getString(R.string.social_navigation_friends), "");
+        String invite = pendingSocialInvite;
+        if (socialClient.configured()) pendingSocialInvite = null;
+        content.addView(new SocialPanel(ui, socialClient, this::showSocialDuel, invite, this::connectGoogle).view());
+    }
+
+    private void showSocialDuel(JSONObject duel) {
+        if (!ready()) return;
+        page(Screen.SOCIAL_DUEL, false);
+        top("Lettrine", this::showSocial, null);
+        heading(getString(R.string.social_navigation_duel), getString(R.string.social_navigation_duel_goal));
+        content.addView(new SocialDuelPanel(ui, socialClient, duel, lexicon, this::showSocial).view());
+    }
+
+    private void connectGoogle(String clientId) {
+        if (googleSignIn != null) return;
+        String endpoint = socialBaseUrl();
+        CancellationSignal request = new CancellationSignal();
+        googleSignIn = request;
+        socialClient.googleChallenge((reply, error) -> {
+            if (googleSignIn != request || isDestroyed()) return;
+            String nonce = reply == null ? "" : reply.optString("nonce");
+            if (error != null || nonce.isEmpty() || !endpoint.equals(socialBaseUrl())
+                    || !clientId.equals(reply.optString("google_client_id"))) {
+                finishGoogle(request, error);
+                return;
+            }
+            SocialGoogle.request(this, clientId, nonce, request,
+                    token -> {
+                        if (googleSignIn != request) return;
+                        if (!endpoint.equals(socialBaseUrl())) {
+                            finishGoogle(request, getString(R.string.social_endpoint_changed));
+                            return;
+                        }
+                        socialClient.linkGoogle(token, nonce, (account, failure) -> {
+                            if (googleSignIn != request) return;
+                            googleSignIn = null;
+                            if (failure != null) toast(failure);
+                            else {
+                                toast(getString(R.string.social_google_connected));
+                                showSocial();
+                            }
+                        });
+                    }, failure -> {
+                        if (googleSignIn != request) return;
+                        googleSignIn = null;
+                        if (failure != 0) toast(getString(failure));
+                    });
+        });
+    }
+
+    private void finishGoogle(CancellationSignal request, String error) {
+        if (googleSignIn != request) return;
+        googleSignIn = null;
+        toast(error == null ? getString(R.string.social_google_error) : error);
     }
 
     private void showHistory() {
@@ -1602,6 +1747,10 @@ public final class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == PROFILE_PHOTO) {
+            if (result == RESULT_OK && data != null && profilePanel != null) profilePanel.photoSelected(data.getData());
+            return;
+        }
         if ((request == ENABLE_BLUETOOTH || request == APP_SETTINGS) && screen == Screen.BLUETOOTH) showBluetooth();
         if (request != EXPORT_FILE) return;
         String body = export;

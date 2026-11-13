@@ -11,6 +11,8 @@ mod profiles;
 mod review;
 mod run;
 mod server;
+mod social;
+mod social_google;
 mod store;
 mod telemetry;
 mod timeline;
@@ -161,6 +163,15 @@ async fn main() -> Result<()> {
                 &PathBuf::from(output),
             )?;
         }
+        "social" => {
+            let engine = load_engine()?;
+            let address =
+                env::var("LETTRINE_SOCIAL_BIND").unwrap_or_else(|_| "127.0.0.1:8790".into());
+            let db = PathBuf::from(
+                env::var("LETTRINE_SOCIAL_DB").unwrap_or_else(|_| "results/social.sqlite".into()),
+            );
+            social::serve(&db, engine, &address).await?;
+        }
         "serve" => {
             let engine = load_engine()?;
             let address = env::var("LETTRINE_BIND").unwrap_or_else(|_| "127.0.0.1:8787".into());
@@ -193,7 +204,7 @@ async fn main() -> Result<()> {
         }
         "help" | "-h" | "--help" => {
             println!(
-                "lettrine profiles | run | train [model.json] | benchmark-llm [tirages] | serve | stats | export [jsonl|csv|json]"
+                "lettrine profiles | run | train [model.json] | benchmark-llm [tirages] | serve | social | stats | export [jsonl|csv|json]"
             )
         }
         _ => bail!("commande inconnue : {command}"),

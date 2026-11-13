@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 final class PracticePanel {
     private final ViewKit ui;
@@ -19,6 +20,7 @@ final class PracticePanel {
     private final Lexicon lexicon;
     private final boolean first;
     private final DailyResult dailyResult;
+    private final Consumer<List<FrenchGame.Tile>> duelSubmit;
     private final char[] letters;
     private final boolean[] blanks;
     private final List<Character> rack;
@@ -39,6 +41,7 @@ final class PracticePanel {
     private final BoardView board;
     private int selected = -1;
     private boolean finished;
+    private boolean submitting;
     private FrenchGame.Preview attempt;
 
     PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, boolean first) {
@@ -46,11 +49,21 @@ final class PracticePanel {
     }
 
     PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, boolean first, DailyResult dailyResult) {
+        this(ui, position, lexicon, first, dailyResult, null);
+    }
+
+    PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, Consumer<List<FrenchGame.Tile>> duelSubmit) {
+        this(ui, position, lexicon, false, null, duelSubmit);
+    }
+
+    private PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, boolean first,
+                          DailyResult dailyResult, Consumer<List<FrenchGame.Tile>> duelSubmit) {
         this.ui = ui;
         this.position = position;
         this.lexicon = lexicon;
         this.first = first;
         this.dailyResult = dailyResult;
+        this.duelSubmit = duelSubmit;
         letters = position.board();
         blanks = position.blanks();
         rack = position.rack();
@@ -123,11 +136,11 @@ final class PracticePanel {
             tile.setMinHeight(ui.dp(48));
             tile.setElevation(ui.dp(1));
             tile.setOnClickListener(view -> {
-                if (finished || used(index)) return;
+                if (finished || submitting || used(index)) return;
                 selected = selected == index ? -1 : index;
                 renderAttempt(-1);
             });
-            tile.setOnLongClickListener(view -> !finished && !used(index) && view.startDragAndDrop(
+            tile.setOnLongClickListener(view -> !finished && !submitting && !used(index) && view.startDragAndDrop(
                     ClipData.newPlainText("Lettrine", String.valueOf(letter)),
                     new View.DragShadowBuilder(view), index, 0));
             rackButtons.add(tile);
@@ -137,19 +150,25 @@ final class PracticePanel {
         playControls.addView(hand);
         ui.gap(playControls, 8);
         LinearLayout actions = ui.row();
-        play = ui.button(label(R.string.practice_ready), true, this::submit);
+        play = ui.button(label(duelSubmit == null ? R.string.practice_ready : R.string.social_submit), true, this::submit);
         clear = ui.textButton(label(R.string.practice_clear), this::clear);
         ui.weight(actions, play);
         ui.space(actions, 7);
         actions.addView(clear);
         playControls.addView(actions);
-        playControls.addView(ui.textButton(label(R.string.practice_reveal), () -> finish(null)));
+        if (duelSubmit == null) playControls.addView(ui.textButton(label(R.string.practice_reveal), () -> finish(null)));
         panel.addView(playControls);
         if (dailyResult == null) panel.addView(retry);
         reset();
     }
 
     View view() { return panel; }
+
+    void setSubmitting(boolean pending) {
+        submitting = pending;
+        play.setText(pending ? R.string.social_sending : R.string.social_submit);
+        renderAttempt(-1);
+    }
 
     private void reset() {
         finished = false;
@@ -170,7 +189,7 @@ final class PracticePanel {
     }
 
     private void tapSquare(int square) {
-        if (finished) return;
+        if (finished || submitting) return;
         for (int i = 0; i < staged.size(); i++) {
             if (staged.get(i).position() == square) {
                 selected = staged.remove(i).rackIndex();
@@ -182,7 +201,7 @@ final class PracticePanel {
     }
 
     private void place(int square, int index) {
-        if (finished || index < 0 || index >= rack.size() || letters[square] != 0 || used(index)) return;
+        if (finished || submitting || index < 0 || index >= rack.size() || letters[square] != 0 || used(index)) return;
         for (FrenchGame.Tile tile : staged) if (tile.position() == square) return;
         char letter = rack.get(index);
         if (letter == FrenchGame.JOKER) {
@@ -220,18 +239,20 @@ final class PracticePanel {
             tile.setContentDescription(occupied ? label(R.string.practice_placed, tileLabel) : tileLabel);
             tile.setSelected(i == selected);
             tile.setBackground(rackFace(i == selected));
-            ui.enabled(tile, !occupied);
+            ui.enabled(tile, !submitting && !occupied);
         }
         FrenchGame.Preview move = staged.isEmpty() ? null : position.preview(staged, lexicon);
         preview.setText(move == null ? label(R.string.practice_guide) : move.valid()
                 ? label(R.string.practice_preview_score, move.word(), points(move.score())) : move.error());
-        ui.enabled(play, move != null && move.valid());
-        ui.enabled(clear, !staged.isEmpty() || selected >= 0);
+        ui.enabled(play, !submitting && move != null && move.valid());
+        ui.enabled(clear, !submitting && (!staged.isEmpty() || selected >= 0));
     }
 
     private void submit() {
         FrenchGame.Preview move = position.preview(staged, lexicon);
-        if (move.valid()) finish(move);
+        if (!move.valid()) return;
+        if (duelSubmit == null) finish(move);
+        else duelSubmit.accept(List.copyOf(staged));
     }
 
     private void finish(FrenchGame.Preview move) {

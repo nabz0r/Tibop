@@ -1,0 +1,33 @@
+name: lettrine-social
+
+services:
+  social:
+    build:
+      context: .
+      target: api
+    image: lettrine-api:local
+    command: ["social"]
+    environment:
+      LETTRINE_SOCIAL_BIND: 0.0.0.0:8790
+      LETTRINE_SOCIAL_DB: /var/lib/lettrine/social.sqlite
+      LETTRINE_GOOGLE_CLIENT_ID: ${LETTRINE_GOOGLE_CLIENT_ID:-}
+      TOKIO_WORKER_THREADS: "2"
+    ports:
+      - "127.0.0.1:${LETTRINE_SOCIAL_PORT:-8790}:8790"
+    volumes:
+      - social_data:/var/lib/lettrine
+    read_only: true
+    user: "10001:10001"
+    init: true
+    pids_limit: 64
+    mem_limit: 256m
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "lettrine", "probe", "http://127.0.0.1:8790/health"]
+      interval: 15s
+      timeout: 4s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  social_data:

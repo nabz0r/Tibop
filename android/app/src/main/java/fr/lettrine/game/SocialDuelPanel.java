@@ -1,0 +1,114 @@
+package fr.lettrine.game;
+
+import android.app.AlertDialog;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import org.json.JSONObject;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+
+final class SocialDuelPanel {
+    private final ViewKit ui;
+    private final SocialClient client;
+    private final Runnable back;
+    private final String duelId;
+    private final LinearLayout root;
+    private final TextView notice;
+    private PracticePanel practice;
+
+    SocialDuelPanel(ViewKit ui, SocialClient client, JSONObject duel, Lexicon lexicon, Runnable back) {
+        this.ui = ui;
+        this.client = client;
+        this.back = back;
+        duelId = duel.optString("id");
+        root = ui.column();
+        notice = ui.body("");
+        notice.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        notice.setVisibility(View.GONE);
+        root.addView(notice);
+
+        JSONObject puzzle = duel.optJSONObject("puzzle");
+        DailyChallenge challenge = compatibleChallenge(duel, puzzle, lexicon);
+        if (challenge == null) {
+            notice.setText(R.string.social_duel_incompatible);
+            notice.setVisibility(View.VISIBLE);
+            backButton();
+            return;
+        }
+        JSONObject opponent = duel.optJSONObject("opponent");
+        if (opponent != null) {
+            root.addView(ui.title(opponent.optString("nickname"), 26));
+            ui.gap(root, 6);
+        }
+        root.addView(ui.body(label(R.string.social_duel_goal)));
+        ui.gap(root, 10);
+        practice = new PracticePanel(ui, challenge.position(), lexicon, this::confirm);
+        root.addView(practice.view());
+    }
+
+    View view() { return root; }
+
+    private static DailyChallenge compatibleChallenge(JSONObject duel, JSONObject puzzle, Lexicon lexicon) {
+        if (puzzle == null || lexicon == null) return null;
+        try {
+            LocalDate date = LocalDate.parse(puzzle.optString("date", duel.optString("date")));
+            DailyChallenge challenge = DailyChallenge.forDate(date, lexicon);
+            if (challenge == null) return null;
+            String identity = ChallengeLink.create(challenge, lexicon, 0).identity();
+            return identity.equals(puzzle.optString("identity")) ? challenge : null;
+        } catch (DateTimeParseException | IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private void confirm(List<FrenchGame.Tile> tiles) {
+        new AlertDialog.Builder(ui.context).setTitle(R.string.social_duel_confirm)
+                .setMessage(R.string.social_duel_confirm_copy).setNegativeButton(R.string.social_cancel, null)
+                .setPositiveButton(R.string.social_submit, (dialog, which) -> submit(tiles)).show();
+    }
+
+    private void submit(List<FrenchGame.Tile> tiles) {
+        notice.setVisibility(View.GONE);
+        practice.setSubmitting(true);
+        client.play(duelId, tiles, (result, error) -> {
+            JSONObject duel = result == null ? null : result.optJSONObject("duel");
+            if (duel == null) {
+                practice.setSubmitting(false);
+                notice.setText(error == null ? label(R.string.social_network_error) : error);
+                notice.setVisibility(View.VISIBLE);
+                notice.requestRectangleOnScreen(new android.graphics.Rect(0, 0, notice.getWidth(), ui.dp(48)));
+            } else {
+                showResult(duel);
+            }
+        });
+    }
+
+    private void showResult(JSONObject duel) {
+        root.removeAllViews();
+        LinearLayout result = ui.card();
+        int score = duel.optInt("score");
+        result.addView(ui.title(label(R.string.social_duel_your_result, score), 25));
+        ui.gap(result, 6);
+        if (duel.optString("status").equals("finished")) {
+            int opponentScore = duel.optInt("opponent_score");
+            int outcome = score == opponentScore ? R.string.social_duel_draw
+                    : score > opponentScore ? R.string.social_duel_win : R.string.social_duel_loss;
+            result.addView(ui.body(label(R.string.social_duel_result, label(outcome), score, opponentScore)));
+        } else {
+            result.addView(ui.body(label(R.string.social_waiting)));
+        }
+        root.addView(result);
+        backButton();
+    }
+
+    private void backButton() {
+        ui.gap(root, 10);
+        root.addView(ui.button(label(R.string.social_back_to_duels), true, back));
+    }
+
+    private String label(int resource, Object... values) { return ui.context.getString(resource, values); }
+}

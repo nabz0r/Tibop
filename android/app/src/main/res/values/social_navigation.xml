@@ -1,0 +1,15 @@
+<resources>
+    <string name="social_navigation_friends">Amis</string>
+    <string name="social_navigation_profile">Profil</string>
+    <string name="social_navigation_duel">Duel</string>
+    <string name="social_navigation_duel_goal">Jouez un coup sur le même plateau que votre ami.</string>
+    <string name="social_navigation_endpoint">Serveur des amis</string>
+    <string name="social_navigation_endpoint_help">Adresse du serveur de votre groupe de test. Le jeu en solo reste accessible hors ligne.</string>
+    <string name="social_navigation_endpoint_hint">https://</string>
+    <string name="social_navigation_endpoint_invalid">Saisissez une adresse HTTPS valide, sans chemin.</string>
+    <string name="social_navigation_endpoint_default">Adresse par défaut</string>
+    <string name="social_navigation_invite_invalid">Ce lien d’amitié est invalide.</string>
+    <string name="social_google_error">La connexion Google a échoué. Vous pouvez continuer en invité.</string>
+    <string name="social_google_no_account">Aucun compte Google disponible sur cet appareil.</string>
+    <string name="social_google_connected">Compte Google associé.</string>
+</resources>

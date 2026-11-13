@@ -5,10 +5,13 @@ import android.content.SharedPreferences;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 
 final class DailyProgress {
     record Snapshot(int streak, Integer bestScore) {}
+    record Achievements(int days, int longestStreak) {}
 
     private final SharedPreferences preferences;
 
@@ -19,6 +22,12 @@ final class DailyProgress {
     Snapshot snapshot(LocalDate today) {
         synchronized (preferences) {
             return summarize(preferences.getAll(), today);
+        }
+    }
+
+    Achievements achievements(LocalDate today) {
+        synchronized (preferences) {
+            return achievements(preferences.getAll(), today);
         }
     }
 
@@ -50,6 +59,31 @@ final class DailyProgress {
             streak++;
         }
         return new Snapshot(streak, best);
+    }
+
+    static Achievements achievements(Map<String, ?> saved, LocalDate today) {
+        long min = LocalDate.MIN.toEpochDay();
+        long max = today.toEpochDay();
+        var days = new ArrayList<Long>();
+        for (Map.Entry<String, ?> entry : saved.entrySet()) {
+            if (!(entry.getValue() instanceof Integer points) || points < 0) continue;
+            try {
+                long day = Long.parseLong(entry.getKey());
+                if (day >= min && day <= max && Long.toString(day).equals(entry.getKey())) {
+                    days.add(day);
+                }
+            } catch (NumberFormatException ignored) { }
+        }
+        Collections.sort(days);
+        int current = 0;
+        int longest = 0;
+        long previous = Long.MIN_VALUE;
+        for (long day : days) {
+            current = day == previous + 1 ? current + 1 : 1;
+            longest = Math.max(longest, current);
+            previous = day;
+        }
+        return new Achievements(days.size(), longest);
     }
 
     private static Integer score(Map<String, ?> saved, long day) {

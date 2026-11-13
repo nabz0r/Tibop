@@ -40,5 +40,17 @@ public class DailyProgressTest {
         assertEquals(new DailyProgress.Snapshot(0, null), DailyProgress.summarize(scores, day.minusDays(7)));
     }
 
+    @Test public void profileStatsCountSavedDatesAndFindLongestCompletedRun() {
+        LocalDate day = LocalDate.of(2026, 11, 13);
+        Map<String, Object> scores = Map.of(key(day.minusDays(9)), 0, key(day.minusDays(8)), 20,
+                key(day.minusDays(7)), 21, key(day.minusDays(5)), 15, key(day), 25,
+                key(day.plusDays(1)), 27, key(day.plusDays(2)), 28,
+                key(day.minusDays(1)), -5, "unrelated", 99, "+" + key(day), 99);
+
+        assertEquals(new DailyProgress.Achievements(5, 3), DailyProgress.achievements(scores, day));
+        assertEquals(new DailyProgress.Achievements(7, 3), DailyProgress.achievements(scores, day.plusDays(2)));
+        assertEquals(new DailyProgress.Achievements(0, 0), DailyProgress.achievements(scores, day.minusDays(10)));
+    }
+
     private static String key(LocalDate date) { return Long.toString(date.toEpochDay()); }
 }

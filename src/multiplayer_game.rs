@@ -174,6 +174,34 @@ pub struct Replay<'a> {
 }
 
 impl Game {
+    pub(crate) fn score_position(
+        engine: &Engine,
+        board: &[u8],
+        rack: &[u8],
+        placements: &[(usize, usize, char)],
+    ) -> Result<i32, String> {
+        let config = engine.profile.game_config(2).map_err(|e| e.to_string())?;
+        let mut state = GameState::new(&config);
+        if board.len() != state.board_tiles.len() {
+            return Err("Plateau incompatible.".into());
+        }
+        state.board_tiles.copy_from_slice(board);
+        state.players[0].rack.extend_from_slice(rack);
+        let placements = placements
+            .iter()
+            .map(|&(position, tile, letter)| Placement {
+                x: (position % 15) as i8,
+                y: (position / 15) as i8,
+                tile,
+                letter: Some(letter),
+            })
+            .collect::<Vec<_>>();
+        match placement_play(engine, &config, &state, &placements)? {
+            Play::Place { score, .. } => Ok(equity::descale_score(score)),
+            _ => unreachable!("un placement produit un coup de pose"),
+        }
+    }
+
     pub fn new(engine: &Engine, players: usize, seed: u64) -> anyhow::Result<Self> {
         let config = engine.profile.game_config(u8::try_from(players)?)?;
         let mut rng = Xoshiro256PlusPlus::seed_from_u64(seed);

@@ -1,6 +1,8 @@
 FROM rust:1.98-bookworm AS build
 WORKDIR /src
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
+RUN apt-get update && apt-get install -y --no-install-recommends cmake \
+    && rm -rf /var/lib/apt/lists/*
 COPY Cargo.toml Cargo.lock ./
 COPY src/ src/
 COPY infra/languages.sql infra/participants.sql infra/move_analytics.sql infra/
@@ -11,6 +13,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 FROM debian:bookworm-slim AS api
 WORKDIR /app
+RUN install -d -o 10001 -g 10001 -m 0700 /var/lib/lettrine
 COPY --from=build /usr/local/bin/lettrine /usr/local/bin/lettrine
 COPY --from=build /usr/share/ca-certificates/ /usr/share/ca-certificates/
 COPY --from=build /etc/ssl/certs/ /etc/ssl/certs/
