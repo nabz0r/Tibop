@@ -29,6 +29,7 @@ final class TournamentPanel {
 
     private final ViewKit ui;
     private final SocialClient client;
+    private final CardStyleStore cardStyles;
     private final Consumer<JSONObject> openRound;
     private final LinearLayout root;
     private final TextView notice;
@@ -38,6 +39,7 @@ final class TournamentPanel {
     TournamentPanel(ViewKit ui, SocialClient client, Consumer<JSONObject> openRound) {
         this.ui = ui;
         this.client = client;
+        cardStyles = new CardStyleStore(ui.context);
         this.openRound = openRound;
         root = ui.column();
         root.addView(hero(ui));
@@ -156,6 +158,7 @@ final class TournamentPanel {
                 || next < starts || next > LAST_SUPPORTED_SECOND || completed < 0 || completed > 3
                 || (!upcoming && (slots == null || slots.length() != 3))) return false;
 
+        cardStyles.recordTournament(event);
         body.removeAllViews();
         LinearLayout scorecard = ui.card();
         String deadline = open ? label(R.string.tournament_open, time(ends)) : upcoming
@@ -190,6 +193,8 @@ final class TournamentPanel {
             }
         }
         body.addView(scorecard);
+        ui.gap(body, 10);
+        body.addView(rewardCard(ui, cardStyles));
         ui.gap(body, 17);
         TextView ranking = ui.title(label(R.string.tournament_ranking), 26);
         if (Build.VERSION.SDK_INT >= 28) ranking.setAccessibilityHeading(true);
@@ -288,6 +293,30 @@ final class TournamentPanel {
     static String progress(ViewKit ui, int completed) {
         return ui.context.getResources().getQuantityString(R.plurals.tournament_progress,
                 completed == 1 ? 1 : 2, completed);
+    }
+
+    static View rewardCard(ViewKit ui, CardStyleStore cardStyles) {
+        CardStyleStore.Style style = CardStyleStore.Style.NOCTURNE;
+        boolean unlocked = cardStyles.has(style);
+        LinearLayout banner = ui.row();
+        banner.setBackground(ui.shape(ui.palette.ordinary(), 15));
+        ui.inset(banner, 10, 10);
+        ImageView preview = ScoreCard.preview(ui, style);
+        preview.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        banner.addView(preview, new LinearLayout.LayoutParams(ui.dp(65), ui.dp(65)));
+        ui.space(banner, 12);
+        LinearLayout copy = ui.column();
+        TextView status = ui.text(ui.context.getString(unlocked ? R.string.card_style_reward_unlocked
+                : R.string.card_style_tournament_reward), 12, ui.palette.accent(), ui.medium);
+        copy.addView(status);
+        ui.gap(copy, 4);
+        copy.addView(ui.title(ui.context.getString(style.label), 21));
+        ui.gap(copy, 5);
+        int detail = !unlocked ? R.string.card_style_unlock_requirement
+                : cardStyles.selected() == style ? R.string.card_style_reward_in_use : R.string.card_style_reward_collection;
+        copy.addView(ui.body(ui.context.getString(detail)));
+        ui.weight(banner, copy);
+        return banner;
     }
 
     private static String time(long seconds) {

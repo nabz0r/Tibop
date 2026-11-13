@@ -13,6 +13,7 @@ import java.util.List;
 final class TournamentRoundPanel {
     private final ViewKit ui;
     private final SocialClient client;
+    private final CardStyleStore cardStyles;
     private final Runnable back;
     private final long eventId;
     private final int number;
@@ -23,6 +24,7 @@ final class TournamentRoundPanel {
     TournamentRoundPanel(ViewKit ui, SocialClient client, JSONObject round, Lexicon lexicon, Runnable back) {
         this.ui = ui;
         this.client = client;
+        cardStyles = new CardStyleStore(ui.context);
         this.back = back;
         eventId = round.optLong("event", -1);
         number = round.optInt("number");
@@ -58,13 +60,16 @@ final class TournamentRoundPanel {
         notice.setVisibility(View.GONE);
         practice.setSubmitting(true);
         client.playTournament(eventId, number, tiles, (result, error) -> {
+            JSONObject slot = result == null || error != null ? null
+                    : TournamentPanel.slot(result.optJSONArray("slots"), number);
+            boolean accepted = slot != null && result.optLong("id", -1) == eventId && !slot.isNull("score");
+            boolean unlocked = accepted && cardStyles.recordTournament(result);
             if (!root.isAttachedToWindow()) return;
-            JSONObject slot = result == null ? null : TournamentPanel.slot(result.optJSONArray("slots"), number);
-            if (slot == null || result.optLong("id", -1) != eventId || slot.isNull("score")) {
+            if (!accepted) {
                 practice.setSubmitting(false);
                 showNotice(error == null ? label(R.string.tournament_response_error) : error);
             } else {
-                showResult(slot.optInt("score"), result.optInt("total"), result.optInt("completed"));
+                showResult(slot.optInt("score"), result.optInt("total"), result.optInt("completed"), unlocked);
             }
         });
     }
@@ -75,7 +80,7 @@ final class TournamentRoundPanel {
         notice.post(() -> notice.requestRectangleOnScreen(new Rect(0, 0, notice.getWidth(), notice.getHeight())));
     }
 
-    private void showResult(int score, int total, int completed) {
+    private void showResult(int score, int total, int completed, boolean unlocked) {
         root.removeAllViews();
         LinearLayout card = ui.card();
         card.addView(ui.body(label(R.string.tournament_round, number)));
@@ -88,6 +93,10 @@ final class TournamentRoundPanel {
         ui.gap(card, 4);
         card.addView(ui.body(TournamentPanel.progress(ui, completed)));
         root.addView(card);
+        if (unlocked) {
+            ui.gap(root, 10);
+            root.addView(TournamentPanel.rewardCard(ui, cardStyles));
+        }
         addBackButton();
         root.post(() -> root.requestRectangleOnScreen(new Rect(0, 0, root.getWidth(), ui.dp(120))));
     }

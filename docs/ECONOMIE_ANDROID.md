@@ -22,7 +22,7 @@ L’intégration utilise UMP avant de demander une annonce. Le lien vers les cho
 
 Lettrine débloque déjà Porcelaine après un jour de défi quotidien, Marée après trois jours joués, Ambre après trois parties solo terminées et Ardoise après cinq. Le profil affiche notamment la première victoire, le premier coup à sept lettres et la série de trois jours.
 
-Proposition pour la prochaine bêta. Afficher le prochain déblocage et sa progression à la fin d’un défi, avec un aperçu du skin sur le plateau. Tester ensuite un badge et un fond de carte à partager pour les joueurs qui terminent les trois manches du week-end. Le défi bonus reste la récompense garantie de la vidéo. Le palier exact des futurs cosmétiques se teste avec les joueurs.
+À partir de la 0.10, terminer les trois manches d’un même week-end débloque **Nocturne dorée**, un fond à choisir pour les cartes **Bats mon score**. Le tournoi montre l’aperçu et confirme le déblocage. Le défi bonus reste la récompense garantie de la vidéo facultative dans la variante AdMob.
 
 ## Première expérience commerciale
 

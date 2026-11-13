@@ -2,7 +2,6 @@
     <string name="social_navigation_friends">Amis</string>
     <string name="social_navigation_profile">Profil</string>
     <string name="social_navigation_duel">Duel</string>
-    <string name="social_navigation_duel_goal">Jouez un coup sur le même plateau que votre ami.</string>
     <string name="social_navigation_endpoint">Serveur des amis</string>
     <string name="social_navigation_endpoint_help">Adresse du serveur de votre groupe de test. Le jeu en solo reste accessible hors ligne.</string>
     <string name="social_navigation_endpoint_hint">https://</string>

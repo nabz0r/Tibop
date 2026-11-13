@@ -1801,7 +1801,8 @@ public final class MainActivity extends Activity {
         if (!ready()) return;
         page(Screen.SOCIAL_DUEL, false);
         top("Lettrine", this::showSocial, null);
-        heading(getString(R.string.social_navigation_duel), getString(R.string.social_navigation_duel_goal));
+        heading(getString(SocialDuelPanel.isMirror(duel) ? R.string.social_mirror_title
+                : R.string.social_navigation_duel), "");
         content.addView(new SocialDuelPanel(ui, socialClient, duel, lexicon, this::showSocial).view());
     }
 

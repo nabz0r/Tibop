@@ -35,6 +35,13 @@
     <string name="social_back_to_duels">Retour aux duels</string>
     <string name="social_new_duel">Défier</string>
     <string name="social_rematch">Revanche</string>
+    <string name="social_mirror_title">Revanche miroir</string>
+    <string name="social_mirror_resume">Reprendre le miroir</string>
+    <string name="social_mirror_confirm">Le plateau reste identique. Vous jouez avec le chevalet que votre ami avait lors du duel précédent, et votre ami reçoit le vôtre.</string>
+    <string name="social_mirror_start">Lancer le miroir</string>
+    <string name="social_mirror_goal">Même plateau. Chevalets échangés. À vous de trouver le meilleur coup avec les lettres de votre ami.</string>
+    <string name="social_mirror_result">Voir le résultat du miroir</string>
+    <string name="social_mirror_total">Cumul des deux manches · %1$d à %2$d</string>
     <string name="social_rank_name">%1$d. %2$s</string>
     <string name="social_rank_stats">%1$d V · %2$d N · %3$d D · %4$d pts</string>
     <string name="social_rank_legend">Victoires, nuls, défaites et points marqués dans les duels.</string>

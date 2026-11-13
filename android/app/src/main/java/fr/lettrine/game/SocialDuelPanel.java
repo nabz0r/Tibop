@@ -9,6 +9,7 @@ import org.json.JSONObject;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 
 final class SocialDuelPanel {
@@ -31,9 +32,13 @@ final class SocialDuelPanel {
         notice.setVisibility(View.GONE);
         root.addView(notice);
 
+        if (!"your_turn".equals(duel.optString("status"))) {
+            showResult(duel);
+            return;
+        }
         JSONObject puzzle = duel.optJSONObject("puzzle");
-        DailyChallenge challenge = compatibleChallenge(puzzle, duel.optString("date"), lexicon);
-        if (challenge == null) {
+        PracticePosition position = compatiblePosition(puzzle, duel.optString("date"), lexicon);
+        if (position == null) {
             notice.setText(R.string.social_duel_incompatible);
             notice.setVisibility(View.VISIBLE);
             backButton();
@@ -44,22 +49,57 @@ final class SocialDuelPanel {
             root.addView(ui.title(opponent.optString("nickname"), 26));
             ui.gap(root, 6);
         }
-        root.addView(ui.body(label(R.string.social_duel_goal)));
+        root.addView(ui.body(label(isMirror(duel) ? R.string.social_mirror_goal : R.string.social_duel_goal)));
         ui.gap(root, 10);
-        practice = new PracticePanel(ui, challenge.position(), lexicon, this::confirm);
+        practice = new PracticePanel(ui, position, lexicon, this::confirm);
         root.addView(practice.view());
     }
 
     View view() { return root; }
 
+    static boolean isMirror(JSONObject duel) { return "mirror".equals(duel.optString("kind")); }
+
+    private static PracticePosition compatiblePosition(JSONObject puzzle, String fallbackDate, Lexicon lexicon) {
+        DailyChallenge catalog = catalogChallenge(puzzle, fallbackDate, lexicon);
+        if (catalog == null) return null;
+        if (!catalog.openingWord().equals(puzzle.optString("opening_word"))
+                || catalog.openingStart() != puzzle.optInt("opening_start", -1)
+                || catalog.openingEnd() != puzzle.optInt("opening_end", -1)) return null;
+        return exactRackPosition(catalog, puzzle.optString("rack"), puzzle.optString("identity"), lexicon);
+    }
+
+    static PracticePosition exactRackPosition(DailyChallenge catalog, String rack, String identity, Lexicon lexicon) {
+        if (rack.length() != FrenchGame.RACK_SIZE) return null;
+        PracticePosition base = catalog.position();
+        char[] board = base.board();
+        int[] used = new int[26];
+        for (char letter : board) if (letter != 0) used[letter - 'A']++;
+        List<Character> letters = new ArrayList<>(FrenchGame.RACK_SIZE);
+        for (char letter : rack.toCharArray()) {
+            if (letter < 'A' || letter > 'Z' || ++used[letter - 'A'] > FrenchGame.tileCount(letter)) return null;
+            letters.add(letter);
+        }
+        // The shared duel UI only evaluates the player's move, with the submitted rack indices.
+        PracticePosition position = new PracticePosition(board, base.blanks(), letters, null, null);
+        return ChallengeLink.positionIdentity(position, lexicon).equals(identity) ? position : null;
+    }
+
     static DailyChallenge compatibleChallenge(JSONObject puzzle, String fallbackDate, Lexicon lexicon) {
+        DailyChallenge challenge = catalogChallenge(puzzle, fallbackDate, lexicon);
+        if (challenge == null) return null;
+        return ChallengeLink.create(challenge, lexicon, 0).identity().equals(puzzle.optString("identity"))
+                ? challenge : null;
+    }
+
+    private static DailyChallenge catalogChallenge(JSONObject puzzle, String fallbackDate, Lexicon lexicon) {
         if (puzzle == null || lexicon == null) return null;
         try {
             LocalDate date = LocalDate.parse(puzzle.optString("date", fallbackDate));
             DailyChallenge challenge = DailyChallenge.forDate(date, lexicon);
             if (challenge == null) return null;
             String identity = ChallengeLink.create(challenge, lexicon, 0).identity();
-            return identity.equals(puzzle.optString("identity")) ? challenge : null;
+            return identity.equals(puzzle.optString("catalog_identity", puzzle.optString("identity")))
+                    ? challenge : null;
         } catch (DateTimeParseException | IllegalArgumentException exception) {
             return null;
         }
@@ -91,14 +131,19 @@ final class SocialDuelPanel {
         root.removeAllViews();
         LinearLayout result = ui.card();
         int score = duel.optInt("score");
-        result.addView(ui.title(label(R.string.social_duel_your_result, score), 25));
-        ui.gap(result, 6);
         if (duel.optString("status").equals("finished")) {
             int opponentScore = duel.optInt("opponent_score");
             int outcome = score == opponentScore ? R.string.social_duel_draw
                     : score > opponentScore ? R.string.social_duel_win : R.string.social_duel_loss;
-            result.addView(ui.body(label(R.string.social_duel_result, label(outcome), score, opponentScore)));
+            result.addView(ui.title(label(R.string.social_duel_result, label(outcome), score, opponentScore), 25));
+            if (isMirror(duel) && !duel.isNull("original_score") && !duel.isNull("original_opponent_score")) {
+                ui.gap(result, 10);
+                result.addView(ui.body(label(R.string.social_mirror_total,
+                        score + duel.optInt("original_score"), opponentScore + duel.optInt("original_opponent_score"))));
+            }
         } else {
+            result.addView(ui.title(label(R.string.social_duel_your_result, score), 25));
+            ui.gap(result, 6);
             result.addView(ui.body(label(R.string.social_waiting)));
         }
         root.addView(result);

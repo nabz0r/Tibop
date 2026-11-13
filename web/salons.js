@@ -212,6 +212,7 @@ function show(section) {
   for (const name of sections) byId(name).hidden = name !== section;
   byId("rooms-link").hidden = section === "welcome";
   byId("studio-link").hidden = !local || section !== "welcome";
+  byId("android-release").hidden = !local;
   if (section === "welcome") {
     renderSavedRooms();
     refreshSavedRooms();

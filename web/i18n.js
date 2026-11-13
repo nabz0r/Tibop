@@ -462,6 +462,13 @@ Retrouvez vos fichiers de parties et téléchargez Lettrine pour Android.|Find y
 Télécharger des parties|Download games
 Utilisez le format CSV pour ouvrir les résultats dans un tableur.|Use CSV to open results in a spreadsheet.
 Lettrine pour Android|Lettrine for Android
+Version 0.10|Version 0.10
+Revanche miroir|Mirror rematch
+Après un duel à chevalets différents dans Amis, rejouez sur le même plateau avec le chevalet de l’autre.|After a Friends duel with different racks, play the same board with each other’s racks.
+Terminez les trois défis d’un week-end pour débloquer ce fond de carte à partager. Retrouvez-le dans votre collection.|Finish all three challenges on a weekend to unlock this share-card background. Find it in your collection.
+Aperçu de Nocturne dorée, une carte bleu nuit avec des tuiles dorées|Preview of Nocturne dorée, a midnight-blue card with golden tiles
+APK Android|Android APK
+AAB Google Play|Google Play AAB
 Version de test à installer sur un appareil Android.|Test version for Android devices.
 Télécharger l’APK|Download APK
 État de la simulation et du service|Simulation and service status
@@ -499,8 +506,8 @@ while (walker.nextNode()) {
   const text = textNode.data.trim();
   if (englishCopy.has(text)) pageCopy.push([textNode, "data", textNode.data, text]);
 }
-for (const element of document.querySelectorAll("[aria-label], [placeholder], [title], meta[name=description]")) {
-  for (const attr of ["aria-label", "placeholder", "title", "content"]) {
+for (const element of document.querySelectorAll("[aria-label], [placeholder], [title], img[alt], meta[name=description]")) {
+  for (const attr of ["aria-label", "placeholder", "title", "alt", "content"]) {
     const value = element.getAttribute(attr);
     if (value && englishCopy.has(value)) pageCopy.push([element, attr, value, value]);
   }

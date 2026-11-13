@@ -56,6 +56,10 @@ record ChallengeLink(LocalDate date, int score, String identity) {
     private String payload() { return VERSION + date + "/" + score + "/" + identity; }
 
     private static String positionIdentity(DailyChallenge challenge, Lexicon lexicon) {
+        return positionIdentity(challenge.position(), lexicon);
+    }
+
+    static String positionIdentity(PracticePosition position, Lexicon lexicon) {
         MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("SHA-256");
@@ -65,7 +69,6 @@ record ChallengeLink(LocalDate date, int score, String identity) {
         digest.update(VERSION.getBytes(StandardCharsets.US_ASCII));
         digest.update(lexicon.hash.getBytes(StandardCharsets.US_ASCII));
         digest.update((byte) 0);
-        PracticePosition position = challenge.position();
         char[] board = position.board();
         boolean[] blanks = position.blanks();
         for (int i = 0; i < board.length; i++) {

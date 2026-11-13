@@ -113,6 +113,14 @@ final class SocialClient {
         request("POST", "/duels/" + segment(duel) + "/rematch", new JSONObject(), callback);
     }
 
+    void mirror(String duel, Callback callback) {
+        request("POST", "/duels/" + segment(duel) + "/mirror", new JSONObject(), callback);
+    }
+
+    void duel(String duel, Callback callback) {
+        request("GET", "/duels/" + segment(duel), null, callback);
+    }
+
     void play(String duel, List<FrenchGame.Tile> tiles, Callback callback) {
         request("POST", "/duels/" + segment(duel) + "/play", placement(tiles), callback);
     }
@@ -216,6 +224,7 @@ final class SocialClient {
             http.setUseCaches(false);
             http.setRequestMethod(method);
             http.setRequestProperty("Accept", "application/json");
+            http.setRequestProperty("X-Lettrine-Duel-Version", "2");
             if (token != null) http.setRequestProperty("Authorization", "Bearer " + token);
             if (body != null) {
                 byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);

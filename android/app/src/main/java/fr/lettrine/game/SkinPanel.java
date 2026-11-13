@@ -12,6 +12,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -19,8 +20,11 @@ import android.widget.Toast;
 import java.util.function.BooleanSupplier;
 
 final class SkinPanel {
+    private enum Category { BOARDS, TILES, CARDS }
+
     private final ViewKit ui;
     private final SkinStore store;
+    private final CardStyleStore cardStyles;
     private final GameStore games;
     private final DailyProgress daily;
     private final Runnable applied;
@@ -28,12 +32,14 @@ final class SkinPanel {
     private final LinearLayout items;
     private final TextView boardsTab;
     private final TextView tilesTab;
+    private final TextView cardsTab;
     private final TextView count;
-    private boolean boards = true;
+    private Category category = Category.BOARDS;
 
     SkinPanel(ViewKit ui, SkinStore store, GameStore games, DailyProgress daily, Runnable applied) {
         this.ui = ui;
         this.store = store;
+        cardStyles = new CardStyleStore(ui.context);
         this.games = games;
         this.daily = daily;
         this.applied = applied;
@@ -56,11 +62,14 @@ final class SkinPanel {
 
         ui.gap(root, 15);
         LinearLayout tabs = ui.row();
-        boardsTab = ui.button(label(R.string.skins_boards), true, () -> select(true));
-        tilesTab = ui.button(label(R.string.skins_tiles), false, () -> select(false));
+        boardsTab = ui.button(label(R.string.skins_boards), true, () -> select(Category.BOARDS));
+        tilesTab = ui.button(label(R.string.skins_tiles), false, () -> select(Category.TILES));
+        cardsTab = ui.button(label(R.string.card_styles), false, () -> select(Category.CARDS));
         ui.weight(tabs, boardsTab);
         ui.space(tabs, 6);
         ui.weight(tabs, tilesTab);
+        ui.space(tabs, 6);
+        ui.weight(tabs, cardsTab);
         root.addView(tabs);
         ui.gap(root, 11);
         count = ui.body("");
@@ -73,21 +82,30 @@ final class SkinPanel {
 
     View view() { return root; }
 
-    private void select(boolean category) {
-        if (boards == category) return;
-        boards = category;
+    private void select(Category category) {
+        if (this.category == category) return;
+        this.category = category;
         render();
     }
 
     private void render() {
-        SkinStore.Inventory inventory = store.refresh(games, daily);
-        SkinStore.Selection selection = inventory.selection();
-        tab(boardsTab, boards);
-        tab(tilesTab, !boards);
+        tab(boardsTab, category == Category.BOARDS);
+        tab(tilesTab, category == Category.TILES);
+        tab(cardsTab, category == Category.CARDS);
         items.removeAllViews();
         int available = 0;
+        if (category == Category.CARDS) {
+            for (CardStyleStore.Style style : CardStyleStore.Style.values()) {
+                if (cardStyles.has(style)) available++;
+                addShareStyle(style);
+            }
+            count.setText(label(R.string.skins_available, available, CardStyleStore.Style.values().length));
+            return;
+        }
+        SkinStore.Inventory inventory = store.refresh(games, daily);
+        SkinStore.Selection selection = inventory.selection();
         int total;
-        if (boards) {
+        if (category == Category.BOARDS) {
             SkinStore.BoardSkin[] skins = SkinStore.BoardSkin.values();
             total = skins.length;
             for (SkinStore.BoardSkin skin : skins) {
@@ -125,29 +143,11 @@ final class SkinPanel {
         card.addView(preview, new LinearLayout.LayoutParams(-1, ui.dp(116)));
         ui.gap(card, 10);
 
-        LinearLayout header = ui.row();
-        TextView title = ui.title(label(name), 25);
-        if (Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
-        ui.weight(header, title);
-        if (active) {
-            TextView badge = ui.text(label(R.string.skins_active), 13, ui.palette.ink(), ui.medium);
-            badge.setBackground(ui.shape(ui.palette.ordinary(), 9));
-            ui.inset(badge, 8, 6);
-            header.addView(badge);
-        } else if (inventory.has(reward)) {
-            TextView action = ui.button(label(R.string.skins_equip), false, () -> {
-                if (!equip.getAsBoolean()) {
-                    Toast.makeText(ui.context, R.string.skins_save_error, Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                render();
-                root.announceForAccessibility(label(R.string.skins_equipped_notice, label(name)));
-                applied.run();
-            });
-            action.setContentDescription(label(R.string.skins_equip_named, label(name)));
-            header.addView(action);
-        }
-        card.addView(header);
+        card.addView(styleHeader(name, active, inventory.has(reward), () -> {
+            if (!equip.getAsBoolean()) return false;
+            applied.run();
+            return true;
+        }));
         card.addView(ui.body(label(detail)));
         if (!inventory.has(reward)) {
             ui.gap(card, 11);
@@ -165,6 +165,50 @@ final class SkinPanel {
         }
         items.addView(card);
         ui.gap(items, 10);
+    }
+
+    private void addShareStyle(CardStyleStore.Style style) {
+        boolean unlocked = cardStyles.has(style);
+        LinearLayout card = ui.card();
+        ui.inset(card, 12, 12);
+        ImageView preview = ScoreCard.preview(ui, style);
+        LinearLayout.LayoutParams bounds = new LinearLayout.LayoutParams(-1, ui.dp(155));
+        preview.setBackground(ui.shape(ui.palette.ordinary(), 12));
+        card.addView(preview, bounds);
+        ui.gap(card, 10);
+        card.addView(styleHeader(style.label, cardStyles.selected() == style, unlocked, () -> cardStyles.equip(style)));
+        card.addView(ui.body(label(style.detail)));
+        if (!unlocked) {
+            ui.gap(card, 8);
+            card.addView(ui.body(label(R.string.card_style_unlock_requirement)));
+        }
+        items.addView(card);
+        ui.gap(items, 10);
+    }
+
+    private View styleHeader(int name, boolean active, boolean unlocked, BooleanSupplier equip) {
+        LinearLayout header = ui.row();
+        TextView title = ui.title(label(name), 25);
+        if (Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
+        ui.weight(header, title);
+        if (active) {
+            TextView badge = ui.text(label(R.string.skins_active), 13, ui.palette.ink(), ui.medium);
+            badge.setBackground(ui.shape(ui.palette.ordinary(), 9));
+            ui.inset(badge, 8, 6);
+            header.addView(badge);
+        } else if (unlocked) {
+            TextView action = ui.button(label(R.string.skins_equip), false, () -> {
+                if (!equip.getAsBoolean()) {
+                    Toast.makeText(ui.context, R.string.skins_save_error, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                render();
+                root.announceForAccessibility(label(R.string.skins_equipped_notice, label(name)));
+            });
+            action.setContentDescription(label(R.string.skins_equip_named, label(name)));
+            header.addView(action);
+        }
+        return header;
     }
 
     private String label(int resource, Object... values) { return ui.context.getString(resource, values); }

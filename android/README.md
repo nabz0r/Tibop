@@ -1,6 +1,6 @@
 # Lettrine pour Android
 
-L’[APK 0.9.0](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe. Le [bundle 0.9.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK 0.10.0](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe. Le [bundle 0.10.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Jouer
 
@@ -8,7 +8,9 @@ L’[APK 0.9.0](artifacts/lettrine.apk) fonctionne en invité hors ligne à part
 - **Bats mon score** partage une carte PNG avec la date, le score et, lorsqu’elle s’applique, la série. Le lien associé mène à une [page d’invitation](https://nabz0r.github.io/scrabnble/defi/) avec le bouton **Ouvrir dans Lettrine**. L’application retrouve le même plateau et le même chevalet, puis compare le coup du destinataire au score partagé. **Copier le lien** est disponible pour les messageries qui séparent les images du texte. Une invitation pour une autre date se joue hors série.
 - **Profil** réunit le pseudo, la photo, le pays, l’âge et le sexe, tous facultatifs. Les exploits se débloquent à partir de vos parties et de vos défis. La photo, le pays, l’âge et le sexe restent sur cet appareil.
 - **Amis** propose une invitation à usage unique, des duels à un coup sur un plateau commun, la revanche et un classement calculé sur les duels terminés entre membres de votre cercle d’amis. Les deux joueurs peuvent jouer à des moments différents. Le score de l’adversaire est dévoilé une fois les deux coups envoyés.
+- **Revanche miroir** apparaît après un duel terminé où chacun avait un chevalet distinct. Rejouez sur le même plateau, chacun avec le chevalet que son ami avait au premier duel. Le résultat affiche aussi le cumul des deux manches. Les deux joueurs utilisent Android 0.10 pour les duels à chevalets distincts. Les anciens duels à chevalet commun gardent la revanche classique.
 - **Tournoi du week-end** se trouve dans **Amis**. Du samedi à 0 h au lundi à 0 h UTC, jouez un coup sur chacun des trois plateaux communs. Le classement entre amis additionne les points des trois défis terminés et attribue la même place en cas d’égalité. L’app affiche les heures dans votre fuseau. Le tournoi et l’envoi des coups demandent une connexion au serveur social.
+- **Nocturne dorée** se débloque dès que le serveur confirme les trois coups d’un même week-end. Le fond est appliqué aux cartes **Bats mon score** et reste disponible hors ligne sur l’appareil. L’onglet **Cartes** de la Collection permet de le prévisualiser ou de revenir au fond classique. Sur un autre appareil, retrouver le même compte social puis ouvrir le tournoi restaure le déblocage.
 - **Collection**, dans **Profil**, permet de choisir séparément le plateau et les tuiles. La porcelaine se débloque après un défi quotidien, Marée après trois jours de défi, Ambre après trois parties solo terminées et Ardoise après cinq. Les parties et défis déjà enregistrés comptent. La collection fonctionne hors ligne.
 - **Comment jouer**, depuis l’accueil, propose un premier coup guidé et une page sur les règles, NAB et le modèle d’explication embarqué. Dans un défi, faites glisser une tuile depuis le chevalet ou touchez une lettre puis une case. Vous pouvez déplacer un jeton déjà posé, zoomer dans les deux sens et vérifier la validité du coup avant de l’envoyer.
 - **Premier défi** ouvre une position courte depuis l’accueil. Prolongez le mot sur le plateau, validez votre pose, puis comparez votre score à la proposition de NAB. Vous pouvez retenter le défi à tout moment.
@@ -106,5 +108,11 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 - Sur Android 16 en mode avion, le solo et la partie locale ont gardé des tours indépendants. Le brouillon a survécu au changement de partie et au redémarrage. L’abandon d’une partie a conservé les autres, la sauvegarde d’origine et l’historique.
 - Le bundle est signé et validé avec `bundletool`. L’installation des APK issus du bundle et le tutoriel en mode avion ont été vérifiés sur Android 16 avec des pages de 16 Kio.
 - La variante de démonstration AdMob a présenté les choix UMP et une vidéo de test Google. La récompense a ouvert le défi après un redémarrage en mode avion, sans effet sur les fichiers de partie et la progression quotidienne.
+
+## Vérification de la version 0.10.0
+
+- Deux comptes invités ont terminé un duel et sa revanche sur le même plateau avec leurs chevalets échangés. Deux demandes simultanées retrouvent la même revanche. La migration SQLite a conservé un duel de la 0.9 et sa revanche classique.
+- Le fond Nocturne dorée est resté verrouillé jusqu’au troisième défi validé. Il est resté accessible dans la Collection après redémarrage en mode avion. Le partage a généré une carte de 1 080 × 1 080 pixels avec le fond débloqué.
+- La mise à jour directe sur Android 8 a conservé les fichiers des parties et de l’historique. Les 29 tests Android et les 24 tests Rust passent. Le scénario Rust ignoré par défaut lance le serveur local utilisé pour les essais du tournoi sur émulateur.
 
 L’APK joue en français avec le moteur embarqué. Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.

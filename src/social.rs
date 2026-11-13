@@ -7,7 +7,7 @@ use axum::{
     response::{IntoResponse, Response},
     routing::{delete, get, post},
 };
-use rand::RngExt;
+use rand::{RngExt, seq::SliceRandom};
 use rusqlite::{Connection, OptionalExtension, Row, Transaction, TransactionBehavior, params};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -18,6 +18,7 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
+use wolges::movegen::Play;
 
 mod tournament;
 
@@ -72,6 +73,12 @@ const SCHEMA: &str = "
     CREATE INDEX IF NOT EXISTS social_duels_b ON social_duels(b,created_at);
     CREATE UNIQUE INDEX IF NOT EXISTS social_active_duel ON social_duels(a,b)
         WHERE score_a IS NULL OR score_b IS NULL;
+    CREATE TABLE IF NOT EXISTS social_duel_deals(
+        duel_id TEXT PRIMARY KEY REFERENCES social_duels(id) ON DELETE CASCADE,
+        rack_a TEXT NOT NULL CHECK(length(rack_a)=7),
+        rack_b TEXT NOT NULL CHECK(length(rack_b)=7),
+        mirror_of TEXT UNIQUE REFERENCES social_duels(id) ON DELETE CASCADE
+    );
     CREATE TABLE IF NOT EXISTS social_google_nonces(
         session TEXT PRIMARY KEY REFERENCES social_sessions(token) ON DELETE CASCADE,
         nonce TEXT NOT NULL,
@@ -128,6 +135,94 @@ struct Puzzle {
     board_codes: Vec<u8>,
     #[serde(skip)]
     rack_codes: Vec<u8>,
+}
+
+impl Puzzle {
+    fn for_rack(&self, engine: &Engine, rack: Option<&str>) -> Value {
+        let rack = rack.unwrap_or(self.rack);
+        let mut digest = Sha256::new();
+        digest.update(b"v1/");
+        digest.update(engine.digest.as_bytes());
+        digest.update([0]);
+        for &tile in &self.board_codes {
+            digest.update([
+                if tile == 0 {
+                    0
+                } else {
+                    engine.letter(tile) as u8
+                },
+                0,
+            ]);
+        }
+        digest.update(rack.as_bytes());
+        let identity = format!("{:x}", digest.finalize());
+        json!({
+            "date":self.date, "opening_word":self.opening_word,
+            "opening_start":self.opening_start, "opening_end":self.opening_end,
+            "rack":rack, "identity":&identity[..24], "catalog_identity":self.identity,
+        })
+    }
+
+    fn deal(&self, engine: &Engine) -> Api<[String; 2]> {
+        let alphabet = engine.config.alphabet();
+        let mut counts = (0..alphabet.len())
+            .map(|tile| alphabet.freq(tile))
+            .collect::<Vec<_>>();
+        for &tile in &self.board_codes {
+            if tile != 0 {
+                counts[usize::from(tile)] -= 1;
+            }
+        }
+        let mut bag = counts
+            .iter()
+            .enumerate()
+            .skip(1)
+            .flat_map(|(tile, &count)| std::iter::repeat_n(tile as u8, usize::from(count)))
+            .collect::<Vec<_>>();
+        let mut rng = rand::rng();
+        let mut generator = engine.generator();
+        let mut closest = None;
+        for _ in 0..32 {
+            let (dealt, _) = bag.partial_shuffle(&mut rng, 14);
+            let (left, right) = dealt.split_at(7);
+            let mut sorted_left = left.to_vec();
+            let mut sorted_right = right.to_vec();
+            sorted_left.sort_unstable();
+            sorted_right.sort_unstable();
+            if sorted_left == sorted_right {
+                continue;
+            }
+            let mut best_score = |rack: &[u8]| {
+                engine.generate(&mut generator, &self.board_codes, rack, 8);
+                generator
+                    .plays
+                    .iter()
+                    .filter_map(|entry| match &entry.play {
+                        Play::Place { score, .. } => Some(wolges::equity::descale_score(*score)),
+                        _ => None,
+                    })
+                    .max()
+            };
+            let (Some(a), Some(b)) = (best_score(left), best_score(right)) else {
+                continue;
+            };
+            let spread = a.abs_diff(b);
+            let racks =
+                [left, right].map(|rack| rack.iter().map(|&tile| engine.letter(tile)).collect());
+            if spread <= 5 {
+                return Ok(racks);
+            }
+            if closest.as_ref().is_none_or(|(best, _)| spread < *best) {
+                closest = Some((spread, racks));
+            }
+        }
+        closest.map(|(_, racks)| racks).ok_or_else(|| {
+            err(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "Aucun tirage jouable. Réessayez.",
+            )
+        })
+    }
 }
 
 struct Social {
@@ -214,8 +309,10 @@ fn router(app: Arc<Social>) -> Router {
         .route("/api/social/invites", post(invite))
         .route("/api/social/invites/accept", post(accept))
         .route("/api/social/duels", post(create_duel))
+        .route("/api/social/duels/{id}", get(get_duel))
         .route("/api/social/duels/{id}/play", post(play))
         .route("/api/social/duels/{id}/rematch", post(rematch))
+        .route("/api/social/duels/{id}/mirror", post(mirror))
         .route("/api/social/google/challenge", post(google_challenge))
         .route("/api/social/google", post(google_link))
         .route("/api/social/tournament", get(tournament::get_weekend))
@@ -615,10 +712,20 @@ struct Duel {
     move_a: Option<String>,
     move_b: Option<String>,
     rematch_id: Option<String>,
+    deal: Option<[String; 2]>,
+    mirror_of: Option<String>,
+    mirror_id: Option<String>,
+    original_scores: Option<[i32; 2]>,
 }
 
 const DUEL_SELECT: &str = "SELECT d.id,d.a,d.b,d.puzzle,d.score_a,d.score_b,d.move_a,d.move_b,
-    (SELECT r.id FROM social_duels r WHERE r.rematch_of=d.id) FROM social_duels d";
+    (SELECT r.id FROM social_duels r WHERE r.rematch_of=d.id),
+    deals.rack_a,deals.rack_b,deals.mirror_of,
+    (SELECT m.duel_id FROM social_duel_deals m WHERE m.mirror_of=d.id),
+    original.score_a,original.score_b
+    FROM social_duels d
+    LEFT JOIN social_duel_deals deals ON deals.duel_id=d.id
+    LEFT JOIN social_duels original ON original.id=deals.mirror_of";
 
 fn duel_row(row: &Row<'_>) -> rusqlite::Result<Duel> {
     Ok(Duel {
@@ -631,7 +738,37 @@ fn duel_row(row: &Row<'_>) -> rusqlite::Result<Duel> {
         move_a: row.get(6)?,
         move_b: row.get(7)?,
         rematch_id: row.get(8)?,
+        deal: row
+            .get::<_, Option<String>>(9)?
+            .zip(row.get::<_, Option<String>>(10)?)
+            .map(|(a, b)| [a, b]),
+        mirror_of: row.get(11)?,
+        mirror_id: row.get(12)?,
+        original_scores: row
+            .get::<_, Option<i32>>(13)?
+            .zip(row.get::<_, Option<i32>>(14)?)
+            .map(|(a, b)| [a, b]),
     })
+}
+
+impl Duel {
+    fn seat(&self, user: &str) -> usize {
+        usize::from(self.a != user)
+    }
+
+    fn rack(&self, user: &str) -> Option<&str> {
+        self.deal
+            .as_ref()
+            .map(|racks| racks[self.seat(user)].as_str())
+    }
+
+    fn completed(&self) -> bool {
+        self.score_a.is_some() && self.score_b.is_some()
+    }
+
+    fn can_mirror(&self) -> bool {
+        self.completed() && self.mirror_of.is_none() && self.deal.is_some()
+    }
 }
 
 fn duel(db: &Connection, id: &str, user: &str) -> Api<Duel> {
@@ -664,10 +801,19 @@ fn duel_json(app: &Social, db: &Connection, duel: &Duel, user: &str) -> Api<Valu
         "your_turn"
     };
     let puzzle = &app.puzzles[duel.puzzle];
+    let seat = duel.seat(user);
+    let (original_score, original_opponent_score) =
+        duel.original_scores.map_or((None, None), |scores| {
+            (Some(scores[seat]), Some(scores[1 - seat]))
+        });
     Ok(json!({
-        "id":duel.id, "opponent":profile(db,other)?, "date":puzzle.date, "puzzle":puzzle,
+        "id":duel.id, "opponent":profile(db,other)?, "date":puzzle.date,
+        "puzzle":puzzle.for_rack(&app.engine,duel.rack(user)),
         "score":score, "opponent_score":if completed {opponent_score} else {None},
-        "status":status, "winner":winner, "rematch_id":duel.rematch_id
+        "status":status, "winner":winner, "rematch_id":duel.rematch_id,
+        "kind":if duel.mirror_of.is_some() {"mirror"} else {"classic"},
+        "mirror_available":duel.can_mirror() && duel.mirror_id.is_none(), "mirror_id":duel.mirror_id,
+        "original_score":original_score, "original_opponent_score":original_opponent_score,
     }))
 }
 
@@ -696,6 +842,7 @@ fn insert_duel(
     a: &str,
     b: &str,
     previous: Option<&str>,
+    separate_racks: bool,
 ) -> Api<Duel> {
     if !friends(db, a, b)? {
         return Err(missing("Ami introuvable."));
@@ -724,12 +871,26 @@ fn insert_duel(
         |row| row.get(0),
     )?;
     let id = random_hex::<16>();
+    let puzzle = count % app.puzzles.len() as i64;
     db.execute(
         "INSERT INTO social_duels(id,a,b,puzzle,created_at,rematch_of)
         VALUES(?1,?2,?3,?4,?5,?6)",
-        params![id, a, b, count % app.puzzles.len() as i64, now(), previous],
+        params![id, a, b, puzzle, now(), previous],
     )?;
+    if separate_racks {
+        let [rack_a, rack_b] = app.puzzles[puzzle as usize].deal(&app.engine)?;
+        db.execute(
+            "INSERT INTO social_duel_deals(duel_id,rack_a,rack_b) VALUES(?1,?2,?3)",
+            params![id, rack_a, rack_b],
+        )?;
+    }
     duel(db, &id, a)
+}
+
+fn supports_separate_racks(headers: &HeaderMap) -> bool {
+    headers
+        .get("x-lettrine-duel-version")
+        .is_some_and(|value| value == "2")
 }
 
 async fn create_duel(
@@ -738,12 +899,30 @@ async fn create_duel(
     body: std::result::Result<Json<DuelRequest>, JsonRejection>,
 ) -> Api<Json<Value>> {
     let Json(body) = body.map_err(json_error)?;
+    let separate_racks = supports_separate_racks(&headers);
     let session = auth(headers)?;
     write(app, move |app, db| {
         let id = user_id(db, &session)?;
         let (a, b) = pair(&id, &body.friend_id);
-        let duel = insert_duel(app, db, a, b, None)?;
+        let duel = insert_duel(app, db, a, b, None, separate_racks)?;
         Ok(Json(json!({"duel":duel_json(app,db,&duel,&id)?})))
+    })
+    .await
+}
+
+async fn get_duel(
+    State(app): State<Arc<Social>>,
+    headers: HeaderMap,
+    Path(duel_id): Path<String>,
+) -> Api<Json<Value>> {
+    let session = auth(headers)?;
+    write(app, move |app, db| {
+        let user = user_id(db, &session)?;
+        let duel = duel(db, &duel_id, &user)?;
+        if !friends(db, &duel.a, &duel.b)? {
+            return Err(missing("Duel indisponible."));
+        }
+        Ok(Json(json!({"duel":duel_json(app,db,&duel,&user)?})))
     })
     .await
 }
@@ -753,15 +932,63 @@ async fn rematch(
     headers: HeaderMap,
     Path(duel_id): Path<String>,
 ) -> Api<Json<Value>> {
+    let separate_racks = supports_separate_racks(&headers);
     let session = auth(headers)?;
     write(app, move |app, db| {
         let user = user_id(db, &session)?;
         let previous = duel(db, &duel_id, &user)?;
-        if previous.score_a.is_none() || previous.score_b.is_none() {
+        if !previous.completed() {
             return Err(conflict("Terminez le duel avant de proposer une revanche."));
         }
-        let duel = insert_duel(app, db, &previous.a, &previous.b, Some(&duel_id))?;
+        let duel = insert_duel(
+            app,
+            db,
+            &previous.a,
+            &previous.b,
+            Some(&duel_id),
+            separate_racks,
+        )?;
         Ok(Json(json!({"duel":duel_json(app,db,&duel,&user)?})))
+    })
+    .await
+}
+
+async fn mirror(
+    State(app): State<Arc<Social>>,
+    headers: HeaderMap,
+    Path(duel_id): Path<String>,
+) -> Api<Json<Value>> {
+    let session = auth(headers)?;
+    write(app, move |app, db| {
+        let user = user_id(db, &session)?;
+        let previous = duel(db, &duel_id, &user)?;
+        if !friends(db, &previous.a, &previous.b)? {
+            return Err(missing("Duel indisponible."));
+        }
+        if let Some(mirror_id) = &previous.mirror_id {
+            let existing = duel(db, mirror_id, &user)?;
+            return Ok(Json(json!({"duel":duel_json(app,db,&existing,&user)?})));
+        }
+        if !previous.can_mirror() {
+            return Err(conflict(
+                "La revanche miroir est disponible après un duel à deux chevalets.",
+            ));
+        }
+        if active_duel(db, &previous.a, &previous.b)?.is_some() {
+            return Err(conflict("Un duel est déjà en cours avec cet ami."));
+        }
+        let [rack_a, rack_b] = previous.deal.expect("duel à deux chevalets");
+        let id = random_hex::<16>();
+        db.execute(
+            "INSERT INTO social_duels(id,a,b,puzzle,created_at) VALUES(?1,?2,?3,?4,?5)",
+            params![id, previous.a, previous.b, previous.puzzle as i64, now()],
+        )?;
+        db.execute(
+            "INSERT INTO social_duel_deals(duel_id,rack_a,rack_b,mirror_of) VALUES(?1,?2,?3,?4)",
+            params![id, rack_b, rack_a, duel_id],
+        )?;
+        let mirror = duel(db, &id, &user)?;
+        Ok(Json(json!({"duel":duel_json(app,db,&mirror,&user)?})))
     })
     .await
 }
@@ -798,18 +1025,17 @@ impl MoveRequest {
     }
 
     fn score(&self, app: &Social, puzzle: &Puzzle) -> Api<i32> {
+        self.score_with_rack(app, puzzle, &puzzle.rack_codes)
+    }
+
+    fn score_with_rack(&self, app: &Social, puzzle: &Puzzle, rack: &[u8]) -> Api<i32> {
         let placements: Vec<_> = self
             .tiles
             .iter()
             .map(|tile| (tile.position, tile.rack_index, tile.letter))
             .collect();
-        Game::score_position(
-            &app.engine,
-            &puzzle.board_codes,
-            &puzzle.rack_codes,
-            &placements,
-        )
-        .map_err(|message| invalid(&message))
+        Game::score_position(&app.engine, &puzzle.board_codes, rack, &placements)
+            .map_err(|message| invalid(&message))
     }
 }
 
@@ -831,17 +1057,29 @@ async fn play(
         }
         let seat_a = previous.a == user;
         let prior_move = if seat_a {
-            previous.move_a
+            previous.move_a.as_ref()
         } else {
-            previous.move_b
+            previous.move_b.as_ref()
         };
         if let Some(prior_move) = prior_move {
-            if canonical != prior_move {
+            if &canonical != prior_move {
                 return Err(conflict("Vous avez déjà joué ce duel."));
             }
         } else {
             let puzzle = &app.puzzles[previous.puzzle];
-            let score = body.score(app, puzzle)?;
+            let score = match previous.rack(&user) {
+                Some(rack) => {
+                    let rack = rack
+                        .chars()
+                        .map(|letter| app.engine.symbol_id(letter))
+                        .collect::<Result<Vec<_>>>()
+                        .map_err(|_| {
+                            err(StatusCode::INTERNAL_SERVER_ERROR, "Chevalet indisponible.")
+                        })?;
+                    body.score_with_rack(app, puzzle, &rack)?
+                }
+                None => body.score(app, puzzle)?,
+            };
             let update = if seat_a {
                 "UPDATE social_duels SET score_a=?1,move_a=?2 WHERE id=?3"
             } else {
@@ -1120,6 +1358,357 @@ mod tests {
         body
     }
 
+    fn candidate(app: &Social, puzzle: &Puzzle, rack: &str, other: &str) -> Value {
+        let rack_codes = rack
+            .chars()
+            .map(|tile| app.engine.symbol_id(tile).unwrap())
+            .collect::<Vec<_>>();
+        let mut generator = app.engine.generator();
+        app.engine
+            .generate(&mut generator, &puzzle.board_codes, &rack_codes, 128);
+        let moves = generator
+            .plays
+            .iter()
+            .filter_map(|entry| {
+                let (_, tiles, _) = app.engine.describe(&puzzle.board_codes, &entry.play);
+                if tiles.is_empty() {
+                    return None;
+                }
+                let mut used = [false; 7];
+                let moves = tiles
+                    .into_iter()
+                    .map(|tile| {
+                        let index = rack
+                            .chars()
+                            .enumerate()
+                            .find(|&(index, letter)| !used[index] && letter == tile.letter)
+                            .unwrap()
+                            .0;
+                        used[index] = true;
+                        json!({"position":usize::from(tile.row) * 15 + usize::from(tile.col),
+                    "rack_index":index, "letter":tile.letter})
+                    })
+                    .collect::<Vec<_>>();
+                Some(moves)
+            })
+            .collect::<Vec<_>>();
+        let best = moves
+            .iter()
+            .find(|tiles| {
+                tiles.iter().any(|tile| {
+                    let index = tile["rack_index"].as_u64().unwrap() as usize;
+                    other.as_bytes()[index] != tile["letter"].as_str().unwrap().as_bytes()[0]
+                })
+            })
+            .or_else(|| moves.first())
+            .expect("chevalet jouable");
+        json!({"tiles":best})
+    }
+
+    #[test]
+    fn every_catalog_board_supports_two_playable_racks_from_one_bag() {
+        let app = Social::open(FilePath::new(":memory:"), engine()).unwrap();
+        let alphabet = app.engine.config.alphabet();
+        for puzzle in &app.puzzles {
+            let [a, b] = puzzle.deal(&app.engine).unwrap();
+            assert_ne!(
+                puzzle.for_rack(&app.engine, Some(&a))["identity"],
+                puzzle.for_rack(&app.engine, Some(&b))["identity"]
+            );
+            assert_eq!(
+                puzzle.for_rack(&app.engine, None)["identity"],
+                puzzle.identity
+            );
+            let mut remaining = (0..alphabet.len())
+                .map(|tile| alphabet.freq(tile))
+                .collect::<Vec<_>>();
+            for &tile in &puzzle.board_codes {
+                if tile != 0 {
+                    remaining[usize::from(tile)] -= 1;
+                }
+            }
+            for (rack, other) in [(&a, &b), (&b, &a)] {
+                let rack_codes = rack
+                    .chars()
+                    .map(|letter| app.engine.symbol_id(letter).unwrap())
+                    .collect::<Vec<_>>();
+                assert_eq!(rack_codes.len(), 7);
+                for &tile in &rack_codes {
+                    let remaining = &mut remaining[usize::from(tile)];
+                    assert_ne!(*remaining, 0);
+                    *remaining -= 1;
+                }
+                let moves: MoveRequest =
+                    serde_json::from_value(candidate(&app, puzzle, rack, other)).unwrap();
+                assert!(
+                    moves
+                        .prepare()
+                        .unwrap()
+                        .score_with_rack(&app, puzzle, &rack_codes)
+                        .is_ok()
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn mirror_swaps_racks_once_without_changing_the_board_or_leaking_play() {
+        let app = Arc::new(Social::open(FilePath::new(":memory:"), engine()).unwrap());
+        let (base, server) = server(app.clone()).await;
+        let a = "a".repeat(64);
+        let b = "b".repeat(64);
+        let c = "c".repeat(64);
+        for (token, name) in [(&a, "Alice"), (&b, "Benoît"), (&c, "Clara")] {
+            request(
+                &base,
+                Method::POST,
+                "session",
+                "",
+                json!({"token":token,"nickname":name}),
+                StatusCode::OK,
+            )
+            .await;
+        }
+        let bob = request(&base, Method::GET, "me", &b, Value::Null, StatusCode::OK).await;
+        let id_b = bob["profile"]["id"].as_str().unwrap();
+        let invitation = request(
+            &base,
+            Method::POST,
+            "invites",
+            &a,
+            json!({}),
+            StatusCode::OK,
+        )
+        .await;
+        request(
+            &base,
+            Method::POST,
+            "invites/accept",
+            &b,
+            json!({"token":invitation["token"]}),
+            StatusCode::OK,
+        )
+        .await;
+        let response = reqwest::Client::new()
+            .post(format!("{base}/api/social/duels"))
+            .bearer_auth(&a)
+            .header("X-Lettrine-Duel-Version", "2")
+            .json(&json!({"friend_id":id_b}))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let response: Value = response.json().await.unwrap();
+        let a_classic = &response["duel"];
+        let id = a_classic["id"].as_str().unwrap();
+        let classic_path = format!("duels/{id}");
+        let classic_play = format!("{classic_path}/play");
+        let mirror_path = format!("{classic_path}/mirror");
+        let b_classic = request(
+            &base,
+            Method::GET,
+            &classic_path,
+            &b,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
+        let a_puzzle = &a_classic["puzzle"];
+        let b_puzzle = &b_classic["duel"]["puzzle"];
+        let rack_a = a_puzzle["rack"].as_str().unwrap();
+        let rack_b = b_puzzle["rack"].as_str().unwrap();
+        assert_ne!(rack_a, rack_b);
+        assert_ne!(a_puzzle["identity"], b_puzzle["identity"]);
+        assert_eq!(a_classic["kind"], "classic");
+        assert_eq!(a_classic["mirror_available"], false);
+        assert!(a_puzzle.get("reference").is_none() && a_classic.get("opponent_rack").is_none());
+        for field in [
+            "date",
+            "catalog_identity",
+            "opening_word",
+            "opening_start",
+            "opening_end",
+        ] {
+            assert_eq!(a_puzzle[field], b_puzzle[field]);
+        }
+        request(
+            &base,
+            Method::GET,
+            &classic_path,
+            &c,
+            Value::Null,
+            StatusCode::NOT_FOUND,
+        )
+        .await;
+        request(
+            &base,
+            Method::POST,
+            &mirror_path,
+            &c,
+            json!({}),
+            StatusCode::NOT_FOUND,
+        )
+        .await;
+        request(
+            &base,
+            Method::POST,
+            &mirror_path,
+            &a,
+            json!({}),
+            StatusCode::CONFLICT,
+        )
+        .await;
+
+        let move_a = candidate(&app, &app.puzzles[0], rack_a, rack_b);
+        let move_b = candidate(&app, &app.puzzles[0], rack_b, rack_a);
+        let first = request(
+            &base,
+            Method::POST,
+            &classic_play,
+            &a,
+            move_a.clone(),
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(first["duel"]["status"], "waiting");
+        assert!(first["duel"]["opponent_score"].is_null());
+        let finished = request(
+            &base,
+            Method::POST,
+            &classic_play,
+            &b,
+            move_b.clone(),
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(finished["duel"]["mirror_available"], true);
+        let (a_mirror, b_mirror) = tokio::join!(
+            request(
+                &base,
+                Method::POST,
+                &mirror_path,
+                &a,
+                json!({}),
+                StatusCode::OK
+            ),
+            request(
+                &base,
+                Method::POST,
+                &mirror_path,
+                &b,
+                json!({}),
+                StatusCode::OK
+            ),
+        );
+        let id_m = a_mirror["duel"]["id"].as_str().unwrap();
+        assert_eq!(a_mirror["duel"]["id"], b_mirror["duel"]["id"]);
+        assert_ne!(id, id_m);
+        assert_eq!(a_mirror["duel"]["kind"], "mirror");
+        assert_eq!(a_mirror["duel"]["puzzle"], *b_puzzle);
+        assert_eq!(b_mirror["duel"]["puzzle"], *a_puzzle);
+        assert_eq!(a_mirror["duel"]["original_score"], first["duel"]["score"]);
+        assert_eq!(
+            a_mirror["duel"]["original_opponent_score"],
+            finished["duel"]["score"]
+        );
+        assert!(a_mirror["duel"]["opponent_score"].is_null());
+        let original = request(
+            &base,
+            Method::GET,
+            &classic_path,
+            &b,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(original["duel"]["mirror_id"], id_m);
+        assert_eq!(original["duel"]["mirror_available"], false);
+        let m_play = format!("duels/{id_m}/play");
+        if move_a["tiles"].as_array().unwrap().iter().any(|tile| {
+            rack_b.as_bytes()[tile["rack_index"].as_u64().unwrap() as usize]
+                != tile["letter"].as_str().unwrap().as_bytes()[0]
+        }) {
+            request(
+                &base,
+                Method::POST,
+                &m_play,
+                &a,
+                move_a.clone(),
+                StatusCode::BAD_REQUEST,
+            )
+            .await;
+        }
+        let replayed = request(&base, Method::POST, &m_play, &a, move_b, StatusCode::OK).await;
+        assert_eq!(replayed["duel"]["score"], finished["duel"]["score"]);
+        let complete = request(&base, Method::POST, &m_play, &b, move_a, StatusCode::OK).await;
+        assert_eq!(complete["duel"]["score"], first["duel"]["score"]);
+        assert_eq!(complete["duel"]["mirror_available"], false);
+        request(
+            &base,
+            Method::POST,
+            &format!("duels/{id_m}/mirror"),
+            &a,
+            json!({}),
+            StatusCode::CONFLICT,
+        )
+        .await;
+        let regular = request(
+            &base,
+            Method::POST,
+            &format!("{classic_path}/rematch"),
+            &a,
+            json!({}),
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(regular["duel"]["kind"], "classic");
+        assert_ne!(regular["duel"]["date"], a_classic["date"]);
+        request(
+            &base,
+            Method::POST,
+            &format!("friends/{id_b}/block"),
+            &a,
+            json!({}),
+            StatusCode::OK,
+        )
+        .await;
+        request(
+            &base,
+            Method::GET,
+            &format!("duels/{id_m}"),
+            &b,
+            Value::Null,
+            StatusCode::NOT_FOUND,
+        )
+        .await;
+        request(
+            &base,
+            Method::POST,
+            &mirror_path,
+            &b,
+            json!({}),
+            StatusCode::NOT_FOUND,
+        )
+        .await;
+        request(
+            &base,
+            Method::DELETE,
+            "profile",
+            &a,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
+        let db = app.db.lock().unwrap();
+        assert_eq!(
+            db.query_row("SELECT count(*) FROM social_duel_deals", [], |row| row
+                .get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
+        server.abort();
+    }
+
     #[tokio::test]
     async fn guests_can_accept_play_rematch_and_block_without_leaking_placements() {
         let app = Arc::new(Social::open(FilePath::new(":memory:"), engine()).unwrap());
@@ -1206,6 +1795,7 @@ mod tests {
             "31f9f7d95680b9d54ef6d063"
         );
         assert_eq!(duel["duel"]["puzzle"]["rack"], "TEEATES");
+        assert_eq!(duel["duel"]["mirror_available"], false);
         assert!(duel["duel"]["puzzle"].get("reference").is_none());
         let submission = format!("duels/{id}/play");
         let simple = json!({"tiles":[{"position":116,"rack_index":6,"letter":"S"}]});
@@ -1276,6 +1866,16 @@ mod tests {
         assert_eq!(completed["duel"]["score"], 17);
         assert_eq!(completed["duel"]["opponent_score"], 15);
         assert_eq!(completed["duel"]["winner"], id_b);
+        assert_eq!(completed["duel"]["mirror_available"], false);
+        request(
+            &base,
+            Method::POST,
+            &format!("duels/{id}/mirror"),
+            &b,
+            json!({}),
+            StatusCode::CONFLICT,
+        )
+        .await;
         let ranks = request(&base, Method::GET, "me", &a, Value::Null, StatusCode::OK).await;
         assert_eq!(ranks["ranking"][0]["wins"], 1);
         assert_eq!(ranks["ranking"][0]["id"], id_b);
@@ -1341,6 +1941,44 @@ mod tests {
             0
         );
         server.abort();
+    }
+
+    #[test]
+    fn existing_duel_keeps_its_saved_state_and_catalog_rack_after_upgrade() {
+        let path =
+            std::env::temp_dir().join(format!("lettrine-duel-{}.sqlite", random_hex::<16>()));
+        let a = "a";
+        let b = "b";
+        {
+            let db = Connection::open(&path).unwrap();
+            db.execute_batch(SCHEMA).unwrap();
+            db.execute_batch(
+                "DROP TABLE social_duel_deals;
+                INSERT INTO social_users(id,nickname) VALUES ('a','Alice'),('b','Benoît');
+                INSERT INTO social_friends(a,b) VALUES ('a','b');
+                INSERT INTO social_duels(id,a,b,puzzle,score_a,move_a,created_at)
+                    VALUES ('legacy','a','b',0,15,'legacy move',1);",
+            )
+            .unwrap();
+        }
+        {
+            let app = Social::open(&path, engine()).unwrap();
+            let db = app.db.lock().unwrap();
+            let legacy = duel(&db, "legacy", a).unwrap();
+            assert_eq!(legacy.move_a.as_deref(), Some("legacy move"));
+            let alice = duel_json(&app, &db, &legacy, a).unwrap();
+            let bob = duel_json(&app, &db, &legacy, b).unwrap();
+            assert_eq!(alice["puzzle"], bob["puzzle"]);
+            assert_eq!(alice["puzzle"]["rack"], "TEEATES");
+            assert_eq!(alice["puzzle"]["identity"], "31f9f7d95680b9d54ef6d063");
+            assert_eq!(alice["status"], "waiting");
+            assert_eq!(alice["score"], 15);
+            assert_eq!(bob["status"], "your_turn");
+            assert!(bob["opponent_score"].is_null());
+            assert_eq!(bob["mirror_available"], false);
+            assert!(active_duel(&db, a, b).unwrap().is_some());
+        }
+        std::fs::remove_file(&path).unwrap();
     }
 
     #[test]

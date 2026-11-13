@@ -147,6 +147,14 @@ fn view(app: &Social, db: &Connection, weekend: Weekend, user: &str) -> Api<Valu
         }));
         ranking = standings(db, weekend, user)?;
     }
+    let card_background_unlocked: bool = db.query_row(
+        "SELECT EXISTS(
+            SELECT 1 FROM social_tournament_scores WHERE user_id=?1
+            GROUP BY weekend HAVING count(*)=?2
+        )",
+        params![user, SLOTS as i64],
+        |row| row.get(0),
+    )?;
     Ok(json!({
         "id":weekend.id,
         "status":weekend.status,
@@ -156,6 +164,7 @@ fn view(app: &Social, db: &Connection, weekend: Weekend, user: &str) -> Api<Valu
         "slots":slots,
         "completed":scores.iter().flatten().count(),
         "total":scores.iter().flatten().sum::<i32>(),
+        "card_background_unlocked":card_background_unlocked,
         "ranking":ranking,
     }))
 }
@@ -285,6 +294,7 @@ mod tests {
         assert_eq!(upcoming["next_starts_at"], START);
         assert_eq!(upcoming["status"], "upcoming");
         assert_eq!(upcoming["slots"], json!([]));
+        assert_eq!(upcoming["card_background_unlocked"], false);
         let post_paths: Vec<_> = (1..=SLOTS)
             .map(|number| format!("tournament/{FIRST_WEEKEND}/slots/{number}/play"))
             .collect();
@@ -362,6 +372,7 @@ mod tests {
         assert_eq!(one["total"], 15);
         assert_eq!(one["completed"], 1);
         assert_eq!(one["ranking"], json!([]));
+        assert_eq!(one["card_background_unlocked"], false);
         let duplicate = request(
             &base,
             Method::POST,
@@ -396,6 +407,7 @@ mod tests {
                 .await;
                 assert_eq!(state["completed"], index + 1);
                 assert_eq!(state["slots"][index]["score"], [15, 8, 8][index]);
+                assert_eq!(state["card_background_unlocked"], index + 1 == SLOTS);
             }
         }
         let final_state = request(
@@ -429,6 +441,7 @@ mod tests {
         )
         .await;
         assert_eq!(closed["status"], "closed");
+        assert_eq!(closed["card_background_unlocked"], true);
         assert_eq!(closed["ranking"], final_state["ranking"]);
         let d = "d".repeat(64);
         request(
@@ -472,7 +485,18 @@ mod tests {
         .await;
         assert_eq!(next["id"], FIRST_WEEKEND + WEEK_DAYS);
         assert_eq!(next["completed"], 0);
+        assert_eq!(next["card_background_unlocked"], true);
         assert_eq!(next["ranking"], json!([]));
+        let other_account = request(
+            &base,
+            Method::GET,
+            endpoint,
+            &d,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(other_account["card_background_unlocked"], false);
         assert_ne!(next["slots"][0]["puzzle"], open["slots"][0]["puzzle"]);
         request(
             &base,

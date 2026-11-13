@@ -294,9 +294,16 @@ input[type="search"], input[type="number"], select { min-width: 0; min-height: 3
 .export-row p, .app-download p { color: var(--muted); font-size: 12px; margin-top: 2px; }
 .export-row:last-child { margin-bottom: 6px; }
 .export-actions { display: flex; gap: 5px; flex: 0 0 auto; }
-.app-download { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 17px 19px; background: #edf1e3; }
+.app-download { display: grid; gap: 14px; padding: 17px 19px; background: #edf1e3; }
 .app-download .export-actions { flex: 0 1 auto; flex-wrap: wrap; }
 .app-download h2 { font-size: 20px; line-height: 1.15; }
+.app-download .app-release-version { color: var(--green); font-weight: 700; }
+.app-release { display: grid; gap: 12px; margin: 0; padding-block: 12px; border-block: 1px solid var(--line); }
+.app-release dt { color: var(--ink); font-size: 14px; font-weight: 740; }
+.app-release dd { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+.app-card-preview dd { display: grid; grid-template-columns: minmax(70px, 110px) minmax(0, 1fr); align-items: center; gap: 10px; }
+.app-card-preview img { width: 100%; height: auto; border-radius: 8px; }
+.app-card-preview p { margin: 0; }
 .import-form { display: grid; gap: 7px; margin: 0 19px 18px; }
 .import-picker { display: flex; gap: 8px; align-items: center; min-width: 0; border: 1px dashed #b7c3ae; border-radius: 9px; padding: 7px; background: #f4f6ee; color: var(--muted); font-size: 12px; cursor: pointer; }
 .import-picker:hover { border-color: var(--green); }

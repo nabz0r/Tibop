@@ -1,0 +1,13 @@
+<resources>
+    <string name="card_styles">Cartes</string>
+    <string name="card_style_classic_detail">Le fond vert forêt des cartes Bats mon score.</string>
+    <string name="card_style_nocturne">Nocturne dorée</string>
+    <string name="card_style_nocturne_detail">Encre bleue, lignes Art déco et tuiles dorées.</string>
+    <string name="card_style_unlock_requirement">Terminez les trois défis d’un même week-end.</string>
+    <string name="card_style_tournament_reward">Fond de carte à gagner</string>
+    <string name="card_style_reward_unlocked">Fond de carte débloqué</string>
+    <string name="card_style_reward_in_use">Nocturne dorée est appliqué à vos cartes Bats mon score. Changez de fond dans la Collection.</string>
+    <string name="card_style_reward_collection">Choisissez ce fond pour vos cartes Bats mon score dans Profil → Collection.</string>
+    <string name="card_style_preview_label">Aperçu du fond %1$s</string>
+    <string name="card_style_preview_date">14 novembre</string>
+</resources>

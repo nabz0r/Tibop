@@ -181,11 +181,27 @@ final class SocialPanel {
                 default -> label(R.string.social_waiting);
             };
             LinearLayout card = ui.card();
+            boolean mirror = SocialDuelPanel.isMirror(duel);
+            if (mirror) {
+                card.addView(ui.micro(label(R.string.social_mirror_title), ui.palette.accent()));
+                ui.gap(card, 5);
+            }
             card.addView(ui.title(opponent, 22));
             ui.gap(card, 5);
             card.addView(ui.body(details));
-            if (status.equals("your_turn")) addAction(card, R.string.social_play, true, () -> openDuel.accept(duel));
-            if (status.equals("finished")) addAction(card, R.string.social_rematch, false, () -> rematch(id));
+            if (status.equals("your_turn")) {
+                addAction(card, R.string.social_play, true, () -> openDuel.accept(duel));
+            }
+            if (status.equals("finished")) {
+                if (mirror) addAction(card, R.string.social_mirror_result, false, () -> openDuel.accept(duel));
+                String mirrorId = duel.isNull("mirror_id") ? "" : duel.optString("mirror_id");
+                if (!mirrorId.isEmpty()) {
+                    addAction(card, R.string.social_mirror_resume, true, () -> openMirror(mirrorId));
+                } else if (duel.optBoolean("mirror_available")) {
+                    addAction(card, R.string.social_mirror_title, true, () -> confirmMirror(id));
+                }
+                addAction(card, R.string.social_rematch, false, () -> rematch(id));
+            }
             body.addView(card);
             ui.gap(body, 8);
         }
@@ -302,6 +318,25 @@ final class SocialPanel {
 
     private void rematch(String duel) {
         if (begin()) client.rematch(duel, this::createdDuel);
+    }
+
+    private void confirmMirror(String id) {
+        new AlertDialog.Builder(ui.context).setTitle(R.string.social_mirror_title)
+                .setMessage(R.string.social_mirror_confirm).setNegativeButton(R.string.social_cancel, null)
+                .setPositiveButton(R.string.social_mirror_start, (dialog, which) -> {
+                    if (begin()) client.mirror(id, this::showRequestedDuel);
+                }).show();
+    }
+
+    private void openMirror(String id) {
+        if (begin()) client.duel(id, this::showRequestedDuel);
+    }
+
+    private void showRequestedDuel(JSONObject result, String error) {
+        if (!finish(error) || !root.isAttachedToWindow()) return;
+        JSONObject duel = result.optJSONObject("duel");
+        if (duel != null) openDuel.accept(duel);
+        else load();
     }
 
     private void createdDuel(JSONObject result, String error) {
