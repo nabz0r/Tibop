@@ -2,7 +2,9 @@ package fr.lettrine.game;
 
 import android.app.AlertDialog;
 import android.content.ClipData;
+import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.drawable.GradientDrawable;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -16,6 +18,7 @@ final class PracticePanel {
     private final PracticePosition position;
     private final Lexicon lexicon;
     private final boolean first;
+    private final DailyResult dailyResult;
     private final char[] letters;
     private final boolean[] blanks;
     private final List<Character> rack;
@@ -39,20 +42,30 @@ final class PracticePanel {
     private FrenchGame.Preview attempt;
 
     PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, boolean first) {
+        this(ui, position, lexicon, first, null);
+    }
+
+    PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, boolean first, DailyResult dailyResult) {
         this.ui = ui;
         this.position = position;
         this.lexicon = lexicon;
         this.first = first;
+        this.dailyResult = dailyResult;
         letters = position.board();
         blanks = position.blanks();
         rack = position.rack();
         panel = ui.column();
 
         result = ui.card();
+        if (dailyResult != null) {
+            LinearLayout.LayoutParams summary = new LinearLayout.LayoutParams(-1, -2);
+            summary.bottomMargin = ui.dp(9);
+            result.addView(dailyResult.summary(), summary);
+        }
         attemptScore = ui.body("");
         referenceScore = ui.body("");
         feedback = ui.body("");
-        result.addView(attemptScore);
+        if (dailyResult == null) result.addView(attemptScore);
         result.addView(referenceScore);
         if (position.originalScore() != null) {
             result.addView(ui.body(label(R.string.practice_original, points(position.originalScore()))));
@@ -68,6 +81,19 @@ final class PracticePanel {
         ui.space(modes, 6);
         ui.weight(modes, showReference);
         result.addView(modes);
+        retry = ui.textButton(label(R.string.practice_reset), () -> {
+            reset();
+            showStart();
+        });
+        if (dailyResult != null) {
+            ui.gap(result, 9);
+            LinearLayout next = ui.row();
+            next.addView(dailyResult.shareButton(), new LinearLayout.LayoutParams(0, -2, 1.55f));
+            LinearLayout.LayoutParams replay = new LinearLayout.LayoutParams(0, -2, 1);
+            replay.leftMargin = ui.dp(7);
+            next.addView(retry, replay);
+            result.addView(next);
+        }
         panel.addView(result);
 
         board = new BoardView(ui.context, ui.palette, new BoardView.Interaction() {
@@ -95,6 +121,7 @@ final class PracticePanel {
             TextView tile = ui.text(String.valueOf(letter), 21, ui.palette.ink(), ui.medium);
             tile.setGravity(android.view.Gravity.CENTER);
             tile.setMinHeight(ui.dp(48));
+            tile.setElevation(ui.dp(1));
             tile.setOnClickListener(view -> {
                 if (finished || used(index)) return;
                 selected = selected == index ? -1 : index;
@@ -118,11 +145,7 @@ final class PracticePanel {
         playControls.addView(actions);
         playControls.addView(ui.textButton(label(R.string.practice_reveal), () -> finish(null)));
         panel.addView(playControls);
-        retry = ui.textButton(label(R.string.practice_reset), () -> {
-            reset();
-            showStart();
-        });
-        panel.addView(retry);
+        if (dailyResult == null) panel.addView(retry);
         reset();
     }
 
@@ -132,6 +155,7 @@ final class PracticePanel {
         finished = false;
         attempt = null;
         result.setVisibility(View.GONE);
+        if (dailyResult != null) dailyResult.show(null);
         playControls.setVisibility(View.VISIBLE);
         retry.setVisibility(View.GONE);
         preview.setVisibility(View.VISIBLE);
@@ -184,18 +208,18 @@ final class PracticePanel {
 
     private void renderAttempt(int animated) {
         board.update(letters, blanks, staged, List.of(), animated);
-        board.setContentDescription(label(first ? R.string.practice_board_first_description
-                : R.string.practice_board_description) + tileSummary(staged));
+        String description = dailyResult == null ? label(first ? R.string.practice_board_first_description
+                : R.string.practice_board_description) : dailyResult.boardDescription();
+        board.setContentDescription(description + tileSummary(staged));
         for (int i = 0; i < rackButtons.size(); i++) {
             TextView tile = rackButtons.get(i);
             boolean occupied = used(i);
             char letter = rack.get(i);
-            String description = letter == FrenchGame.JOKER ? label(R.string.practice_joker)
+            String tileLabel = letter == FrenchGame.JOKER ? label(R.string.practice_joker)
                     : label(R.string.practice_letter, letter);
-            tile.setContentDescription(occupied ? label(R.string.practice_placed, description) : description);
+            tile.setContentDescription(occupied ? label(R.string.practice_placed, tileLabel) : tileLabel);
             tile.setSelected(i == selected);
-            tile.setBackground(ui.touch(i == selected ? ui.palette.fresh() : ui.palette.tile(), 9,
-                    i == selected ? ui.palette.accent() : ui.palette.tileEdge()));
+            tile.setBackground(rackFace(i == selected));
             ui.enabled(tile, !occupied);
         }
         FrenchGame.Preview move = staged.isEmpty() ? null : position.preview(staged, lexicon);
@@ -216,6 +240,7 @@ final class PracticePanel {
         int referencePoints = position.reference().preview().score();
         attemptScore.setVisibility(move == null ? View.GONE : View.VISIBLE);
         if (move != null) attemptScore.setText(scoreLine(R.string.practice_yours, move));
+        if (dailyResult != null) dailyResult.show(move);
         referenceScore.setText(scoreLine(R.string.practice_reference, position.reference().preview()));
         String message = "";
         if (move != null) {
@@ -255,6 +280,16 @@ final class PracticePanel {
 
     private void showStart() {
         panel.post(() -> panel.requestRectangleOnScreen(new Rect(0, 0, panel.getWidth(), ui.dp(55)), false));
+    }
+
+    private GradientDrawable rackFace(boolean active) {
+        int base = active ? ui.palette.fresh() : ui.palette.tile();
+        int light = Color.rgb((3 * Color.red(base) + 255) / 4,
+                (3 * Color.green(base) + 255) / 4, (3 * Color.blue(base) + 255) / 4);
+        GradientDrawable face = ui.shape(base, 9, active ? ui.palette.accent() : ui.palette.tileEdge());
+        face.setOrientation(GradientDrawable.Orientation.TOP_BOTTOM);
+        face.setColors(new int[]{light, base});
+        return face;
     }
 
     private void highlight(TextView button, boolean active) {

@@ -5,8 +5,11 @@ import android.animation.ValueAnimator;
 import android.content.ClipDescription;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.view.DragEvent;
 import android.view.GestureDetector;
@@ -28,7 +31,8 @@ final class BoardView extends View {
     private final Palette palette;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rectangle = new RectF();
-    private final Typeface bold = Typeface.create("sans-serif-medium", Typeface.NORMAL);
+    private final Path frameClip = new Path();
+    private final Typeface bold = Typeface.create("sans-serif", Typeface.BOLD);
     private final Typeface regular = Typeface.create("sans-serif", Typeface.NORMAL);
     private final ScaleGestureDetector scaleDetector;
     private final GestureDetector gestureDetector;
@@ -37,6 +41,10 @@ final class BoardView extends View {
     private boolean[] blanks = new boolean[FrenchGame.CELLS];
     private final FrenchGame.Tile[] pending = new FrenchGame.Tile[FrenchGame.CELLS];
     private final boolean[] highlights = new boolean[FrenchGame.CELLS];
+    private final int[] cellColors = new int[FrenchGame.CELLS];
+    private final int tileRim;
+    private final int freshRim;
+    private LinearGradient frameShading;
     private float side;
     private float zoom = 1;
     private float offsetX;
@@ -51,6 +59,9 @@ final class BoardView extends View {
         super(context);
         this.palette = palette;
         this.interaction = interaction;
+        for (int i = 0; i < cellColors.length; i++) cellColors[i] = palette.bonus(i);
+        tileRim = blend(palette.tile(), palette.tileEdge(), 0.56f);
+        freshRim = blend(palette.fresh(), palette.accent(), 0.64f);
         setFocusable(interaction != null);
         setClickable(interaction != null);
         setContentDescription(interaction == null ? "Plateau de la partie" : "Plateau 15 sur 15. Pincez pour zoomer.");
@@ -142,6 +153,15 @@ final class BoardView extends View {
             offsetY *= w / (float) oldW;
         }
         side = Math.min(w, h);
+        if (side > 0) {
+            float corner = unit() * 0.48f;
+            rectangle.set(0, 0, side, side);
+            frameClip.rewind();
+            frameClip.addRoundRect(rectangle, corner, corner, Path.Direction.CW);
+            frameShading = new LinearGradient(0, 0, side, side,
+                    blend(palette.deep(), palette.heroInk(), 0.13f),
+                    blend(palette.deep(), 0xff000000, 0.28f), Shader.TileMode.CLAMP);
+        }
         clamp();
     }
 
@@ -154,11 +174,12 @@ final class BoardView extends View {
         float unit = unit();
         float start = gridStart();
         float inset = unit * 0.062f;
-        rectangle.set(0, 0, side, side);
-        paint.setColor(palette.deep());
-        canvas.drawRoundRect(rectangle, 10, 10, paint);
+        float rounding = unit * 0.13f;
         canvas.save();
-        canvas.clipRect(0, 0, side, side);
+        canvas.clipPath(frameClip);
+        paint.setShader(frameShading);
+        canvas.drawPaint(paint);
+        paint.setShader(null);
         canvas.translate(offsetX, offsetY);
         canvas.scale(zoom, zoom);
         for (int i = 0; i < FrenchGame.SIZE; i++) {
@@ -177,39 +198,59 @@ final class BoardView extends View {
             rectangle.set(x + inset, y + inset, x + unit - inset, y + unit - inset);
             FrenchGame.Tile tile = pending[i];
             if (tile != null || board[i] != 0) {
-                paint.setColor(tile != null || highlights[i] ? palette.fresh() : palette.tile());
-                canvas.drawRoundRect(rectangle, unit * 0.11f, unit * 0.11f, paint);
+                boolean fresh = tile != null || highlights[i];
+                paint.setColor(fresh ? freshRim : tileRim);
+                canvas.drawRoundRect(rectangle, rounding, rounding, paint);
+                rectangle.bottom -= unit * 0.11f;
+                paint.setColor(fresh ? palette.fresh() : palette.tile());
+                canvas.drawRoundRect(rectangle, rounding, rounding, paint);
+                paint.setColor(0x65ffffff);
+                canvas.drawRoundRect(rectangle.left + unit * 0.11f, rectangle.top + unit * 0.037f,
+                        rectangle.right - unit * 0.11f, rectangle.top + unit * 0.083f,
+                        rounding, rounding, paint);
+                rectangle.bottom += unit * 0.11f;
                 char letter = tile != null ? tile.letter() : board[i];
                 boolean blank = tile != null ? tile.blank() : blanks[i];
-                label(canvas, String.valueOf(letter), x + unit * 0.45f, y + unit * 0.48f,
+                label(canvas, String.valueOf(letter), x + unit * 0.46f, y + unit * 0.43f,
                         unit * 0.55f, palette.ink(), bold);
                 label(canvas, String.valueOf(blank ? 0 : FrenchGame.value(letter)), x + unit * 0.76f,
-                        y + unit * 0.73f, unit * 0.23f, palette.ink(), regular);
+                        y + unit * 0.70f, unit * 0.25f, palette.ink(), bold);
                 if (blank) {
                     paint.setColor(palette.accent());
-                    canvas.drawCircle(x + unit * 0.22f, y + unit * 0.77f, unit * 0.048f, paint);
+                    canvas.drawCircle(x + unit * 0.22f, y + unit * 0.72f, unit * 0.048f, paint);
                 }
             } else {
-                paint.setColor(palette.bonus(i));
-                canvas.drawRoundRect(rectangle, unit * 0.11f, unit * 0.11f, paint);
+                paint.setColor(cellColors[i]);
+                canvas.drawRoundRect(rectangle, rounding, rounding, paint);
                 String mark = i == FrenchGame.CENTER ? "✦"
                         : FrenchGame.WORD_MULTIPLIER[i] > 1 ? "M" + FrenchGame.WORD_MULTIPLIER[i]
                         : FrenchGame.LETTER_MULTIPLIER[i] > 1 ? "L" + FrenchGame.LETTER_MULTIPLIER[i] : "";
                 if (!mark.isEmpty()) {
                     label(canvas, mark, x + unit * 0.5f, y + unit * 0.5f,
-                            unit * (i == FrenchGame.CENTER ? 0.60f : 0.30f), palette.ink(), bold);
+                            unit * (i == FrenchGame.CENTER ? 0.57f : 0.33f), palette.ink(), bold);
                 }
             }
             if (isFocused() && focused == i) {
                 paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(unit * 0.085f);
-                paint.setColor(palette.accent());
-                canvas.drawRoundRect(rectangle, unit * 0.11f, unit * 0.11f, paint);
+                paint.setStrokeWidth(unit * 0.10f);
+                paint.setColor(palette.heroInk());
+                canvas.drawRoundRect(rectangle, rounding, rounding, paint);
+                rectangle.inset(unit * 0.09f, unit * 0.09f);
+                paint.setStrokeWidth(unit * 0.066f);
+                paint.setColor(palette.ink());
+                canvas.drawRoundRect(rectangle, rounding, rounding, paint);
                 paint.setStyle(Paint.Style.FILL);
             }
             if (i == animated && animation < 1) canvas.restore();
         }
         canvas.restore();
+    }
+
+    private static int blend(int first, int second, float weight) {
+        int red = Math.round((first >> 16 & 0xff) * (1 - weight) + (second >> 16 & 0xff) * weight);
+        int green = Math.round((first >> 8 & 0xff) * (1 - weight) + (second >> 8 & 0xff) * weight);
+        int blue = Math.round((first & 0xff) * (1 - weight) + (second & 0xff) * weight);
+        return 0xff000000 | red << 16 | green << 8 | blue;
     }
 
     private void label(Canvas canvas, String value, float x, float middle, float size, int color, Typeface face) {

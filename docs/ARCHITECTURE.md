@@ -147,4 +147,6 @@ Le bilan d’une partie terminée reconstruit le plateau tour par tour et calcul
 
 Le premier défi utilise une position préparée et la validation habituelle des coups. Pour retenter un tour du bilan, l’exercice reprend une copie du plateau avant le coup et du chevalet enregistré. La tentative et la comparaison restent en mémoire. Le moteur de partie, l’historique et la cote ne sont pas modifiés.
 
+Le défi quotidien détermine sa position à partir du jour civil local et vérifie sa proposition avec le lexique embarqué. La date est fixée à l’ouverture du défi. Les préférences locales gardent le meilleur score de chaque jour validé et calculent la série à partir des jours consécutifs. Le partage Android envoie la date, le record et la série sous forme de texte.
+
 Les profils de jeu versionnés regroupent géométrie, jetons, conditions de fin, lexique et orthographe. Les profils classiques français, anglais, allemand et russe fournissent chacun un lexique libre. Le profil japonais documente une mécanique propre. Un profil incompatible ou un lexique différent empêche de recalculer les variantes d’une campagne. Les archives historiques conservent leurs éditions de référence. [Profils de langue](LANGUES.md)

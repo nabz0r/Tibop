@@ -2,9 +2,6 @@ package fr.lettrine.game;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -153,77 +150,4 @@ final class ViewKit {
         return option;
     }
 
-    View hero() { return new Hero(context); }
-
-    private final class Hero extends View {
-        private final Paint brush = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final RectF rect = new RectF();
-        private final android.graphics.Path clip = new android.graphics.Path();
-
-        Hero(Context context) {
-            super(context);
-            setContentDescription("Lettrine. Jeu de lettres.");
-        }
-
-        @Override protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            float width = getWidth();
-            float height = getHeight();
-            rect.set(0, 0, width, height);
-            brush.setColor(palette.deep());
-            canvas.drawRoundRect(rect, dp(22), dp(22), brush);
-            canvas.save();
-            clip.rewind();
-            clip.addRoundRect(rect, dp(22), dp(22), android.graphics.Path.Direction.CW);
-            canvas.clipPath(clip);
-            float tileSize = dp(28);
-            float x = width - dp(93);
-            float y = height * 0.51f;
-            canvas.save();
-            canvas.rotate(-18, x, y);
-            for (int row = -2; row <= 2; row++) {
-                for (int col = -2; col <= 3; col++) {
-                    if ((row == -2 && col <= -1) || (row == 2 && col == -2)) continue;
-                    brush.setColor(((row + col) & 1) == 0 ? 0x226bd0a2 : 0x126bd0a2);
-                    square(canvas, x + col * tileSize, y + row * tileSize, tileSize * 0.93f);
-                }
-            }
-            token(canvas, "Z", 10, x - tileSize * 0.96f, y - tileSize, tileSize);
-            token(canvas, "E", 1, x + tileSize * 0.04f, y - tileSize, tileSize);
-            token(canvas, "N", 1, x + tileSize * 1.04f, y - tileSize, tileSize);
-            token(canvas, "J", 8, x + tileSize * 0.04f, y, tileSize);
-            canvas.restore();
-            brush.setColor(palette.fresh());
-            brush.setTypeface(medium);
-            brush.setTextSize(dp(10));
-            canvas.drawText("JEU DE LETTRES", dp(21), dp(32), brush);
-            brush.setColor(palette.heroInk());
-            brush.setTypeface(serif);
-            brush.setTextSize(dp(width > dp(330) ? 48 : 39));
-            canvas.drawText("Lettrine", dp(19), dp(86), brush);
-            brush.setColor(palette.heroInk());
-            brush.setTypeface(regular);
-            brush.setTextSize(dp(13));
-            canvas.drawText("Français", dp(22), dp(115), brush);
-            canvas.restore();
-        }
-
-        private void square(Canvas canvas, float x, float y, float size) {
-            rect.set(x, y, x + size, y + size);
-            canvas.drawRoundRect(rect, dp(4), dp(4), brush);
-        }
-
-        private void token(Canvas canvas, String letter, int value, float x, float y, float size) {
-            brush.setColor(0x3310140b);
-            square(canvas, x, y + dp(2), size * 0.92f);
-            brush.setColor(letter.equals("J") ? palette.fresh() : palette.tile());
-            square(canvas, x, y, size * 0.92f);
-            brush.setColor(palette.ink());
-            brush.setTypeface(medium);
-            brush.setTextSize(size * 0.53f);
-            canvas.drawText(letter, x + size * 0.23f, y + size * 0.61f, brush);
-            brush.setTextSize(size * 0.21f);
-            canvas.drawText(String.valueOf(value), x + size * 0.60f, y + size * 0.78f, brush);
-        }
-    }
 }

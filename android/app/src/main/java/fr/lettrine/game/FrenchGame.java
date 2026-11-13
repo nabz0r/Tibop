@@ -42,6 +42,8 @@ final class FrenchGame {
         return letter >= 'A' && letter <= 'Z' ? VALUES[letter - 'A'] : 0;
     }
 
+    static int tileCount(char letter) { return DISTRIBUTION[letter - 'A']; }
+
     static int step(int pos, int direction, int amount) {
         if (direction == 1) {
             int col = pos % SIZE + amount;

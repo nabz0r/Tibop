@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <application android:theme="@style/AppTheme" android:label="Lettrine"
         android:enableOnBackInvokedCallback="true"
-        android:icon="@drawable/lettrine_mark" android:allowBackup="false"
+        android:icon="@drawable/lettrine_adaptive_icon" android:allowBackup="false"
         android:fullBackupContent="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:supportsRtl="true" tools:targetApi="33">

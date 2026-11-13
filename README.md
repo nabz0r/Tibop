@@ -37,7 +37,7 @@ Pour jouer, glisser une lettre sur le plateau ou sélectionner une lettre puis s
 
 [Télécharger l’APK](android/artifacts/lettrine.apk) · [Télécharger depuis le studio](http://127.0.0.1:8787/download/lettrine.apk) · [Guide Android et compilation](android/README.md)
 
-L’application propose un premier défi depuis l’accueil, le jeu hors ligne à deux, trois ou quatre sur un appareil, le duel Bluetooth et le solo. Le bilan de NAB permet de retenter un coup manqué avec son chevalet d’origine. SmolLM2 explique les coups et les comparaisons hors ligne. L’historique affiche la progression de l’Elo et exporte les parties en JSON.
+Lettrine Android propose un défi par jour hors ligne, une série de jours joués et le partage du record quotidien. L’application permet de jouer en solo, à deux, trois ou quatre sur un appareil ou en duel Bluetooth. Le bilan de NAB permet de retenter un coup manqué avec son chevalet d’origine. SmolLM2 explique les coups et les comparaisons hors ligne. L’historique affiche la progression de l’Elo et exporte les parties en JSON.
 
 ## Laboratoire
 

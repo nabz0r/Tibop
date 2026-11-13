@@ -1,0 +1,20 @@
+<resources>
+    <string name="daily_title">Défi du jour</string>
+    <string name="daily_play">Jouer le défi</string>
+    <string name="daily_replay">Rejouer le défi</string>
+    <string name="daily_home_open">Un coup à trouver</string>
+    <string name="daily_goal">Prolongez %1$s ou accrochez-y un mot. Cherchez le meilleur score.</string>
+    <string name="daily_board">Plateau du défi. %1$s est posé de %2$s à %3$s.</string>
+    <string name="daily_unavailable">Ce défi n’est pas disponible avec ce lexique.</string>
+    <string name="daily_best">Record du jour · %1$s</string>
+    <string name="daily_streak">Série · %1$s</string>
+    <string name="daily_points_label">POINTS</string>
+    <string name="daily_share">Partager mon score</string>
+    <string name="daily_share_text">Lettrine · Défi du %1$s\n%2$s\n%3$s</string>
+    <string name="daily_save_error">Le score du défi n’a pas pu être enregistré sur cet appareil.</string>
+    <string name="daily_share_error">Le partage est indisponible sur cet appareil.</string>
+    <plurals name="daily_days">
+        <item quantity="one">%d jour</item>
+        <item quantity="other">%d jours</item>
+    </plurals>
+</resources>

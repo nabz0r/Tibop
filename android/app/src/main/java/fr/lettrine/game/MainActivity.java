@@ -7,9 +7,11 @@ import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -45,6 +47,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,6 +77,7 @@ public final class MainActivity extends Activity {
     private SharedPreferences preferences;
     private ViewKit ui;
     private GameStore store;
+    private DailyProgress dailyProgress;
     private Lexicon lexicon;
     private FrenchGame game;
     private MatchCodec.State guestState;
@@ -112,11 +116,16 @@ public final class MainActivity extends Activity {
     private Future<?> reviewTask;
     private Runnable reviewBack;
     private Runnable practiceBack;
-    private boolean firstChallengeRequested;
+    private Runnable pendingChallenge;
+    private LocalDate homeDate;
+    private final BroadcastReceiver calendarChanges = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) { refreshDailyHome(); }
+    };
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         preferences = getSharedPreferences("preferences", MODE_PRIVATE);
+        dailyProgress = new DailyProgress(this);
         skin = Math.max(0, Math.min(Palette.THEMES.length - 1, preferences.getInt("skin", 0)));
         ui = new ViewKit(this, Palette.THEMES[skin]);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
@@ -159,7 +168,9 @@ public final class MainActivity extends Activity {
                     notice = sourceNotice;
                     if (game != null && game.end != null) archiveIfFinished();
                     if (screen == Screen.HOME) {
-                        if (firstChallengeRequested) openFirstChallenge();
+                        Runnable requested = pendingChallenge;
+                        pendingChallenge = null;
+                        if (requested != null) requested.run();
                         else showHome();
                     }
                 });
@@ -167,6 +178,7 @@ public final class MainActivity extends Activity {
                 main.post(() -> {
                     if (isDestroyed()) return;
                     lexiconError = "Le lexique intégré n’a pas pu être chargé.";
+                    pendingChallenge = null;
                     if (screen == Screen.HOME) showHome();
                 });
             }
@@ -181,10 +193,21 @@ public final class MainActivity extends Activity {
     @Override protected void onStart() {
         super.onStart();
         began = true;
+        IntentFilter changes = new IntentFilter(Intent.ACTION_DATE_CHANGED);
+        changes.addAction(Intent.ACTION_TIME_CHANGED);
+        changes.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(calendarChanges, changes, Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(calendarChanges, changes);
         updateMusic();
     }
 
+    @Override protected void onResume() {
+        super.onResume();
+        refreshDailyHome();
+    }
+
     @Override protected void onStop() {
+        unregisterReceiver(calendarChanges);
         began = false;
         if (music != null) music.pause();
         super.onStop();
@@ -237,7 +260,7 @@ public final class MainActivity extends Activity {
     private void page(Screen next, boolean navigation) {
         if (explanationDialog != null) explanationDialog.dismiss();
         cancelReview();
-        if (next != Screen.HOME) firstChallengeRequested = false;
+        if (next != Screen.HOME) pendingChallenge = null;
         screen = next;
         if (Build.VERSION.SDK_INT >= 33) {
             if (next == Screen.HOME && backCallback != null) {
@@ -299,6 +322,7 @@ public final class MainActivity extends Activity {
     private TextView navItem(String name, boolean active, Runnable action) {
         TextView tab = ui.textButton(name, action);
         tab.setMinHeight(ui.dp(49));
+        ui.inset(tab, 1, 7);
         tab.setTextColor(active ? ui.palette.ink() : ui.palette.muted());
         tab.setBackground(ui.touch(active ? ui.palette.ordinary() : ui.palette.paper(), 10, 0));
         return tab;
@@ -337,20 +361,26 @@ public final class MainActivity extends Activity {
 
     private void showHome() {
         page(Screen.HOME, true);
+        homeDate = LocalDate.now();
         TextView rating = ui.text("Elo " + currentRating(), 12, ui.palette.accent(), ui.medium);
         ui.inset(rating, 11, 7);
         rating.setBackground(ui.shape(ui.palette.ordinary(), 14));
         top("Lettrine", null, rating);
         ui.gap(content, 8);
-        content.addView(ui.hero(), new LinearLayout.LayoutParams(-1, ui.dp(137)));
-        ui.gap(content, 9);
-        content.addView(ui.option("✦", getString(R.string.practice_first), getString(R.string.practice_first_home),
-                this::openFirstChallenge));
+        DailyProgress.Snapshot today = dailyProgress.snapshot(homeDate);
+        boolean completed = today.bestScore() != null;
+        String status = completed ? DailyResult.bestLabel(ui, today.bestScore()) : getString(R.string.daily_home_open);
+        content.addView(DailyChallengeCard.create(ui, DailyResult.dateLabel(homeDate), status,
+                DailyResult.streakLabel(ui, today.streak()), getString(completed ? R.string.daily_replay : R.string.daily_play),
+                () -> openChallenge(this::openDailyChallenge)));
         MatchCodec.State ongoing = state();
         if (ongoing != null && ongoing.end() == null && (!mode.equals("bluetooth") || bluetoothReady)) {
             ui.gap(content, 13);
             content.addView(ui.button("Reprendre la partie", true, this::showGame));
         }
+        ui.gap(content, 10);
+        content.addView(ui.option("✦", getString(R.string.practice_first), getString(R.string.practice_first_home),
+                () -> openChallenge(this::openFirstChallenge)));
         ui.gap(content, 19);
         content.addView(ui.micro("NOUVELLE PARTIE", ui.palette.accent()));
         ui.gap(content, 8);
@@ -373,15 +403,22 @@ public final class MainActivity extends Activity {
 
     private int currentRating() { return store == null ? DEFAULT_RATING : store.elo(); }
 
+    private void refreshDailyHome() {
+        if (screen == Screen.HOME && !LocalDate.now().equals(homeDate)) showHome();
+    }
+
     private boolean ready() {
         if (lexicon != null) return true;
         toast(lexiconError == null ? "Le lexique se charge…" : lexiconError);
         return false;
     }
 
+    private void openChallenge(Runnable action) {
+        if (lexicon == null && lexiconError == null) pendingChallenge = action;
+        if (ready()) action.run();
+    }
+
     private void openFirstChallenge() {
-        firstChallengeRequested = lexicon == null && lexiconError == null;
-        if (!ready()) return;
         PracticePosition position = PracticePosition.first(lexicon);
         if (position == null) {
             toast(getString(R.string.practice_first_unavailable));
@@ -389,6 +426,24 @@ public final class MainActivity extends Activity {
         }
         showPractice(getString(R.string.practice_first), getString(R.string.practice_first_goal),
                 position, true, this::showHome);
+    }
+
+    private void openDailyChallenge() {
+        LocalDate date = LocalDate.now();
+        DailyChallenge challenge = DailyChallenge.forDate(date, lexicon);
+        if (challenge == null) {
+            toast(getString(R.string.daily_unavailable));
+            return;
+        }
+        page(Screen.PRACTICE, false);
+        practiceBack = this::showHome;
+        top("Lettrine", this::leavePractice, null);
+        ui.gap(content, 5);
+        content.addView(DailyChallengeCard.heading(ui, DailyResult.dateLabel(date),
+                getString(R.string.daily_goal, challenge.openingWord())));
+        ui.gap(content, 11);
+        DailyResult dailyResult = new DailyResult(ui, dailyProgress, challenge);
+        content.addView(new PracticePanel(ui, challenge.position(), lexicon, false, dailyResult).view());
     }
 
     private void practiceReviewedTurn(MatchReview.Turn turn) {
