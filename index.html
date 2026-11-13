@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#18352a">
+  <meta name="description" content="Relève le défi de lettres d’un ami dans Lettrine et essaie de battre son score.">
+  <title>Bats mon score · Lettrine</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18352a;
+      --muted: #465e50;
+      --paper: #fffaf0;
+      --page: #f1efe4;
+      font: 16px/1.5 system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; background: var(--page); color: var(--ink); }
+    main { max-width: 35rem; padding: clamp(1rem, 6vw, 2.5rem); margin: 4vh auto; }
+    .brand { margin: 0 0 1rem; display: flex; align-items: center; gap: .65rem; font-weight: 700; }
+    .brand span {
+      display: grid;
+      place-items: center;
+      background: var(--ink);
+      color: var(--paper);
+      border-radius: .6rem;
+      font: 1.2rem Georgia, serif;
+      width: 2rem;
+      height: 2rem;
+    }
+    article {
+      overflow: hidden;
+      border-radius: 1.5rem;
+      background: var(--paper);
+      border: 1px solid #daddd0;
+      box-shadow: 0 .75rem 2.5rem #1a332917;
+    }
+    .hero {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      padding: 1.65rem;
+      background: linear-gradient(135deg, #284e3e, #17342a 72%);
+      color: var(--paper);
+    }
+    .hero p { margin: 0; color: #d1dfbd; }
+    h1 { margin: .3rem 0 0; font: clamp(2rem, 7vw, 3.25rem)/1.04 Georgia, serif; max-width: 85%; }
+    .tile {
+      position: absolute;
+      right: -.55rem;
+      bottom: -.75rem;
+      z-index: -1;
+      width: 5rem;
+      height: 5rem;
+      border: 1px solid #f3e3b3;
+      border-radius: .8rem;
+      background: linear-gradient(145deg, #f7e8be, #cbb477);
+      box-shadow: inset 0 2px #fff3d3, 0 .35rem #867246, 0 .7rem 1rem #142d25;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      transform: rotate(-14deg);
+      font: 3rem Georgia, serif;
+    }
+    .body { padding: 1.65rem; }
+    .body p { margin: 0 0 1.1rem; }
+    .target { display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem .75rem; }
+    .target strong { font: 2.5rem/1 Georgia, serif; }
+    .target span { color: var(--muted); }
+    .button {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 3rem;
+      border: 1px solid #b5c2af;
+      border-radius: .8rem;
+      padding: .65rem .9rem;
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 650;
+      text-align: center;
+    }
+    .primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+    .button:focus-visible { outline: 3px solid #73875d; outline-offset: 3px; }
+    .install { margin-top: 1.2rem; }
+    .install p { color: var(--muted); font-size: .9rem; margin-bottom: .55rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="brand"><span aria-hidden="true">L</span> Lettrine</p>
+    <article>
+      <header class="hero">
+        <p id="date">Défi de lettres</p>
+        <h1>Bats mon score</h1>
+        <span class="tile" aria-hidden="true">L</span>
+      </header>
+      <div class="body">
+        <div id="challenge" hidden>
+          <p class="target"><strong id="score"></strong><span>à battre</span></p>
+          <p>Retrouve le même plateau et le même chevalet dans Lettrine.</p>
+          <a class="button primary" id="open">Ouvrir dans Lettrine</a>
+        </div>
+        <p id="invalid">Ouvre le lien complet qui accompagne la carte pour retrouver le défi.</p>
+        <div class="install">
+          <p>Sur Android, installe Lettrine puis reviens à cette invitation.</p>
+          <a class="button" href="https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk">Télécharger l’APK Android</a>
+        </div>
+      </div>
+    </article>
+  </main>
+  <script>
+    const invite = /^v1\/(\d{4})-(\d{2})-(\d{2})\/(0|[1-9]\d{0,3})\/[0-9a-f]{24}$/;
+    const payload = location.hash.slice(1);
+    const fields = invite.exec(payload);
+    if (fields) {
+      const [, year, month, day, points] = fields;
+      const date = new Date(0);
+      date.setUTCFullYear(+year, +month - 1, +day);
+      if (+year > 0 && date.getUTCFullYear() === +year && date.getUTCMonth() === +month - 1 && date.getUTCDate() === +day) {
+        const formatter = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+        document.getElementById('date').textContent = 'Défi du ' + formatter.format(date);
+        document.getElementById('score').textContent = points + (+points === 1 ? ' point' : ' points');
+        document.getElementById('open').href = 'lettrine://defi/' + payload;
+        document.getElementById('challenge').hidden = false;
+        document.getElementById('invalid').hidden = true;
+      }
+    }
+  </script>
+</body>
+</html>
