@@ -1,6 +1,6 @@
 # Lettrine pour Android
 
-L’[APK 0.11.0](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe. Le [bundle 0.11.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK 0.11.1](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe. Le [bundle 0.11.1](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Jouer
 
@@ -122,5 +122,11 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 
 - Deux invités ont joué un duel complet via le serveur HTTPS de la bêta. Le lien d’invitation a proposé le même serveur dans l’application avant l’acceptation. Le tournoi réel affiche son calendrier UTC, et un serveur Docker de test isolé a accepté les trois manches, calculé le classement et confirmé le fond de carte.
 - Sur Android 16, une notification a ouvert le duel exact. Le test de tâche en arrière-plan a aussi contrôlé les doublons et le retrait de l’alerte après blocage. Les 31 tests Android et les 24 tests Rust passent.
+
+## Correctifs de la version 0.11.1
+
+- Les parties terminées depuis deux fenêtres Android sont archivées ensemble. Le calcul Elo est enchaîné dans l’ordre des écritures.
+- Une notification de duel reste disponible si elle est ouverte hors ligne. En ligne, l’application recharge l’état du duel avant d’afficher son plateau.
+- La revanche miroir réutilise son plateau sans sauter le plateau suivant du catalogue. Sur le web, un brouillon reste disponible après annulation d’un passage ou d’un échange, ou après rechargement dans le même onglet si le tour est encore le même.
 
 L’APK joue en français avec le moteur embarqué. Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.

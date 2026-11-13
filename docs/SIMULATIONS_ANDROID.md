@@ -21,12 +21,30 @@ Le premier exercice valide bien la pose du S à la suite de CHAT (CHATS, 11 poin
 
 Du 13 novembre au 12 décembre 2026 inclus, les 30 défis ont tous accepté une pose d’une seule lettre. Le nombre de poses distinctes possibles varie de 9 à 32, avec une médiane de 21. Le meilleur coup à une lettre vaut entre 6 et 28 points, avec une médiane de 9. Sur 10 dates, un de ces coups dépasse la proposition du catalogue, avec jusqu’à 16 points d’avance. Présenter cette proposition comme un coup que le joueur peut battre correspond au comportement du jeu.
 
+## Campagne de vérification de la bêta 0.11
+
+Avec la graine `20261114`, les six confrontations ont été rejouées sur **3 000 parties complètes**. Le moteur a validé chaque placement proposé par NAB et retrouvé son score annoncé. Les médianes vont de 22 à 31 tours selon les niveaux. Promeneur remporte 21 parties sur 500 contre Habitué et 11 sur 500 contre Adaptatif. Ces écarts restent des mesures entre bots.
+
+Les **1 200 parties de stress** ont mélangé placements, passes et échanges sur des tables de deux à quatre joueurs. Chaque tour vérifie l’ordre des sièges, la conservation des 102 jetons, le chevalet inscrit dans l’historique et les ajustements de fin de partie. Les poses volontairement invalides sont vérifiées avant l’action de chaque tour concerné.
+
+| Joueurs | Parties | Placements | Échanges | Passes | Poses invalides refusées | Jokers posés |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2 | 400 | 9 727 | 2 145 | 1 914 | 2 885 | 677 |
+| 3 | 400 | 8 917 | 1 866 | 2 019 | 2 729 | 685 |
+| 4 | 400 | 7 875 | 1 621 | 2 108 | 2 520 | 677 |
+
+Les 366 dates à partir du 13 novembre 2026 ont toutes accepté une pose d’une lettre. Le nombre médian de possibilités est de 21. Le tutoriel valide toujours CHATS pour 11 points.
+
+Le test de stockage sur Android 8 a reproduit une perte d’historique lorsque deux instances de l’application terminaient des parties avec la même ancienne copie des archives. Après correction, quatre instances concurrentes ont archivé 48 parties distinctes. Les 48 archives sont présentes une seule fois, chaque calcul d’Elo repart du résultat précédent et les autres parties en cours sont intactes.
+
 ## Reproduire
 
 Installer Java 17, Python 3 et le SDK Android 36, puis lancer depuis le dépôt. Le SDK est lu depuis `ANDROID_HOME`, `ANDROID_SDK_ROOT` ou l’emplacement Android Studio par défaut sur macOS.
 
 ```sh
 ./tools/android_gameplay/run.sh 40 20261113 4
+./tools/android_gameplay/run.sh 250 20261114 8 400
+./tools/android_gameplay/run-storage.sh emulator-5586
 ```
 
-Les arguments sont le nombre de tirages, la graine et le nombre de workers. Le programme compile les classes de jeu Android et prépare le lexique avec le même script que le build. Il imprime aussi son empreinte SHA-256 et l’activation des poids Maître. Cette mesure couvre le moteur local et les solutions des défis. L’usage sur écran tactile, la rétention et le niveau des autres jeux demandent des essais distincts.
+Les trois premiers arguments sont le nombre de tirages, la graine et le nombre de workers. Le quatrième, facultatif, indique le nombre de parties de stress par taille de table et active la vérification de 366 défis. Le programme compile les classes de jeu Android et prépare le lexique avec le même script que le build. Il imprime aussi son empreinte SHA-256 et l’activation des poids Maître. Le script de stockage utilise `adb` et `d8` du SDK Android et crée des fichiers temporaires sur l’appareil indiqué. Les essais sur écran tactile et la rétention se mesurent séparément.

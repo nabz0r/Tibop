@@ -222,6 +222,7 @@ public final class MainActivity extends Activity {
                 JSONObject duel = result == null ? null : result.optJSONObject("duel");
                 if (duel == null || !notified.equals(duel.optString("id"))) {
                     toast(error == null ? getString(R.string.turn_notification_unavailable) : error);
+                    refreshTurnNotifications();
                     return;
                 }
                 if (lexicon == null && lexiconError == null) {
@@ -907,24 +908,18 @@ public final class MainActivity extends Activity {
     private void archiveIfFinished() {
         MatchCodec.State finished = state();
         if (finished == null || finished.end() == null || store == null || lexicon == null) return;
-        int before = 0;
-        int after = 0;
         int opponent = 0;
         if (mode.equals("solo") && !assisted) {
-            before = currentRating();
             int level = finished.levels()[1];
             opponent = level == Bot.ADAPTIVE
                     ? (botLevelCount == 0 ? Bot.RATINGS[2] : Math.round(botLevelSum / (float) botLevelCount))
                     : Bot.RATINGS[level];
-            after = GameStore.adjustedRating(before, opponent,
-                    Integer.compare(finished.scores()[0], finished.scores()[1]));
         }
         try {
-            JSONObject archived = MatchCodec.finished(finished, mode, lexicon.label, game == null ? null : game.seed,
-                    before, after, opponent);
+            JSONObject archived = MatchCodec.finished(finished, mode, lexicon.label, game == null ? null : game.seed);
             MatchCodec.put(archived, "lexicon_sha256", lexicon.hash);
             if (assisted) MatchCodec.put(archived, "assisted", true);
-            store.archive(archived);
+            store.archive(archived, opponent, Integer.compare(finished.scores()[0], finished.scores()[1]));
             skinStore.refresh(store, dailyProgress);
             if (!mode.equals("bluetooth")) store.removeGame(finished.id());
         } catch (Exception exception) {

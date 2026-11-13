@@ -17,11 +17,13 @@ import java.util.List;
 
 final class GameStore {
     static final int BASE_ELO = 1100;
-    private static final Object SAVED_GAMES_LOCK = new Object();
+    private static final Object STORE_LOCK = new Object();
+    private static long historyRevision;
     private final AtomicFile currentFile;
     private final AtomicFile savedGamesFile;
     private final AtomicFile historyFile;
     private final ArrayList<JSONObject> history = new ArrayList<>();
+    private long loadedRevision = -1;
 
     GameStore(Context context) throws IOException, JSONException {
         this(context.getFilesDir());
@@ -31,30 +33,27 @@ final class GameStore {
         currentFile = new AtomicFile(new File(filesDir, "current-match.json"));
         savedGamesFile = new AtomicFile(new File(filesDir, "saved-matches.json"));
         historyFile = new AtomicFile(new File(filesDir, "history.json"));
-        String serialized = read(historyFile);
-        if (serialized != null) {
-            JSONArray rows = new JSONArray(serialized);
-            for (int i = 0; i < rows.length(); i++) history.add(rows.getJSONObject(i));
+        synchronized (STORE_LOCK) {
+            refreshHistory();
+            migrateCurrent();
         }
-        migrateCurrent();
     }
 
     private void migrateCurrent() throws IOException, JSONException {
-        synchronized (SAVED_GAMES_LOCK) {
-            if (read(savedGamesFile) != null) return;
-            JSONArray rows = new JSONArray();
-            String legacy = read(currentFile);
-            if (legacy != null) {
-                JSONObject row = new JSONObject(legacy);
-                if (!archived(id(row))) rows.put(row);
-            }
-            // An empty list also marks migration complete, even after removing the last slot.
-            write(savedGamesFile, rows.toString());
+        if (read(savedGamesFile) != null) return;
+        JSONArray rows = new JSONArray();
+        String legacy = read(currentFile);
+        if (legacy != null) {
+            JSONObject row = new JSONObject(legacy);
+            if (!archived(id(row))) rows.put(row);
         }
+        // An empty list also marks migration complete, even after removing the last slot.
+        write(savedGamesFile, rows.toString());
     }
 
     List<JSONObject> savedGames() throws IOException, JSONException {
-        synchronized (SAVED_GAMES_LOCK) {
+        synchronized (STORE_LOCK) {
+            refreshHistory();
             JSONArray rows = readSavedGames();
             List<JSONObject> games = new ArrayList<>(rows.length());
             for (int i = 0; i < rows.length(); i++) {
@@ -74,7 +73,8 @@ final class GameStore {
 
     void saveGame(JSONObject row) throws IOException, JSONException {
         String gameId = id(row);
-        synchronized (SAVED_GAMES_LOCK) {
+        synchronized (STORE_LOCK) {
+            refreshHistory();
             if (archived(gameId)) return;
             JSONArray remaining = withoutGame(readSavedGames(), gameId);
             JSONArray rows = new JSONArray();
@@ -85,7 +85,7 @@ final class GameStore {
     }
 
     void removeGame(String gameId) throws IOException, JSONException {
-        synchronized (SAVED_GAMES_LOCK) {
+        synchronized (STORE_LOCK) {
             JSONArray existing = readSavedGames();
             JSONArray remaining = withoutGame(existing, gameId);
             if (existing.length() != remaining.length()) write(savedGamesFile, remaining.toString());
@@ -117,9 +117,21 @@ final class GameStore {
         return false;
     }
 
-    List<JSONObject> history() { return Collections.unmodifiableList(history); }
+    List<JSONObject> history() {
+        synchronized (STORE_LOCK) {
+            refreshHistoryForDisplay();
+            return Collections.unmodifiableList(new ArrayList<>(history));
+        }
+    }
 
     int elo() {
+        synchronized (STORE_LOCK) {
+            refreshHistoryForDisplay();
+            return latestRating();
+        }
+    }
+
+    private int latestRating() {
         for (int i = history.size() - 1; i >= 0; i--) {
             int value = history.get(i).optInt("elo_after");
             if (value > 0) return value;
@@ -133,13 +145,43 @@ final class GameStore {
         return Math.max(100, before + (int) Math.round(24 * (actual - expected)));
     }
 
-    void archive(JSONObject row) throws IOException {
-        String id = row.optString("id");
-        if (archived(id)) return;
-        JSONArray serialized = new JSONArray(history);
-        serialized.put(row);
-        write(historyFile, serialized.toString());
-        history.add(row);
+    void archive(JSONObject row, int opponent, int comparison) throws IOException, JSONException {
+        synchronized (STORE_LOCK) {
+            refreshHistory();
+            if (archived(id(row))) return;
+            if (opponent > 0) {
+                int before = latestRating();
+                row.put("elo_before", before);
+                row.put("elo_after", adjustedRating(before, opponent, comparison));
+                row.put("opponent_reference_elo", opponent);
+            }
+            JSONArray serialized = new JSONArray(history);
+            serialized.put(row);
+            write(historyFile, serialized.toString());
+            history.add(row);
+            loadedRevision = ++historyRevision;
+        }
+    }
+
+    private void refreshHistory() throws IOException, JSONException {
+        if (loadedRevision == historyRevision) return;
+        String serialized = read(historyFile);
+        ArrayList<JSONObject> rows = new ArrayList<>();
+        if (serialized != null) {
+            JSONArray saved = new JSONArray(serialized);
+            for (int i = 0; i < saved.length(); i++) rows.add(saved.getJSONObject(i));
+        }
+        history.clear();
+        history.addAll(rows);
+        loadedRevision = historyRevision;
+    }
+
+    private void refreshHistoryForDisplay() {
+        try {
+            refreshHistory();
+        } catch (IOException | JSONException ignored) {
+            // The last readable snapshot can still be displayed. Mutations require a successful refresh.
+        }
     }
 
     private static String read(AtomicFile file) throws IOException {

@@ -141,7 +141,6 @@ final class TurnNotifications {
                 || !MessageDigest.isEqual(session.proofFor(id).getBytes(StandardCharsets.US_ASCII),
                 supplied.getBytes(StandardCharsets.US_ASCII))) return null;
         intent.removeExtra(EXTRA_PROOF);
-        dismiss(context, id);
         return id;
     }
 
@@ -237,7 +236,6 @@ final class TurnNotifications {
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
                 .setPublicVersion(publicVersion)
                 .setContentIntent(open)
-                .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
                 .build();
         try {

@@ -876,13 +876,20 @@ fn insert_duel(
         }
         return Ok(active);
     }
-    let count: i64 = db.query_row(
-        "SELECT count(*) FROM social_duels WHERE a=?1 AND b=?2",
-        params![a, b],
-        |row| row.get(0),
-    )?;
+    // A mirror reuses the preceding board. Follow the latest classic board rather
+    // than counting rows, including when earlier releases counted the mirrors.
+    let last_puzzle: Option<i64> = db
+        .query_row(
+            "SELECT d.puzzle FROM social_duels d
+            LEFT JOIN social_duel_deals deal ON deal.duel_id=d.id
+            WHERE d.a=?1 AND d.b=?2 AND deal.mirror_of IS NULL
+            ORDER BY d.rowid DESC LIMIT 1",
+            params![a, b],
+            |row| row.get(0),
+        )
+        .optional()?;
     let id = random_hex::<16>();
-    let puzzle = count % app.puzzles.len() as i64;
+    let puzzle = (last_puzzle.unwrap_or(-1) + 1) % app.puzzles.len() as i64;
     db.execute(
         "INSERT INTO social_duels(id,a,b,puzzle,created_at,rematch_of)
         VALUES(?1,?2,?3,?4,?5,?6)",
@@ -1800,7 +1807,7 @@ mod tests {
         )
         .await;
         assert_eq!(regular["duel"]["kind"], "classic");
-        assert_ne!(regular["duel"]["date"], a_classic["date"]);
+        assert_eq!(regular["duel"]["date"], app.puzzles[1].date);
         assert_eq!(
             turn_feed(&base, &b).await["turns"]
                 .as_array()

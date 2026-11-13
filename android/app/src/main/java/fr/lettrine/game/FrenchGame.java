@@ -229,7 +229,11 @@ final class FrenchGame {
     String end;
 
     FrenchGame(String[] names, int[] levels) {
-        this(UUID.randomUUID().toString(), new Random().nextLong(), names, levels);
+        this(names, levels, new Random().nextLong());
+    }
+
+    FrenchGame(String[] names, int[] levels, long seed) {
+        this(UUID.randomUUID().toString(), seed, names, levels);
         for (int i = 0; i < 26; i++) {
             for (int copies = 0; copies < DISTRIBUTION[i]; copies++) bag.add((char) ('A' + i));
         }

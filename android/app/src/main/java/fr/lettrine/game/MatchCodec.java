@@ -196,8 +196,7 @@ final class MatchCodec {
         return game;
     }
 
-    static JSONObject finished(State state, String mode, String lexicon, Long seed,
-                               int ratingBefore, int ratingAfter, int effectiveRating) {
+    static JSONObject finished(State state, String mode, String lexicon, Long seed) {
         int maximum = Arrays.stream(state.scores).max().orElse(0);
         JSONArray winners = new JSONArray();
         for (int i = 0; i < state.scores.length; i++) {
@@ -213,11 +212,6 @@ final class MatchCodec {
                 "winner", winners.length() == 1 ? winners.optInt(0) : null, "winners", winners,
                 "end", state.end, "board", boardText(state.board, state.blanks));
         if (seed != null) put(row, "seed", Long.toString(seed));
-        if (ratingBefore > 0) {
-            put(row, "elo_before", ratingBefore);
-            put(row, "elo_after", ratingAfter);
-            put(row, "opponent_reference_elo", effectiveRating);
-        }
         return row;
     }
 }

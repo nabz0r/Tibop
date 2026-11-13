@@ -20,6 +20,7 @@ final class GameplaySimulation {
     private record Pair(String name, int player, int opponent) {}
     private record Result(int score, int opponentScore, int turns, int passes, int exchanges, int invalid,
                           int bingoes, int opening, int earlyMargin, boolean rackOut, int[] botLevels) {}
+    private record StressResult(int plays, int exchanges, int passes, int invalid, int jokers) {}
 
     public static void main(String[] args) throws Exception {
         Locale.setDefault(Locale.ROOT);
@@ -28,7 +29,10 @@ final class GameplaySimulation {
         int deals = Integer.parseInt(args[1]);
         long seed = Long.parseLong(args[2]);
         int workers = Integer.parseInt(args[3]);
-        if (deals < 1 || workers < 1) throw new IllegalArgumentException("Il faut au moins un tirage et un thread.");
+        int stressDeals = Integer.parseInt(args[4]);
+        if (deals < 1 || workers < 1 || stressDeals < 0) {
+            throw new IllegalArgumentException("Il faut au moins un tirage et un thread.");
+        }
         Lexicon lexicon;
         try (var reader = Files.newBufferedReader(input.resolve("words-fr.txt"))) {
             lexicon = Lexicon.read(reader, "Grammalecte 7.7", "MPL-2.0", metadata.get(0),
@@ -57,11 +61,12 @@ final class GameplaySimulation {
                 for (var future : pool.invokeAll(tasks)) results.add(future.get());
                 report(pair, results);
             }
+            if (stressDeals > 0) stress(lexicon, pool, seed, stressDeals);
         } finally {
             pool.shutdown();
         }
         tutorial(lexicon);
-        challenges(lexicon, LocalDate.of(2026, 11, 13), 30);
+        challenges(lexicon, LocalDate.of(2026, 11, 13), stressDeals > 0 ? 366 : 30);
     }
 
     private static Result play(Lexicon lexicon, Pair pair, long seed, boolean swap) {
@@ -97,24 +102,151 @@ final class GameplaySimulation {
     }
 
     private static FrenchGame seededGame(Pair pair, long seed, boolean swap) {
-        // Same draw, joker count and seat assignment as the production constructor, with controlled seed.
-        FrenchGame game = new FrenchGame("simulation", seed, new String[]{"Joueur", "NAB"},
-                new int[]{pair.player(), pair.opponent()});
-        for (char letter = 'A'; letter <= 'Z'; letter++) {
-            for (int count = 0; count < FrenchGame.tileCount(letter); count++) game.bag.add(letter);
-        }
-        game.bag.add(FrenchGame.JOKER);
-        game.bag.add(FrenchGame.JOKER);
-        Collections.shuffle(game.bag, new Random(seed));
-        game.active = new Random(seed ^ 0x4C65747472696E65L).nextInt(2);
-        for (var rack : game.racks) {
-            while (rack.size() < FrenchGame.RACK_SIZE) rack.add(game.bag.remove(game.bag.size() - 1));
-        }
+        FrenchGame game = new FrenchGame(new String[]{"Joueur", "NAB"},
+                new int[]{pair.player(), pair.opponent()}, seed);
         if (swap) {
             Collections.swap(game.racks, 0, 1);
             game.active = 1 - game.active;
         }
         return game;
+    }
+
+    private static void stress(Lexicon lexicon, java.util.concurrent.ExecutorService pool, long seed, int deals)
+            throws Exception {
+        long[] seeds = new Random(seed ^ 0xDCB123L).longs(deals).toArray();
+        for (int seats = 2; seats <= 4; seats++) {
+            int seatCount = seats;
+            List<Callable<StressResult>> tasks = new ArrayList<>();
+            for (long deal : seeds) tasks.add(() -> stressGame(lexicon, deal, seatCount));
+            int plays = 0, exchanges = 0, passes = 0, invalid = 0, jokers = 0;
+            for (var future : pool.invokeAll(tasks)) {
+                StressResult result = future.get();
+                plays += result.plays;
+                exchanges += result.exchanges;
+                passes += result.passes;
+                invalid += result.invalid;
+                jokers += result.jokers;
+            }
+            System.out.printf("Stress %d seats: %d finished; %d placements; %d exchanges; %d passes; "
+                            + "%d intentional rejected placements; %d joker placements%n",
+                    seats, deals, plays, exchanges, passes, invalid, jokers);
+        }
+    }
+
+    private static StressResult stressGame(Lexicon lexicon, long seed, int seats) {
+        String[] names = IntStream.range(0, seats).mapToObj(i -> "Joueur " + i).toArray(String[]::new);
+        FrenchGame game = new FrenchGame(names, IntStream.rangeClosed(1, seats).toArray(), seed);
+        Random actions = new Random(seed);
+        int placements = 0, passes = 0, exchanges = 0, rejected = 0, jokers = 0;
+        int[] points = new int[seats];
+        boolean stopByPass = actions.nextInt(5) == 0;
+        int trailingPasses = 0;
+        checkInventory(game);
+        while (game.end == null && game.history.size() < TURN_LIMIT) {
+            int seat = game.active;
+            int turn = game.history.size();
+            String rackBefore = rackText(game.racks.get(seat));
+            int bagBefore = game.bag.size();
+            int action = stopByPass && turn > 8 ? 0 : actions.nextInt(10);
+            if (turn % 5 == 0) {
+                char onRack = game.racks.get(seat).get(0);
+                char wrong = onRack == 'A' ? 'B' : 'A';
+                FrenchGame.Preview invalid = game.play(List.of(new FrenchGame.Tile(FrenchGame.CENTER, 0, wrong, false)),
+                        lexicon);
+                if (invalid.valid() || game.active != seat || game.history.size() != turn
+                        || !rackText(game.racks.get(seat)).equals(rackBefore) || game.bag.size() != bagBefore) {
+                    throw new AssertionError("An invalid move changed the game, seed " + seed);
+                }
+                rejected++;
+            }
+            if (action == 0) {
+                game.pass();
+            } else if (action <= 2 && bagBefore >= FrenchGame.RACK_SIZE) {
+                int size = game.racks.get(seat).size();
+                List<Integer> selection = new ArrayList<>(IntStream.range(0, size).boxed().toList());
+                Collections.shuffle(selection, actions);
+                game.exchange(selection.subList(0, 1 + actions.nextInt(size)));
+            } else {
+                Bot.Choice choice = Bot.choose(game, lexicon, game.levels[seat], START_ELO);
+                if (!choice.tiles().isEmpty()) {
+                    FrenchGame.Preview actual = game.play(choice.tiles(), lexicon);
+                    if (!actual.valid() || actual.score() != choice.score()) {
+                        throw new AssertionError("Generated move failed scoring, seed " + seed);
+                    }
+                    for (FrenchGame.Tile tile : choice.tiles()) if (tile.blank()) jokers++;
+                } else if (!choice.exchange().isEmpty()) game.exchange(choice.exchange());
+                else game.pass();
+            }
+            if (game.history.size() != turn + 1) throw new AssertionError("Turn was not recorded, seed " + seed);
+            FrenchGame.Move move = game.history.get(turn);
+            if (move.player() != seat || move.bagBefore() != bagBefore || !rackBefore.equals(move.rack())) {
+                throw new AssertionError("Replay lost the original rack, seed " + seed);
+            }
+            switch (move.type()) {
+                case "play" -> placements++;
+                case "exchange" -> exchanges++;
+                case "pass" -> passes++;
+                default -> throw new AssertionError("Unknown action, seed " + seed);
+            }
+            trailingPasses = "pass".equals(move.type()) ? trailingPasses + 1 : 0;
+            points[seat] += move.score();
+            checkInventory(game);
+            checkTurn(game, seat, points, trailingPasses);
+        }
+        if (game.end == null) throw new AssertionError("Game did not finish, seed " + seed);
+        return new StressResult(placements, exchanges, passes, rejected, jokers);
+    }
+
+    private static void checkTurn(FrenchGame game, int player, int[] points, int trailingPasses) {
+        if (game.end == null) {
+            if (game.active != (player + 1) % points.length || !Arrays.equals(game.scores, points)
+                    || trailingPasses >= points.length * 3) {
+                throw new AssertionError("Incorrect rotation or scoring, seed " + game.seed);
+            }
+            return;
+        }
+        boolean rackOut = "rack_out".equals(game.end);
+        if (rackOut && (!game.racks.get(player).isEmpty() || !game.bag.isEmpty())
+                || !rackOut && trailingPasses != points.length * 3) {
+            throw new AssertionError("Premature ending, seed " + game.seed);
+        }
+        int transferred = 0;
+        for (int seat = 0; seat < points.length; seat++) {
+            int remainder = game.racks.get(seat).stream().mapToInt(FrenchGame::value).sum();
+            points[seat] -= remainder;
+            transferred += remainder;
+        }
+        if (rackOut) points[player] += transferred;
+        if (!Arrays.equals(game.scores, points)) {
+            throw new AssertionError("Incorrect endgame adjustment, seed " + game.seed);
+        }
+    }
+
+    private static void checkInventory(FrenchGame game) {
+        int[] counts = new int[27];
+        for (char letter : game.bag) counts[tileIndex(letter)]++;
+        for (List<Character> rack : game.racks) {
+            if (rack.size() > FrenchGame.RACK_SIZE) throw new AssertionError("Rack overflow, seed " + game.seed);
+            for (char letter : rack) counts[tileIndex(letter)]++;
+        }
+        for (int i = 0; i < game.board.length; i++) {
+            char letter = game.board[i];
+            if (letter != 0) counts[tileIndex(game.blanks[i] ? FrenchGame.JOKER : letter)]++;
+        }
+        for (char letter = 'A'; letter <= 'Z'; letter++) {
+            if (counts[tileIndex(letter)] != FrenchGame.tileCount(letter)) {
+                throw new AssertionError("Lost or duplicated " + letter + ", seed " + game.seed);
+            }
+        }
+        if (counts[26] != 2) throw new AssertionError("Lost or duplicated joker, seed " + game.seed);
+    }
+
+    private static int tileIndex(char letter) { return letter == FrenchGame.JOKER ? 26 : letter - 'A'; }
+
+    private static String rackText(List<Character> rack) {
+        StringBuilder text = new StringBuilder(rack.size());
+        rack.forEach(text::append);
+        return text.toString();
     }
 
     private static void report(Pair pair, List<Result> results) {

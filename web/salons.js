@@ -61,7 +61,7 @@ function storageKey(name) {
 }
 
 function storage(name) {
-  return name.startsWith("pending.") ? sessionStorage : localStorage;
+  return name.startsWith("pending.") || name.startsWith("draft.") ? sessionStorage : localStorage;
 }
 
 function save(name, value) {
@@ -406,6 +406,7 @@ async function poll() {
 function sessionEnded(status) {
   forget(`seat.${code}`);
   forget(`room.${code}`);
+  forget(`draft.${code}`);
   token = null;
   room = null;
   clearDrag();
@@ -451,6 +452,45 @@ function resetDraft() {
   if (byId("blank-dialog").open) byId("blank-dialog").close();
 }
 
+function restoreDraft() {
+  const key = `draft.${room.code}`;
+  try {
+    const saved = JSON.parse(read(key) || "null");
+    if (!yourTurn() || saved?.revision !== room.revision || saved.seat !== room.seat
+      || !Array.isArray(saved.placements) || saved.placements.length > 7) {
+      forget(key);
+      return;
+    }
+    for (const { x, y, tile, letter } of saved.placements) {
+      const rack = room.game.rack[tile];
+      const index = y * 15 + x;
+      if (!rack || !Number.isInteger(tile) || !Number.isInteger(x) || !Number.isInteger(y)
+        || x < 0 || x > 14 || y < 0 || y > 14
+        || draft.has(index) || isDrafted(tile) || room.game.board.some((square) => square.x === x && square.y === y)
+        || (rack.blank && (typeof letter !== "string" || !/^[A-Z]$/.test(letter)))) {
+        draft.clear();
+        forget(key);
+        return;
+      }
+      draft.set(index, { x, y, tile, letter: rack.blank ? letter : rack.letter, blank: rack.blank });
+    }
+  } catch {
+    draft.clear();
+    forget(key);
+  }
+}
+
+function saveDraft() {
+  if (!yourTurn()) return;
+  const key = `draft.${room.code}`;
+  if (!draft.size) {
+    if (read(key)) forget(key);
+    return;
+  }
+  const value = JSON.stringify({ revision: room.revision, seat: room.seat, placements: draftPlacements() });
+  if (read(key) !== value) save(key, value);
+}
+
 function rackChanged(prior, current) {
   if (!prior?.game || prior.code !== current.code || prior.seat !== current.seat) return true;
   const before = prior.game;
@@ -478,11 +518,13 @@ function applyRoom(snapshot) {
     rackOrder = room.game.rack.map((_, index) => index);
     output("rack-announcement", "");
   }
-  if (prior?.game?.turn_number !== room.game?.turn_number || prior?.game?.status !== room.game?.status) {
+  if (prior?.revision !== room.revision) {
     if (room.game?.status === "finished") clearDrag();
     resetDraft();
     notice("play-error");
   }
+  if (!prior) restoreDraft();
+  else if (prior.revision !== room.revision) forget(`draft.${room.code}`);
   notice("error");
   notice("loading");
   show("room");
@@ -639,7 +681,7 @@ function canPlaceTile() {
 }
 
 function isDrafted(index) {
-  return [...draft.values()].some(({ tile }) => tile === index);
+  return mode === "play" && [...draft.values()].some(({ tile }) => tile === index);
 }
 
 function reorderRack(tile, target) {
@@ -878,7 +920,8 @@ function renderBoard() {
   const suggested = new Map((move?.placements || []).map((tile) => [coordinates(tile), tile]));
   const anchors = new Set((move?.anchors || []).map(coordinates));
   for (const [index, cell] of cells.entries()) {
-    const tile = draft.get(index) || board.get(index);
+    const staged = mode === "play" ? draft.get(index) : undefined;
+    const tile = staged || board.get(index);
     const suggestion = suggested.get(index);
     const anchor = anchors.has(index);
     const suggestedLetter = suggestion && (suggestion.letter || game.rack[suggestion.tile].letter);
@@ -886,7 +929,7 @@ function renderBoard() {
     const center = index === 112;
     const coordinate = cellName(index % 15, Math.floor(index / 15));
     cell.classList.toggle("occupied", !!tile);
-    cell.classList.toggle("draft", draft.has(index));
+    cell.classList.toggle("draft", !!staged);
     cell.classList.toggle("last", last.has(index));
     cell.classList.toggle("blank", !!tile?.blank);
     cell.classList.toggle("hint-cell", !!suggestion);
@@ -896,7 +939,7 @@ function renderBoard() {
     if (tile) {
       const value = tile.blank ? 0 : tilePoints[tile.letter];
       const hintLabel = suggestion ? `, indice ${suggestedLetter}` : anchor ? ", lettre utilisée par l’indice" : "";
-      cell.setAttribute("aria-label", `${coordinate}, ${tile.blank ? "joker " : ""}${tile.letter}, ${pointLabel(value)}${draft.has(index) ? ", à jouer" : ""}${hintLabel}`);
+      cell.setAttribute("aria-label", `${coordinate}, ${tile.blank ? "joker " : ""}${tile.letter}, ${pointLabel(value)}${staged ? ", à jouer" : ""}${hintLabel}`);
       cell.replaceChildren(document.createTextNode(tile.letter), element("small", "", value));
       if (suggestion && suggestedLetter !== tile.letter) cell.append(element("span", "hint-letter hint-letter-badge", suggestedLetter));
     } else if (suggestion) {
@@ -1090,7 +1133,8 @@ async function checkPreview(current, body) {
 function renderDraft() {
   const game = room.game;
   const active = yourTurn();
-  const placed = new Set(Array.from(draft.values(), ({ tile }) => tile));
+  saveDraft();
+  const placed = new Set(mode === "play" ? Array.from(draft.values(), ({ tile }) => tile) : []);
   const suggested = new Set((currentHint()?.placements || []).map(({ tile }) => tile));
   const selectedTile = game.rack[selected];
   output("board-caption", selectedTile ? (selectedTile.blank ? "Placez le joker" : `Placez le ${selectedTile.letter}`) : "Plateau");
@@ -1263,13 +1307,14 @@ for (const [id, action] of [["swap-mode", "swap"], ["pass-mode", "pass"], ["canc
   byId(id).addEventListener("click", () => {
     clearDrag();
     clearHint();
-    if (action !== "play") draft.clear();
+    const previousMode = mode;
     mode = action;
     selected = null;
     swaps.clear();
     notice("play-error");
     renderDraft();
-    byId(mode === "play" ? "play-move" : "cancel-action").focus();
+    const returnFocus = previousMode === "swap" ? "swap-mode" : "pass-mode";
+    byId(mode === "play" ? returnFocus : "cancel-action").focus();
   });
 }
 byId("confirm-action").addEventListener("click", () => {

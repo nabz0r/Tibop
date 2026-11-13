@@ -201,13 +201,13 @@ final class SocialPanel {
             ui.gap(card, 5);
             card.addView(ui.body(details));
             if (status.equals("your_turn")) {
-                addAction(card, R.string.social_play, true, () -> openDuel.accept(duel));
+                addAction(card, R.string.social_play, true, () -> openLatestDuel(id));
             }
             if (status.equals("finished")) {
                 if (mirror) addAction(card, R.string.social_mirror_result, false, () -> openDuel.accept(duel));
                 String mirrorId = duel.isNull("mirror_id") ? "" : duel.optString("mirror_id");
                 if (!mirrorId.isEmpty()) {
-                    addAction(card, R.string.social_mirror_resume, true, () -> openMirror(mirrorId));
+                    addAction(card, R.string.social_mirror_resume, true, () -> openLatestDuel(mirrorId));
                 } else if (duel.optBoolean("mirror_available")) {
                     addAction(card, R.string.social_mirror_title, true, () -> confirmMirror(id));
                 }
@@ -347,7 +347,7 @@ final class SocialPanel {
                 }).show();
     }
 
-    private void openMirror(String id) {
+    private void openLatestDuel(String id) {
         if (begin()) client.duel(id, this::showRequestedDuel);
     }
 

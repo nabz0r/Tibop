@@ -32,4 +32,4 @@ engine=android/app/src/main/java/fr/lettrine/game
     "$engine/"{Bot,FrenchGame,Lexicon,DailyChallenge,PracticePosition,MatchReview,MoveExplanation}.java \
     tools/android_gameplay/GameplaySimulation.java
 "$java_bin" -Xmx512m -cp "$work/classes:$android_jar" fr.lettrine.game.GameplaySimulation \
-    "$work" "${1:-40}" "${2:-20261113}" "${3:-4}"
+    "$work" "${1:-40}" "${2:-20261113}" "${3:-4}" "${4:-0}"
