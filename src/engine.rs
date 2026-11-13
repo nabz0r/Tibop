@@ -206,6 +206,17 @@ impl Engine {
         KurniaMoveGenerator::new(&self.config)
     }
 
+    pub(crate) fn reference_graph(&self) -> Result<Vec<u8>> {
+        use wolges::kwg::{Node, Node22};
+        let mut bytes = Vec::with_capacity(self.kwg.0.len() * 4);
+        for node in self.kwg.0.iter() {
+            let packed = Node22::pack(node.tile(), node.accepts(), node.is_end(), node.arc_index())
+                .context("Le graphe dépasse les limites du format KWG de Macondo.")?;
+            bytes.extend(packed.to_le_bytes());
+        }
+        Ok(bytes)
+    }
+
     pub fn snapshot<'a>(&'a self, board: &'a [u8]) -> BoardSnapshot<'a, kwg::Node24, kwg::Node22> {
         BoardSnapshot {
             board_tiles: board,

@@ -1,5 +1,7 @@
 mod adaptive;
 mod engine;
+mod fisf_benchmark;
+mod fisf_match;
 mod import;
 mod llm_benchmark;
 mod metrics;
@@ -144,8 +146,43 @@ async fn main() -> Result<()> {
             let output = env::args()
                 .nth(3)
                 .unwrap_or_else(|| "results/peak-test.json".into());
-            let report = peak::benchmark(&engine, expert, peak::DEFAULT_CONFIG, 982900000, pairs)?;
+            let first_seed = env::args()
+                .nth(4)
+                .unwrap_or_else(|| "982900000".into())
+                .parse()?;
+            let report = peak::benchmark(&engine, expert, peak::DEFAULT_CONFIG, first_seed, pairs)?;
             std::fs::write(output, serde_json::to_vec_pretty(&report)?)?;
+        }
+        "benchmark-fisf" => {
+            let args: Vec<_> = env::args_os().skip(2).collect();
+            let [pairs, seed, report, games] = args.as_slice() else {
+                bail!(
+                    "usage : lettrine benchmark-fisf <paires> <graine> <rapport.json> <parties.jsonl>"
+                );
+            };
+            let pairs = pairs.to_string_lossy().parse()?;
+            let seed = seed.to_string_lossy().parse()?;
+            let words = env::var_os("LETTRINE_WORDS")
+                .ok_or_else(|| anyhow::anyhow!("indiquez le fichier LETTRINE_WORDS"))?;
+            let name = env::var("LETTRINE_LEXICON")?;
+            if name.trim().is_empty() {
+                bail!("indiquez le nom et l’édition du lexique dans LETTRINE_LEXICON");
+            }
+            let reference = env::var_os("LETTRINE_REFERENCE")
+                .ok_or_else(|| anyhow::anyhow!("indiquez le programme LETTRINE_REFERENCE"))?;
+            let engine = Engine::load(
+                &PathBuf::from(words),
+                name,
+                profiles::load("fr-classic-v1")?,
+            )?;
+            fisf_benchmark::run(
+                &engine,
+                &PathBuf::from(reference),
+                pairs,
+                seed,
+                &PathBuf::from(report),
+                &PathBuf::from(games),
+            )?;
         }
         "benchmark-reference" => {
             let engine = load_engine()?;
@@ -218,7 +255,7 @@ async fn main() -> Result<()> {
         }
         "help" | "-h" | "--help" => {
             println!(
-                "lettrine profiles | run | train [model.json] | benchmark-llm [tirages] | serve | social | stats | export [jsonl|csv|json]"
+                "lettrine profiles | run | train [model.json] | benchmark-llm [tirages] | benchmark-peak [tirages] [rapport.json] [graine] | benchmark-fisf <paires> <graine> <rapport.json> <parties.jsonl> | serve | social | stats | export [jsonl|csv|json]"
             )
         }
         _ => bail!("commande inconnue : {command}"),

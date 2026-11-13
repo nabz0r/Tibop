@@ -36,7 +36,17 @@ La liste FFSc ODS 9 compte 81 formes de deux lettres. Grammalecte en retient 149
 
 Les **10 000 duels Expert × Expert** ont leur filtre et leur export JSONL. Le rejeu affiche le plateau au tour choisi, le score du coup et le chevalet. L’analyse propose des placements alternatifs, mesure l’écart au meilleur score immédiat et évalue les répliques en échantillonnant les lettres inconnues. Un placement de plus faible score peut garder un meilleur reliquat, fermer un raccord ou limiter le prochain coup adverse.
 
-Les archives humaines fournissent quatre parties de compétition et 108 tours documentés, avec leurs références et le lexique d’époque. Sur 94 placements comparables, 32 égalent le meilleur score immédiat affiché, 62 rapportent moins et 28 laissent au moins dix points immédiats. Au tour 3 de la première manche de la finale 2015, Schélick Ilagou Rekawe joue `AISEE` pour 9 contre un maximum de 26. Le placement bloque des raccords en S et garde un reliquat moins chargé en voyelles. En finale 2025, Quentin Mallégol décrit comment `HO` ferme deux possibilités de bingo et laisse une lettre dans le sac. Ces exemples donnent des positions de test pour la valeur du reliquat et la défense du plateau. [Corpus et détails](../data/expert/README.md) · [Finale 2015, manche 1](https://www.crds.fr/menus/classique/classique.php?ref=150720CHMRF1) · [Scrabblerama n° 513](https://www.ffsc.fr/mafiche.exporter.scrabblerama.php?numero=513)
+Les archives humaines fournissent quatre parties de compétition et 108 tours documentés, avec leurs références et le lexique d’époque. Sur 94 placements dont l’archive fournit le meilleur score immédiat, 32 égalent ce score, 62 rapportent moins et 28 laissent au moins dix points immédiats. Au tour 3 de la première manche de la finale 2015, Schélick Ilagou Rekawe joue `AISEE` pour 9 contre un maximum de 26. Le placement bloque des raccords en S et garde un reliquat moins chargé en voyelles. En finale 2025, Quentin Mallégol décrit comment `HO` ferme deux possibilités de bingo et laisse une lettre dans le sac. Ces exemples donnent des positions de test pour la valeur du reliquat et la défense du plateau. [Corpus et détails](../data/expert/README.md) · [Finale 2015, manche 1](https://www.crds.fr/menus/classique/classique.php?ref=150720CHMRF1) · [Scrabblerama n° 513](https://www.ffsc.fr/mafiche.exporter.scrabblerama.php?numero=513)
+
+### NAB Android sur les mêmes positions
+
+Le banc rejoue les 108 tours documentés et présente au niveau Maître le plateau, le chevalet du joueur et le nombre de tuiles dans le sac. Il compare 79 placements avec le lexique Grammalecte de l’APK. NAB retrouve exactement 23 coups. En points immédiats, il marque plus sur 48 positions, autant sur 26 et moins sur 5. Le banc écarte 16 placements qui forment au moins un mot absent de Grammalecte, un écart de score, 11 échanges et une tentative invalidée. [Script de mesure](../tools/android_gameplay/benchmark_experts.py)
+
+```sh
+python3 tools/android_gameplay/benchmark_experts.py
+```
+
+Les archives utilisaient ODS 6 à 8. Les coups proposés par NAB sont vérifiés avec Grammalecte. Les points mesurent le gain du tour sur un plateau donné. L’étalonnage humain demande des duels complets contre des joueurs cotés avec une édition du lexique, un règlement et une cadence communs. Il faut figer la version de NAB, alterner le premier joueur et conserver les journaux, puis estimer la cote avec un intervalle d’incertitude. [Protocole du studio](ENTRAINEMENT.md)
 
 ## Vérification
 
@@ -85,5 +95,13 @@ Le premier exemple lit l’archive française de référence. Une archive d’un
 Le vérificateur indépendant a relu les 100 000 duels français et recalculé les 2 754 615 tours. Il contrôle les placements, les mots croisés, les primes et les scores de fin. L’Expert entraîné a ensuite obtenu 52,08 % des points sur une réplication séparée de 100 000 duels contre l’Expert de référence, en 43,1 secondes sur le Mac. [Vérification](../data/campaign/verification-fr.json) · [Réplication](../data/models/reference-holdout-fr.json)
 
 La recherche avancée de N A B échantillonne uniquement les lettres inconnues et peut résoudre exactement des fins de partie lorsque le sac est vide. Sur 2 000 duels français réservés contre l’Expert entraîné, elle obtient 55,58 % des points, avec un intervalle de 53,79 à 57,36 %. Ce test compare deux politiques simulées. L’Elo humain demande des adversaires communs dans le même lexique. [Rapport de recherche avancée](../data/models/peak-fr-v1.json)
+
+La réplication du 14 novembre 2026 a joué 4 000 parties complètes sur 2 000 nouveaux tirages, dans les deux ordres de départ. Avec le profil classique du laboratoire et Grammalecte 7.7 pour les deux moteurs, NAB Recherche avancée obtient 2 235 victoires, 10 nulles et 1 755 défaites contre l’Expert entraîné. Cela donne 56,00 % des points de match (intervalle à 95 % de 54,73 à 57,27 %), un écart moyen de +16,61 points et un Elo relatif de +42 (environ +33 à +51). La cadence et les contestations du règlement FISF ne sont pas simulées. La [campagne du moteur Android](SIMULATIONS_ANDROID.md#réplication-sur-1-440-parties-complètes) est distincte.
+
+```sh
+cargo run --release --locked -- benchmark-peak 2000 results/nab-simulation-fr-2026-11-14.json 984110000
+```
+
+Le [banc classique NAB contre Macondo](SIMULATION_FISF.md) rejoue des duels complets contre un moteur externe avec une pendule et un arbitre logiciel.
 
 Les courbes de rejeu estiment les chances à partir des écarts de points observés dans les duels à niveau égal, du stade de partie et de l’écart Elo entre références. La calibration est vérifiée sur un lot réservé par langue. Les jetons piochés sont reconstruits depuis les chevalets enregistrés. La probabilité de tirer un joker utilise l’inventaire inconnu avant le coup. [Calibrage](../data/models/win-model.json)

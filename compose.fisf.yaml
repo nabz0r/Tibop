@@ -1,0 +1,25 @@
+name: lettrine-fisf
+
+services:
+  benchmark:
+    image: lettrine-fisf:local
+    build:
+      context: .
+      target: fisf-benchmark
+    environment:
+      LETTRINE_WORDS: /input/lexicon.txt
+      LETTRINE_LEXICON: ${LETTRINE_LEXICON:?indiquez le nom et l’édition du lexique}
+      TOKIO_WORKER_THREADS: "2"
+    volumes:
+      - type: bind
+        source: ${LETTRINE_FISF_WORDS:?indiquez le chemin du fichier lexique}
+        target: /input/lexicon.txt
+        read_only: true
+        bind:
+          create_host_path: false
+      - ./results:/app/results
+    network_mode: none
+    read_only: true
+    init: true
+    pids_limit: 64
+    security_opt: ["no-new-privileges:true"]

@@ -25,6 +25,21 @@ EXPOSE 8787
 ENTRYPOINT ["lettrine"]
 CMD ["serve"]
 
+FROM golang:1.26.1-bookworm AS fisf-reference-build
+WORKDIR /src
+ENV GOTOOLCHAIN=local CGO_ENABLED=0
+COPY tools/fisf_reference/go.mod tools/fisf_reference/go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY tools/fisf_reference/main.go ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -mod=readonly -trimpath -o /out/macondo-reference .
+
+FROM api AS fisf-benchmark
+COPY --from=fisf-reference-build /out/macondo-reference /usr/local/bin/macondo-reference
+ENV LETTRINE_REFERENCE=/usr/local/bin/macondo-reference
+CMD ["help"]
+
 FROM nginx:alpine AS dashboard
 RUN sed -i 's/^worker_processes .*;/worker_processes 1;/' /etc/nginx/nginx.conf
 COPY infra/dashboard.conf /etc/nginx/conf.d/default.conf

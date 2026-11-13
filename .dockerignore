@@ -11,6 +11,11 @@
 !docs/**
 !infra/
 !infra/**
+!tools/
+!tools/fisf_reference/
+!tools/fisf_reference/go.mod
+!tools/fisf_reference/go.sum
+!tools/fisf_reference/main.go
 data/campaign/*.zst
 data/campaign/**/*.zst
 docs/media/
