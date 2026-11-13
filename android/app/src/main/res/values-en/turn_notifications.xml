@@ -1,0 +1,7 @@
+<resources>
+    <string name="turn_notification_title">Your turn</string>
+    <string name="turn_notification_public">A duel is waiting for your move.</string>
+    <string name="turn_notification_duel">Duel with %1$s</string>
+    <string name="turn_notification_mirror">Mirror rematch with %1$s</string>
+    <string name="turn_notification_channel_detail">Duels and rematches waiting for your move.</string>
+</resources>

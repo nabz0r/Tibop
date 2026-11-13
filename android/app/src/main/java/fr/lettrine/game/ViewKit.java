@@ -23,15 +23,17 @@ final class ViewKit {
     final Palette palette;
     final SkinStore.Selection skins;
     final GameAudio audio;
+    final GameLanguage language;
     final Typeface serif = Typeface.create("serif", Typeface.NORMAL);
     final Typeface medium = Typeface.create("sans-serif-medium", Typeface.NORMAL);
     final Typeface regular = Typeface.create("sans-serif", Typeface.NORMAL);
 
-    ViewKit(Context context, Palette palette, SkinStore.Selection skins, GameAudio audio) {
+    ViewKit(Context context, Palette palette, SkinStore.Selection skins, GameAudio audio, GameLanguage language) {
         this.context = context;
         this.palette = palette;
         this.skins = skins;
         this.audio = audio;
+        this.language = language;
     }
 
     @SuppressLint("ClickableViewAccessibility") // Taps keep the accessible click action.

@@ -13,7 +13,7 @@ final class MatchCodec {
 
     record State(String id, String[] names, int[] levels, int[] scores, int active, int bagSize,
                  int seat, char[] board, boolean[] blanks, List<Character> rack,
-                 List<FrenchGame.Move> history, String end) {}
+                 List<FrenchGame.Move> history, String end, GameLanguage language) {}
 
     static JSONObject object(Object... fields) {
         JSONObject result = new JSONObject();
@@ -114,15 +114,17 @@ final class MatchCodec {
 
     static State forLocal(FrenchGame game, int seat) {
         return new State(game.id, game.names, game.levels, game.scores, game.active, game.bag.size(), seat,
-                game.board, game.blanks, game.racks.get(seat), game.history, game.end);
+                game.board, game.blanks, game.racks.get(seat), game.history, game.end, game.language);
     }
 
     static JSONObject visible(FrenchGame game, int seat) {
         State state = forLocal(game, seat);
-        return object("type", "state", "version", VERSION, "id", state.id, "names", new JSONArray(Arrays.asList(state.names)),
+        JSONObject row = object("type", "state", "version", VERSION, "id", state.id, "names", new JSONArray(Arrays.asList(state.names)),
                 "levels", ints(state.levels), "scores", ints(state.scores), "active", state.active,
                 "bag_count", state.bagSize, "seat", state.seat, "board", boardText(state.board, state.blanks),
                 "rack", rackText(state.rack), "moves", moves(state.history, false), "end", state.end);
+        if (state.language != GameLanguage.FRENCH) put(row, "language", state.language.code);
+        return row;
     }
 
     static State readState(JSONObject row) throws JSONException {
@@ -153,7 +155,8 @@ final class MatchCodec {
             if (move.player() < 0 || move.player() >= names.length) throw new JSONException("Historique invalide");
         }
         return new State(row.getString("id"), names, levels, scores, active, row.getInt("bag_count"), seat,
-                board, blanks, rack, moves, row.isNull("end") ? null : row.getString("end"));
+                board, blanks, rack, moves, row.isNull("end") ? null : row.getString("end"),
+                GameLanguage.fromCode(row.optString("language", "fr")));
     }
 
     private static int[] readInts(JSONArray array, int expected) throws JSONException {
@@ -182,7 +185,8 @@ final class MatchCodec {
 
     static FrenchGame restore(JSONObject row) throws JSONException {
         State state = readState(row);
-        FrenchGame game = new FrenchGame(state.id, Long.parseLong(row.getString("seed")), state.names, state.levels);
+        FrenchGame game = new FrenchGame(state.id, Long.parseLong(row.getString("seed")), state.names,
+                state.levels, state.language);
         JSONArray racks = row.getJSONArray("racks");
         for (int i = 0; i < game.racks.size(); i++) game.racks.get(i).addAll(readRack(racks.getString(i)));
         game.bag.addAll(readRack(row.getString("bag")));
@@ -205,7 +209,7 @@ final class MatchCodec {
         int[] adjustments = state.scores.clone();
         for (FrenchGame.Move move : state.history) adjustments[move.player()] -= move.score();
         JSONObject row = object("schema", "lettrine.game.v1", "id", state.id, "source", "android",
-                "mode", mode, "language", "fr", "lexicon", lexicon, "finished_at_ms", System.currentTimeMillis(),
+                "mode", mode, "language", state.language.code, "lexicon", lexicon, "finished_at_ms", System.currentTimeMillis(),
                 "names", new JSONArray(Arrays.asList(state.names)), "levels", ints(state.levels),
                 "scores", ints(state.scores), "adjustments", ints(adjustments), "turns", state.history.size(),
                 "moves", moves(state.history, !mode.equals("bluetooth")),

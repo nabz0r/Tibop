@@ -1,0 +1,32 @@
+<resources>
+    <string name="skins_title">Collection</string>
+    <string name="skins_intro">Customize your board, tiles, and score cards.</string>
+    <string name="skins_boards">Boards</string>
+    <string name="skins_tiles">Tiles</string>
+    <string name="skins_classic">Classic</string>
+    <string name="skins_tide">Tide</string>
+    <string name="skins_slate">Slate</string>
+    <string name="skins_porcelain">Porcelain</string>
+    <string name="skins_amber">Amber</string>
+    <string name="skins_board_classic">The colors of your current theme.</string>
+    <string name="skins_board_tide">Deep blue with glass-like squares.</string>
+    <string name="skins_board_slate">A graphite frame with mineral-toned squares.</string>
+    <string name="skins_tile_classic">The tiles from your current theme.</string>
+    <string name="skins_tile_porcelain">Cool ivory with satin edges.</string>
+    <string name="skins_tile_amber">Golden honey with warm brown lettering.</string>
+    <string name="skins_available">%1$d of %2$d available</string>
+    <string name="skins_active">Equipped</string>
+    <string name="skins_equip">Equip</string>
+    <string name="skins_equip_named">Equip %1$s</string>
+    <string name="skins_equipped_notice">%1$s equipped.</string>
+    <string name="skins_save_error">Couldn’t save this style.</string>
+    <string name="skins_progress">%1$d / %2$d</string>
+    <plurals name="skins_daily_requirement">
+        <item quantity="one">Finish a daily puzzle.</item>
+        <item quantity="other">Finish a daily puzzle on %d different days.</item>
+    </plurals>
+    <plurals name="skins_solo_requirement">
+        <item quantity="one">Finish a solo game.</item>
+        <item quantity="other">Finish %d solo games.</item>
+    </plurals>
+</resources>

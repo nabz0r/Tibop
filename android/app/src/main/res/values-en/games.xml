@@ -1,0 +1,19 @@
+<resources>
+    <string name="games_title">My Games</string>
+    <string name="games_home_detail">Resume a game or start a new one</string>
+    <string name="games_empty">No games in progress.</string>
+    <string name="games_new_solo">New solo game</string>
+    <string name="games_new_local">New local game</string>
+    <string name="games_solo_score">Solo · %1$s · Turn %2$d</string>
+    <string name="games_local_score">On this device · %1$s · Turn %2$d</string>
+    <string name="games_your_turn">Your turn</string>
+    <string name="games_pending_archive">Ready to archive</string>
+    <string name="games_abandon">Abandon</string>
+    <string name="games_abandon_title">Abandon this game?</string>
+    <string name="games_bluetooth_active">Connected</string>
+    <string name="games_bluetooth_title">Leave the Bluetooth game?</string>
+    <string name="games_bluetooth_body">Leaving ends the connection between the two devices.</string>
+    <string name="games_bluetooth_continue">Leave Bluetooth game</string>
+    <string name="games_read_error">Couldn’t read a saved game.</string>
+    <string name="games_write_error">Couldn’t save the game.</string>
+</resources>

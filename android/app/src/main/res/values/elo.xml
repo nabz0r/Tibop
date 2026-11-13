@@ -1,0 +1,11 @@
+<resources>
+    <string name="elo_chart_title">Évolution de l’Elo</string>
+    <string name="elo_chart_empty">Terminez une partie cotée contre NAB pour voir votre courbe.</string>
+    <string name="elo_chart_rated_games">Parties cotées contre NAB</string>
+    <string name="elo_chart_previous">Point Elo précédent</string>
+    <string name="elo_chart_next">Point Elo suivant</string>
+    <string name="elo_chart_before_first">%1$s Elo\nAvant la première partie cotée</string>
+    <string name="elo_chart_unchanged">stable</string>
+    <string name="elo_chart_game">Partie %1$s sur %2$s</string>
+    <string name="elo_chart_latest">Dernière partie</string>
+</resources>

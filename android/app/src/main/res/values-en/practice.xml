@@ -1,0 +1,43 @@
+<resources>
+    <string name="practice_first">First puzzle</string>
+    <string name="practice_first_home">Find a move in under a minute</string>
+    <string name="practice_first_goal">Extend SHIP to the right or play a word that crosses it.</string>
+    <string name="practice_first_unavailable">This puzzle requires a dictionary that supports the tutorial words.</string>
+    <string name="practice_retry_title">Replay move %1$d</string>
+    <string name="practice_retry_goal">Play from the original board and rack. Look for a stronger move.</string>
+    <string name="practice_guide">Drag a tile or tap a tile, then a square.</string>
+    <string name="practice_ready">Play move</string>
+    <string name="practice_clear">Clear</string>
+    <string name="practice_reveal">Show NAB’s move</string>
+    <string name="practice_yours">Your move</string>
+    <string name="practice_reference">NAB’s move</string>
+    <string name="practice_reset">Try again</string>
+    <string name="practice_original">Your move in the game · %1$s</string>
+    <string name="practice_score_line">%1$s · %2$s · %3$s</string>
+    <string name="practice_preview_score">%1$s · %2$s</string>
+    <string name="practice_better">Your move scores %1$s more than NAB’s.</string>
+    <string name="practice_lower">Your move scores %1$s less than NAB’s.</string>
+    <string name="practice_equal">Your move and NAB’s score the same.</string>
+    <string name="practice_first_tip">NAB extends SHIP to SHIPMENT. The M on H12 is doubled, and the final T reaches a triple-word square on H15.</string>
+    <string name="practice_joker_choice">Choose a letter for the blank tile</string>
+    <string name="practice_cancel">Cancel</string>
+    <string name="practice_letter">Letter %1$c</string>
+    <string name="practice_joker">Blank tile</string>
+    <string name="practice_placed">%1$s, already on the board</string>
+    <string name="practice_board_description">Practice board, 15 rows by 15 columns.</string>
+    <string name="practice_board_first_description">Practice board. SHIP runs from H8 to H11.</string>
+    <string name="practice_board_result">Board, %1$s. %2$s, %3$s.</string>
+    <string name="practice_board_tile">%1$c at %2$c%3$d</string>
+    <string name="practice_board_blank">Blank %1$c at %2$c%3$d</string>
+    <string name="practice_zoom">Zoom in on the board</string>
+    <string name="practice_zoom_out">Zoom out on the board</string>
+    <string name="practice_zoom_percent">%1$d%%</string>
+    <string name="practice_status_valid">✓ Valid move</string>
+    <string name="practice_status_invalid">Check your move</string>
+    <string name="practice_status_empty">Your placement</string>
+    <string name="practice_zoom_reset">Reset board zoom</string>
+    <plurals name="practice_points">
+        <item quantity="one">%d point</item>
+        <item quantity="other">%d points</item>
+    </plurals>
+</resources>

@@ -14,10 +14,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 final class DailyResult {
-    private static final Locale FRENCH = Locale.FRANCE;
-    private static final DateTimeFormatter CARD_DATE = DateTimeFormatter.ofPattern("EEEE d MMMM", FRENCH);
-    private static final DateTimeFormatter SHARE_DATE = DateTimeFormatter.ofPattern("d MMMM uuuu", FRENCH);
-
     private final ViewKit ui;
     private final DailyProgress progress;
     private final DailyChallenge challenge;
@@ -128,10 +124,11 @@ final class DailyResult {
 
     private void share() {
         if (outgoing == null) return;
-        String formattedDate = SHARE_DATE.format(date);
+        String formattedDate = date.format(DateTimeFormatter.ofPattern(label(R.string.daily_share_date),
+                AppLocale.locale(ui.context)));
         String points = points(ui, outgoing.score());
         String title = label(R.string.daily_share);
-        String message = label(R.string.daily_share_text, SHARE_DATE.format(date),
+        String message = label(R.string.daily_share_text, formattedDate,
                 points, outgoing.uri());
         try {
             ScoreCard.share(ui, formattedDate, points, shareStreak == 0 ? "" : streakLabel(ui, shareStreak), message, title);
@@ -149,9 +146,11 @@ final class DailyResult {
         }
     }
 
-    static String dateLabel(LocalDate date) {
-        String label = CARD_DATE.format(date);
-        return label.substring(0, 1).toUpperCase(FRENCH) + label.substring(1);
+    static String dateLabel(ViewKit ui, LocalDate date) {
+        Locale locale = AppLocale.locale(ui.context);
+        String pattern = ui.context.getString(R.string.daily_card_date);
+        String label = date.format(DateTimeFormatter.ofPattern(pattern, locale));
+        return label.substring(0, 1).toUpperCase(locale) + label.substring(1);
     }
 
     static String bestLabel(ViewKit ui, int score) {

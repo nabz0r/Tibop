@@ -12,12 +12,12 @@ server {
     limit_req_status 429;
     add_header Cache-Control "no-store" always;
 
-    location ~ ^/api/social/(session|google(?:/challenge)?)$ {
+    location ~ ^/api/social(?:-en)?/(session|google(?:/challenge)?)$ {
         limit_req zone=lettrine_registration burst=5 nodelay;
         proxy_pass http://127.0.0.1:8790;
     }
 
-    location /api/social/ {
+    location ~ ^/api/social(?:-en)?/ {
         limit_req zone=lettrine_social burst=20 nodelay;
         proxy_pass http://127.0.0.1:8790;
     }

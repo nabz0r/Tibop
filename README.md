@@ -2,7 +2,7 @@
 
 # Lettrine
 
-Laboratoire local de stratégie pour jeux de lettres. Le studio explore 128 000 duels en quatre langues, les archives de maîtres, les variantes de placement et la progression du bot adaptatif N A B. L’application Android permet de jouer et d’expliquer les coups hors ligne.
+Laboratoire local de stratégie pour jeux de lettres. Le studio explore 128 000 duels en quatre langues, les archives de maîtres, les variantes de placement et la progression du bot adaptatif NAB. L’application Android, appelée WordRivet en bêta, permet de jouer et d’expliquer les coups hors ligne en français et en anglais.
 
 ## Ouvrir sur le Mac
 
@@ -33,15 +33,15 @@ Pour jouer, glisser une lettre sur le plateau ou sélectionner une lettre puis s
 
 À la fin d’une partie jouée avec cette version, les participants peuvent télécharger le journal des coups en JSON. Dans le studio, ouvrez **Outils**, importez ce fichier, puis ouvrez **Parties → Parties importées** pour le rejeu. Les salons qui avaient déjà enregistré des coups avant cette mise à jour restent jouables et leur journal antérieur est indisponible.
 
-## Application Android
+## WordRivet pour Android
 
 [Télécharger l’APK](android/artifacts/lettrine.apk) · [App Bundle pour la bêta Google Play](android/artifacts/lettrine.aab) · [Guide Android et compilation](android/README.md)
 
-**Deux coups d’avance** propose douze défis hors ligne. Placez deux mots avec le même chevalet, puis rejouez la solution de NAB sur le plateau.
+**Deux coups d’avance** propose douze défis hors ligne par langue. Placez deux mots avec le même chevalet, puis rejouez une séquence guidée par NAB sur le plateau. Le bouton **EN / FR** sur l’accueil change l’interface, le lexique et les défis. Chaque langue conserve ses parties, son Elo et ses records.
 
-Lettrine Android propose un défi par jour hors ligne et une série de jours joués. **Bats mon score** crée une carte et un lien pour inviter un ami à jouer le même défi. L’application permet de jouer en solo, à deux, trois ou quatre sur un appareil ou en duel Bluetooth. Le bilan de NAB permet de retenter un coup manqué avec son chevalet d’origine. SmolLM2 explique les coups et les comparaisons hors ligne. L’historique affiche la progression de l’Elo et exporte les parties en JSON.
+WordRivet propose un défi par jour hors ligne et une série de jours joués. **Bats mon score** crée une carte et un lien pour inviter un ami à jouer le même défi. L’application permet de jouer en solo, à deux, trois ou quatre sur un appareil ou en duel Bluetooth. Le bilan de NAB permet de retenter un coup manqué avec son chevalet d’origine. SmolLM2 aide à expliquer les coups et les comparaisons hors ligne. L’historique affiche la progression de l’Elo et exporte les parties en JSON.
 
-**Amis** propose les duels asynchrones, les notifications de tour et un tournoi du week-end sur trois défis avec classement. Le lien HTTPS de bêta ouvre Android et propose le serveur du groupe. **Profil → Collection** permet de débloquer des plateaux, tuiles et fonds de carte en jouant. [Rejoindre la bêta Android](android/README.md#amis-et-duels-en-bêta)
+**Amis** propose les duels asynchrones, les notifications de tour et un tournoi du week-end sur trois défis avec classement. Le lien HTTPS de bêta ouvre Android et propose le serveur du groupe. La bêta anglaise utilise son propre espace sur le serveur. **Profil → Collection** permet de débloquer des plateaux, tuiles et fonds de carte en jouant. [Rejoindre la bêta Android](android/README.md#amis-et-duels-en-bêta)
 
 ## Laboratoire
 

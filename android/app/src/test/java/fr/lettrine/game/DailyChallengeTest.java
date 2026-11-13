@@ -23,10 +23,14 @@ import static org.junit.Assert.assertTrue;
 public class DailyChallengeTest {
     private static final LocalDate LAUNCH = LocalDate.of(2026, 11, 13);
     private static Lexicon french;
+    private static Lexicon english;
 
     @BeforeClass public static void loadBundledDictionary() throws Exception {
         try (BufferedReader reader = Files.newBufferedReader(Path.of("../../data/fr/words.txt"))) {
             french = Lexicon.read(reader, "Grammalecte 7.7", "", "", 406312);
+        }
+        try (BufferedReader reader = Files.newBufferedReader(Path.of("../../data/en/words.txt"))) {
+            english = Lexicon.read(reader, "ENABLE2K", "Public domain", "", 169266, GameLanguage.ENGLISH);
         }
     }
 
@@ -48,16 +52,37 @@ public class DailyChallengeTest {
     }
 
     @Test public void calendarCoversFourYearsOfDistinctPlayablePositions() {
+        verifyCalendar(french);
+    }
+
+    @Test public void englishCalendarCoversFourYearsOfDistinctPlayablePositions() {
+        verifyCalendar(english);
+        assertEquals("DATE", DailyChallenge.forDate(LAUNCH, english).openingWord());
+        assertEquals("CLOCHE", DailyChallenge.forDate(LAUNCH, french).openingWord());
+    }
+
+    @Test public void englishTutorialHasItsOwnGuidedMoveAndReferenceScore() {
+        PracticePosition first = PracticePosition.first(english);
+        assertNotNull(first);
+        var placed = new FrenchGame.Tile(FrenchGame.CENTER + 4, 0, 'S', false);
+        var guided = first.preview(List.of(placed), english);
+        assertEquals("SHIPS", guided.word());
+        assertEquals(11, guided.score());
+        assertEquals("SHIPMENT", first.reference().preview().word());
+        assertEquals(54, first.reference().preview().score());
+    }
+
+    private static void verifyCalendar(Lexicon lexicon) {
         Set<String> seen = new HashSet<>();
         Set<String> openings = new HashSet<>();
         String previous = "";
         for (LocalDate date = LAUNCH; date.isBefore(LAUNCH.plusYears(4)); date = date.plusDays(1)) {
-            DailyChallenge challenge = DailyChallenge.forDate(date, french);
+            DailyChallenge challenge = DailyChallenge.forDate(date, lexicon);
             assertNotNull(date.toString(), challenge);
             PracticePosition position = challenge.position();
             char[] board = position.board();
             String name = challenge.openingWord();
-            assertTrue(name, french.contains(name));
+            assertTrue(name, lexicon.contains(name));
             assertEquals(name, readOpening(challenge, board));
             assertTrue(board[FrenchGame.CENTER] != 0);
             assertEquals(FrenchGame.RACK_SIZE, position.rack().size());
@@ -65,17 +90,17 @@ public class DailyChallengeTest {
             for (char letter : name.toCharArray()) used[letter - 'A']++;
             for (char letter : position.rack()) used[letter - 'A']++;
             for (char letter = 'A'; letter <= 'Z'; letter++) {
-                assertTrue(date.toString(), used[letter - 'A'] <= FrenchGame.tileCount(letter));
+                assertTrue(date.toString(), used[letter - 'A'] <= lexicon.language.tileCount(letter));
             }
             assertNotEquals(date.toString(), previous, name);
             previous = name;
             openings.add(name);
             assertTrue(date.toString(), seen.add(Arrays.toString(board) + position.rack()));
 
-            var reference = position.preview(position.reference().tiles(), french);
+            var reference = position.preview(position.reference().tiles(), lexicon);
             assertTrue(date.toString(), reference.valid());
             assertEquals(position.reference().preview(), reference);
-            assertTrue(date.toString(), hasOneTileMove(position, board));
+            assertTrue(date.toString(), hasOneTileMove(position, board, lexicon));
         }
         assertEquals(164, openings.size());
     }
@@ -96,12 +121,12 @@ public class DailyChallengeTest {
         return word.toString();
     }
 
-    private static boolean hasOneTileMove(PracticePosition position, char[] board) {
+    private static boolean hasOneTileMove(PracticePosition position, char[] board, Lexicon lexicon) {
         for (int square = 0; square < board.length; square++) {
             if (board[square] != 0 || !FrenchGame.touches(board, square)) continue;
             for (int index = 0; index < position.rack().size(); index++) {
                 var tile = new FrenchGame.Tile(square, index, position.rack().get(index), false);
-                if (position.preview(List.of(tile), french).valid()) return true;
+                if (position.preview(List.of(tile), lexicon).valid()) return true;
             }
         }
         return false;

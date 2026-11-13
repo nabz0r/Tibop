@@ -93,11 +93,75 @@ final class TwoMoveChallenge {
                     across("PARTAGE", "E8"), down("PLAGE", "J5"))
     );
 
+    private static final List<Design> ENGLISH_DESIGNS = List.of(
+            new Design("en-cats", "The S that starts it", "Create a starting point with one letter.",
+                    "Try adding one letter to CAT. Then look below the new tile.",
+                    "The S in CATS is also the first letter of STOP. That one tile gives you a new line to play.",
+                    "STOPALE", List.of(across("CAT", "H8")),
+                    across("CATS", "H8"), down("STOP", "K8")),
+            new Design("en-moons", "Moon and stone", "Use a new tile to open a path to the right.",
+                    "The bottom of MOON can become the start of a word that runs across.",
+                    "The S added to MOON lets you play STONE to the right.",
+                    "STONELA", List.of(down("MOON", "H8")),
+                    down("MOONS", "H8"), across("STONE", "H12")),
+            new Design("en-return", "Backtrack", "Find space before the word on the board.",
+                    "Two letters before TURN will give you a new starting point to the left.",
+                    "RETURN puts an R before TURN. You can then play RAIN down from that R.",
+                    "REAINOS", List.of(across("TURN", "H8"), down("TOP", "H8")),
+                    across("RETURN", "F8"), down("RAIN", "F8")),
+            new Design("en-place", "Make room", "Extend ACE upwards to create a new crossing.",
+                    "Keep ACE at the end of your first word, and look to the right of the new P.",
+                    "PLACE adds a P above ACE. That P is the first letter of PIANO.",
+                    "PLIANOS", List.of(down("ACE", "H8"), across("TEA", "F8")),
+                    down("PLACE", "H6"), across("PIANO", "H6")),
+            new Design("en-train", "On the right track", "Build your second word around the new tile.",
+                    "One tile turns RAIN into something that runs on rails.",
+                    "The T added to RAIN goes in the middle of STONE, with new tiles on both sides.",
+                    "TSONELD", List.of(across("RAIN", "H8")),
+                    across("TRAIN", "G8"), down("STONE", "G7")),
+            new Design("en-ice", "First snow", "Create a crossing one square above ICE.",
+                    "The new tile above ICE can become the second letter of a winter word.",
+                    "The N in NICE lets you play SNOW across. There is room on both sides of the N.",
+                    "NSOWARE", List.of(down("ICE", "H8")),
+                    down("NICE", "H7"), across("SNOW", "G7")),
+            new Design("en-nest", "In the branches", "Use the blank tile to create a crossing.",
+                    "Play the blank as an S so you can keep the real S for your second word.",
+                    "The blank turns NEST into NESTS. It keeps its zero value, and the real S helps make ASSET.",
+                    "?ASETEL", List.of(across("NEST", "H8"), down("NIGHT", "H8")),
+                    across("NESTs", "H8"), down("ASSET", "L7")),
+            new Design("en-into", "Side by side", "Make three words with a single placement.",
+                    "Try placing a two-letter word just below IN. Keep E and M for the second turn.",
+                    "TO also makes IT and NO. You can extend IT down into ITEM.",
+                    "TOEMASR", List.of(across("IN", "H8")),
+                    across("TO", "H9"), down("ITEM", "H8")),
+            new Design("en-queen", "Save the Q", "Keep the Q for the crossing you are about to make.",
+                    "Extend PLAY so you have an E on the board for a word starting with QU.",
+                    "PLAYED puts an E in the middle of QUEEN. Keep the other E for the fourth letter.",
+                    "EDQUENA", List.of(across("PLAY", "H8"), down("PINE", "H8")),
+                    across("PLAYED", "H8"), down("QUEEN", "L6")),
+            new Design("en-boats", "Across the bay", "Turn a vertical word into a horizontal crossing.",
+                    "Start at the bottom of BOAT and keep R, O and E in your rack.",
+                    "BOATS gives you an S to build ROSE around on the bottom row.",
+                    "SROENIA", List.of(down("BOAT", "H8"), across("BREAD", "H8")),
+                    down("BOATS", "H8"), across("ROSE", "F12")),
+            new Design("en-flower", "A triple in bloom", "Aim for the triple-letter square on the second turn.",
+                    "An S at the end of FLOWER opens a line going down.",
+                    "The S in FLOWERS starts SOBER. The B lands on a triple-letter square.",
+                    "SOBERTA", List.of(across("FLOWER", "D8"), down("WATER", "G8")),
+                    across("FLOWERS", "D8"), down("SOBER", "J8")),
+            new Design("en-starters", "To the edge", "Reach a triple-word square on the second turn.",
+                    "Extend STAR by a single letter first. You can reach the edge on the next turn.",
+                    "START keeps E, R and S in your rack. Use all three to make STARTERS and reach the triple-word square.",
+                    "TERSMLN", List.of(down("STAR", "H8"), across("SAND", "H8")),
+                    down("START", "H8"), down("STARTERS", "H8"))
+    );
+
     private TwoMoveChallenge() {}
 
     static List<Puzzle> catalog(Lexicon lexicon) {
-        List<Puzzle> puzzles = new ArrayList<>(DESIGNS.size());
-        for (Design design : DESIGNS) {
+        List<Design> designs = lexicon.language == GameLanguage.ENGLISH ? ENGLISH_DESIGNS : DESIGNS;
+        List<Puzzle> puzzles = new ArrayList<>(designs.size());
+        for (Design design : designs) {
             Puzzle puzzle = prepare(design, lexicon);
             if (puzzle != null) puzzles.add(puzzle);
         }
@@ -107,12 +171,14 @@ final class TwoMoveChallenge {
     static Step play(Position position, List<FrenchGame.Tile> tiles, Lexicon lexicon) {
         List<FrenchGame.Tile> placed = List.copyOf(tiles);
         if (position.moves() == TURN_LIMIT) {
-            return new Step(position, placed, FrenchGame.Preview.invalid("Les deux coups sont déjà joués."), position);
+            return new Step(position, placed, FrenchGame.Preview.invalid(
+                    lexicon.language == GameLanguage.ENGLISH ? "Both moves have already been played." : "Les deux coups sont déjà joués."), position);
         }
         FrenchGame.Preview preview = FrenchGame.preview(position.board, position.blanks, position.rack,
                 lexicon, placed);
         if (preview.valid() && position.moves() == 0 && placed.size() == position.rack.size()) {
-            preview = FrenchGame.Preview.invalid("Garde au moins une lettre pour le deuxième coup.");
+            preview = FrenchGame.Preview.invalid(lexicon.language == GameLanguage.ENGLISH
+                    ? "Keep at least one tile for the second move." : "Garde au moins une lettre pour le deuxième coup.");
         }
         if (!preview.valid()) return new Step(position, placed, preview, position);
 

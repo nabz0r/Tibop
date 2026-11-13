@@ -1,0 +1,35 @@
+<resources>
+    <string name="match_review">Review with NAB</string>
+    <string name="match_review_heading">Moves to revisit</string>
+    <string name="match_review_loading">NAB is analyzing moves on this device…</string>
+    <string name="match_review_empty">This game has no moves to review.</string>
+    <string name="match_review_error">Couldn’t generate a review for this game.</string>
+    <string name="match_review_bluetooth">Racks remain private in Bluetooth games. The review explains the moves played on the board.</string>
+    <string name="match_review_lexicon">This game uses a different dictionary. The review explains the recorded moves.</string>
+    <string name="match_review_turn">Move %1$d</string>
+    <plurals name="match_review_choose_turn">
+        <item quantity="one">Move %1$d, %2$s, %3$d point</item>
+        <item quantity="other">Move %1$d, %2$s, %3$d points</item>
+    </plurals>
+    <string name="match_review_turn_title">Move %1$d · %2$s</string>
+    <string name="match_review_played">Played move</string>
+    <string name="match_review_alternative">NAB’s alternative</string>
+    <string name="match_review_played_score">Played move · %1$s · %2$d pts</string>
+    <string name="match_review_alternative_score">NAB’s alternative · %1$s · %2$d pts</string>
+    <string name="match_review_equal">Same immediate score</string>
+    <string name="match_review_score_delta">Alternative score difference · %1$+d pts</string>
+    <string name="match_review_rack_unavailable">The rack for this turn is missing from the game log, so there’s no alternative to show.</string>
+    <string name="match_review_alternative_unavailable">No other placement to compare on this turn.</string>
+    <string name="match_review_practice">Replay missed moves</string>
+    <string name="match_review_pass">Pass</string>
+    <string name="match_review_exchange">Exchange</string>
+    <string name="match_review_explain">Explain the comparison</string>
+    <string name="match_review_reset_zoom">Reset zoom</string>
+    <string name="match_review_zoom">Zoom in on the board</string>
+    <plurals name="match_review_board">
+        <item quantity="one">Board, %1$s. %2$s, %3$d point.</item>
+        <item quantity="other">Board, %1$s. %2$s, %3$d points.</item>
+    </plurals>
+    <string name="match_review_board_tile">%1$c at %2$c%3$d</string>
+    <string name="match_review_board_blank">Blank %1$c at %2$c%3$d</string>
+</resources>

@@ -21,7 +21,7 @@ final class BluetoothLink implements Closeable {
     interface Listener {
         void connected(BluetoothLink link);
         void received(BluetoothLink link, JSONObject row);
-        void lost(BluetoothLink link, String reason);
+        void lost(BluetoothLink link, int reason);
     }
 
     private static final UUID SERVICE = UUID.fromString("8b99652a-287e-48e2-904a-67d02b41ac99");
@@ -70,9 +70,9 @@ final class BluetoothLink implements Closeable {
                     listener.received(this, new JSONObject(new String(bytes, StandardCharsets.UTF_8)));
                 }
             } catch (SecurityException exception) {
-                fail("L’autorisation Bluetooth n’est plus disponible.");
+                fail(R.string.app_bluetooth_permission);
             } catch (Exception exception) {
-                fail("La connexion Bluetooth a été interrompue.");
+                fail(R.string.bluetooth_disconnected);
             }
         }, "Lettrine Bluetooth").start();
     }
@@ -81,7 +81,7 @@ final class BluetoothLink implements Closeable {
         if (closed || output == null) return;
         byte[] bytes = message.toString().getBytes(StandardCharsets.UTF_8);
         if (bytes.length > MAX_FRAME) {
-            fail("Le message Bluetooth est trop volumineux.");
+            fail(R.string.app_bluetooth_oversize);
             return;
         }
         try {
@@ -91,7 +91,7 @@ final class BluetoothLink implements Closeable {
                     output.write(bytes);
                     output.flush();
                 } catch (IOException exception) {
-                    fail("La connexion Bluetooth a été interrompue.");
+                    fail(R.string.bluetooth_disconnected);
                 }
             });
         } catch (RejectedExecutionException ignored) {
@@ -99,7 +99,7 @@ final class BluetoothLink implements Closeable {
         }
     }
 
-    private synchronized void fail(String reason) {
+    private synchronized void fail(int reason) {
         if (closed) return;
         close();
         listener.lost(this, reason);

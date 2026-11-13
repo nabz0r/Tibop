@@ -17,14 +17,24 @@ import static org.junit.Assert.assertNull;
 
 public class SocialPuzzleParityTest {
     @Test public void everyServerDuelReconstructsTheExactAndroidPosition() throws Exception {
-        Path dictionary = Path.of("../../data/fr/words.txt");
+        checkServerCatalog(GameLanguage.FRENCH, "../../src/social_puzzles.tsv", 406312);
+    }
+
+    @Test public void everyEnglishDuelReconstructsTheExactAndroidPosition() throws Exception {
+        checkServerCatalog(GameLanguage.ENGLISH, "../../src/social_puzzles_en.tsv", 169266);
+    }
+
+    private static void checkServerCatalog(GameLanguage language, String path, int wordCount) throws Exception {
+        Path dictionary = Path.of("../../data", language.code, "words.txt");
         String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(dictionary)));
         Lexicon lexicon;
         try (var reader = Files.newBufferedReader(dictionary)) {
-            lexicon = Lexicon.read(reader, "Grammalecte", "MPL-2.0", hash, 406312);
+            lexicon = Lexicon.read(reader, "Test", "", hash, wordCount, language);
         }
 
-        for (String row : Files.readAllLines(Path.of("../../src/social_puzzles.tsv"))) {
+        List<String> rows = Files.readAllLines(Path.of(path));
+        assertEquals(164, rows.size());
+        for (String row : rows) {
             String[] fields = row.split("\t");
             LocalDate date = LocalDate.parse(fields[0]);
             DailyChallenge challenge = DailyChallenge.forDate(date, lexicon);

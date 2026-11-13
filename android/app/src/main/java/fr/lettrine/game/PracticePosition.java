@@ -17,12 +17,18 @@ record PracticePosition(char[] board, boolean[] blanks, List<Character> rack,
         int center = FrenchGame.CENTER;
         char[] board = new char[FrenchGame.CELLS];
         boolean[] blanks = new boolean[FrenchGame.CELLS];
-        String opening = "CHAT";
-        if (!lexicon.contains(opening) || !lexicon.contains("CHATS")) return null;
+        boolean english = lexicon.language == GameLanguage.ENGLISH;
+        String opening = english ? "SHIP" : "CHAT";
+        if (!lexicon.contains(opening) || !lexicon.contains(opening + 'S')) return null;
         opening.getChars(0, opening.length(), board, center);
 
-        List<Character> rack = List.of('S', 'O', 'N', 'E', 'R', 'I', 'L');
-        List<FrenchGame.Tile> reference = List.of(
+        List<Character> rack = english ? List.of('S', 'M', 'E', 'N', 'T', 'A', 'R')
+                : List.of('S', 'O', 'N', 'E', 'R', 'I', 'L');
+        List<FrenchGame.Tile> reference = english ? List.of(
+                new FrenchGame.Tile(center + 4, 1, 'M', false),
+                new FrenchGame.Tile(center + 5, 2, 'E', false),
+                new FrenchGame.Tile(center + 6, 3, 'N', false),
+                new FrenchGame.Tile(center + 7, 4, 'T', false)) : List.of(
                 new FrenchGame.Tile(center + 4, 1, 'O', false),
                 new FrenchGame.Tile(center + 5, 2, 'N', false),
                 new FrenchGame.Tile(center + 6, 0, 'S', false));

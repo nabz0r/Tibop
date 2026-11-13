@@ -20,20 +20,41 @@ import static org.junit.Assert.assertTrue;
 
 public class TwoMoveChallengeTest {
     private static Lexicon french;
+    private static Lexicon english;
     private static List<TwoMoveChallenge.Puzzle> puzzles;
 
     @BeforeClass public static void loadBundledDictionary() throws Exception {
         try (BufferedReader reader = Files.newBufferedReader(Path.of("../../data/fr/words.txt"))) {
             french = Lexicon.read(reader, "Grammalecte 7.7", "", "", 406312);
         }
+        try (BufferedReader reader = Files.newBufferedReader(Path.of("../../data/en/words.txt"))) {
+            english = Lexicon.read(reader, "ENABLE2K", "Public domain", "", 169266, GameLanguage.ENGLISH);
+        }
         puzzles = TwoMoveChallenge.catalog(french);
     }
 
     @Test public void allTwelvePuzzlesHaveVerifiedTwoMoveSolutionsWithoutDrawing() {
-        assertEquals(12, puzzles.size());
+        verifyCatalog(puzzles, french, "Les deux coups sont déjà joués.");
+    }
+
+    @Test public void englishPuzzlesHaveDistinctVerifiedSolutionsWithEnglishTileValues() {
+        var catalog = TwoMoveChallenge.catalog(english);
+        verifyCatalog(catalog, english, "Both moves have already been played.");
+        assertTrue(catalog.stream().allMatch(puzzle -> puzzle.id().startsWith("en-")));
+        var queen = catalog.stream().filter(puzzle -> puzzle.id().equals("en-queen")).findFirst().orElseThrow();
+        assertEquals("QUEEN", queen.solution().get(1).preview().word());
+        assertEquals(14, queen.solution().get(1).preview().score());
+        var starters = catalog.stream().filter(puzzle -> puzzle.id().equals("en-starters")).findFirst().orElseThrow();
+        assertEquals(24, starters.solution().get(1).preview().score());
+        var crosses = catalog.stream().filter(puzzle -> puzzle.id().equals("en-into")).findFirst().orElseThrow();
+        assertEquals(List.of("TO", "IT", "NO"), crosses.solution().get(0).preview().words());
+    }
+
+    private static void verifyCatalog(List<TwoMoveChallenge.Puzzle> catalog, Lexicon lexicon, String finishedError) {
+        assertEquals(12, catalog.size());
         Set<String> ids = new HashSet<>();
         Set<List<Character>> racks = new HashSet<>();
-        for (var puzzle : puzzles) {
+        for (var puzzle : catalog) {
             String id = puzzle.id();
             assertTrue(id, ids.add(id));
             assertTrue(id, racks.add(puzzle.initial().rack()));
@@ -45,7 +66,7 @@ public class TwoMoveChallengeTest {
             var position = puzzle.initial();
             int total = 0;
             for (var authored : puzzle.solution()) {
-                var played = TwoMoveChallenge.play(position, authored.tiles(), french);
+                var played = TwoMoveChallenge.play(position, authored.tiles(), lexicon);
                 assertTrue(id, played.preview().valid());
                 assertEquals(id, authored.preview(), played.preview());
                 assertTrue(id, played.preview().score() > 0);
@@ -65,8 +86,8 @@ public class TwoMoveChallengeTest {
                 assertEquals(id, remaining, played.after().rack());
                 position = played.after();
             }
-            var third = TwoMoveChallenge.play(position, List.of(), french);
-            assertEquals(id, "Les deux coups sont déjà joués.", third.preview().error());
+            var third = TwoMoveChallenge.play(position, List.of(), lexicon);
+            assertEquals(id, finishedError, third.preview().error());
             assertSame(id, position, third.after());
         }
     }

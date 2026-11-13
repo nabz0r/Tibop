@@ -27,14 +27,14 @@ public final class TurnNotificationWorker extends Worker {
     }
 
     @NonNull @Override public Result doWork() {
-        Context context = getApplicationContext();
+        Context context = AppLocale.wrap(getApplicationContext());
         if (!TurnNotifications.enabled(context) || !TurnNotifications.available(context)) return Result.success();
         TurnNotifications.Session session = TurnNotifications.currentSession(context);
         if (session == null) return Result.success();
         long order = TurnNotifications.begin();
         try {
             HttpURLConnection connection = (HttpURLConnection) URI.create(session.origin()
-                    + "/api/social/turns").toURL().openConnection();
+                    + SocialClient.api(AppLocale.language(context)) + "/turns").toURL().openConnection();
             try {
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(7000);

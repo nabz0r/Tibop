@@ -26,21 +26,23 @@ import java.util.function.Supplier;
 final class SocialClient {
     interface Callback { void onResult(JSONObject result, String error); }
 
-    private static final String API = "/api/social";
+    static String api(GameLanguage language) { return language.storageName("/api/social"); }
     private static final int RESPONSE_LIMIT = 2 * 1024 * 1024;
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String HEX = "0123456789abcdef";
 
     private final Context context;
+    private final GameLanguage language;
     private final SharedPreferences preferences;
     private final Supplier<String> base;
     private final Supplier<String> nickname;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
 
-    SocialClient(Context context, Supplier<String> base, Supplier<String> nickname) {
-        this.context = context.getApplicationContext();
-        preferences = context.getSharedPreferences("social_session", Context.MODE_PRIVATE);
+    SocialClient(Context context, GameLanguage language, Supplier<String> base, Supplier<String> nickname) {
+        this.context = context;
+        this.language = language;
+        preferences = context.getSharedPreferences(language.storageName("social_session"), Context.MODE_PRIVATE);
         this.base = base;
         this.nickname = nickname;
     }
@@ -236,7 +238,7 @@ final class SocialClient {
 
     private JSONObject exchange(String origin, String method, String path, JSONObject body, String token)
             throws IOException, JSONException, ApiError {
-        HttpURLConnection http = (HttpURLConnection) URI.create(origin + API + path).toURL().openConnection();
+        HttpURLConnection http = (HttpURLConnection) URI.create(origin + api(language) + path).toURL().openConnection();
         try {
             http.setConnectTimeout(6000);
             http.setReadTimeout(9000);

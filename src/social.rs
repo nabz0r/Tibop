@@ -4,6 +4,7 @@ use axum::{
     Json, Router,
     extract::{DefaultBodyLimit, Path, State, rejection::JsonRejection},
     http::{HeaderMap, StatusCode, header},
+    middleware,
     response::{IntoResponse, Response},
     routing::{delete, get, post},
 };
@@ -22,7 +23,8 @@ use wolges::movegen::Play;
 
 mod tournament;
 
-const LEXICON: &str = "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a";
+const FR_LEXICON: &str = "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a";
+const EN_LEXICON: &str = "452528054b24cce68199a01534e4639d451ac0da3bdac70113546ad6e13fda0e";
 const INVITE_SECONDS: i64 = 2 * 24 * 60 * 60;
 const NONCE_SECONDS: i64 = 5 * 60;
 const MAX_FRIENDS: i64 = 100;
@@ -90,9 +92,14 @@ const SCHEMA: &str = "
 struct ApiError(StatusCode, String);
 type Api<T> = std::result::Result<T, ApiError>;
 
+#[derive(Clone)]
+struct ErrorMessage(String);
+
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        (self.0, Json(json!({ "error": self.1 }))).into_response()
+        let mut response = (self.0, Json(json!({ "error": self.1 }))).into_response();
+        response.extensions_mut().insert(ErrorMessage(self.1));
+        response
     }
 }
 
@@ -123,6 +130,73 @@ fn missing(message: &str) -> ApiError {
     err(StatusCode::NOT_FOUND, message)
 }
 
+async fn english_errors(mut response: Response) -> Response {
+    if let Some(ErrorMessage(message)) = response.extensions_mut().remove::<ErrorMessage>() {
+        let translated = if let Some(word) = message
+            .strip_prefix("« ")
+            .and_then(|text| text.strip_suffix(" » est absent du lexique."))
+        {
+            format!("“{word}” is not in the dictionary.")
+        } else {
+            match message.as_str() {
+                "Stockage indisponible." => "Storage unavailable.",
+                "Requête JSON invalide." => "Invalid JSON request.",
+                "Aucun tirage jouable. Réessayez." => "No playable rack. Try again.",
+                "Session indisponible. Reconnectez-vous." => "Session unavailable. Sign in again.",
+                "Le pseudo doit compter de 1 à 24 caractères." => "Your nickname must have 1 to 24 characters.",
+                "Utilisez un code pays à deux lettres." => "Use a two-letter country code.",
+                "Joueur introuvable." => "Player not found.",
+                "Identifiant de session invalide." => "Invalid session identifier.",
+                "Joueur invalide." => "Invalid player.",
+                "Trop d’invitations en cours." => "Too many pending invitations.",
+                "Invitation invalide." => "Invalid invitation.",
+                "Invitation introuvable ou expirée." => "Invitation not found or expired.",
+                "Cette invitation est la vôtre." => "This is your own invitation.",
+                "Invitation indisponible." => "Invitation unavailable.",
+                "Invitation déjà utilisée." => "This invitation has already been used.",
+                "La liste d’amis est pleine." => "The friends list is full.",
+                "Duel introuvable." => "Duel not found.",
+                "Ami introuvable." => "Friend not found.",
+                "Un duel est déjà en cours avec cet ami." => "A duel with this friend is already in progress.",
+                "Duel indisponible." => "Duel unavailable.",
+                "Terminez le duel avant de proposer une revanche." => "Finish the duel before requesting a rematch.",
+                "La revanche miroir est disponible après un duel à deux chevalets." => "A mirror rematch follows a duel with different racks.",
+                "Placement invalide." | "Ce placement est invalide." => "Invalid placement.",
+                "Vous avez déjà joué ce duel." => "You already played in this duel.",
+                "Chevalet indisponible." => "Rack unavailable.",
+                "La connexion Google n’est pas configurée. Le mode invité reste disponible." => "Google sign-in is unavailable. You can continue as a guest.",
+                "Identifiant Google invalide." => "Invalid Google identifier.",
+                "Impossible de vérifier ce compte Google." => "This Google account could not be verified.",
+                "La session a changé. Réessayez." => "The session changed. Try again.",
+                "Ce profil est déjà associé à un autre compte Google." => "This profile is linked to another Google account.",
+                "Ce compte Google utilise déjà un autre profil Lettrine. Votre profil invité est conservé." => "This Google account already uses another WordRivet profile. Your guest profile is still available.",
+                "Défi introuvable." => "Challenge not found.",
+                "Ce tournoi n’est plus disponible." => "This tournament is no longer available.",
+                "Vous avez déjà joué ce défi." => "You already played this challenge.",
+                "Le tournoi est fermé." => "The tournament is closed.",
+                "Plateau incompatible." => "Incompatible board.",
+                "Cette lettre du chevalet est indisponible." => "That rack tile is unavailable.",
+                "Posez des lettres sur le plateau." => "Place tiles on the board.",
+                "Cette case est hors du plateau." => "That square is outside the board.",
+                "Cette case est déjà occupée." => "That square is already occupied.",
+                "Choisissez la lettre représentée par le joker." => "Choose a letter for the blank.",
+                "La lettre posée doit correspondre à celle du chevalet." => "The letter must match the tile on the rack.",
+                "Alignez les nouvelles lettres." => "Place the new tiles in one line.",
+                "Formez un mot d’au moins deux lettres." => "Make a word with at least two letters.",
+                "Comblez les trous entre les lettres." => "Fill the gaps between the letters.",
+                "Le premier mot doit couvrir l’étoile centrale." => "The first word must cover the center star.",
+                "Reliez le mot aux lettres déjà posées." => "Connect your word to the tiles on the board.",
+                _ => "The request could not be completed.",
+            }.into()
+        };
+        *response.body_mut() = Json(json!({ "error": translated }))
+            .into_response()
+            .into_body();
+        response.headers_mut().remove(header::CONTENT_LENGTH);
+    }
+    response
+}
+
 #[derive(Serialize)]
 struct Puzzle {
     date: &'static str,
@@ -138,8 +212,7 @@ struct Puzzle {
 }
 
 impl Puzzle {
-    fn for_rack(&self, engine: &Engine, rack: Option<&str>) -> Value {
-        let rack = rack.unwrap_or(self.rack);
+    fn identity_for_rack(&self, engine: &Engine, rack: &str) -> String {
         let mut digest = Sha256::new();
         digest.update(b"v1/");
         digest.update(engine.digest.as_bytes());
@@ -155,11 +228,16 @@ impl Puzzle {
             ]);
         }
         digest.update(rack.as_bytes());
-        let identity = format!("{:x}", digest.finalize());
+        format!("{:x}", digest.finalize())[..24].to_string()
+    }
+
+    fn for_rack(&self, engine: &Engine, rack: Option<&str>) -> Value {
+        let rack = rack.unwrap_or(self.rack);
+        let identity = self.identity_for_rack(engine, rack);
         json!({
             "date":self.date, "opening_word":self.opening_word,
             "opening_start":self.opening_start, "opening_end":self.opening_end,
-            "rack":rack, "identity":&identity[..24], "catalog_identity":self.identity,
+            "rack":rack, "identity":identity, "catalog_identity":self.identity,
         })
     }
 
@@ -235,8 +313,16 @@ struct Social {
 
 impl Social {
     fn open(db: &FilePath, engine: Engine) -> Result<Self> {
-        ensure!(engine.digest == LEXICON, "lexique social incompatible");
-        let puzzles = include_str!("social_puzzles.tsv")
+        let (expected_digest, catalog) = match engine.profile.id.as_str() {
+            "fr-classic-v1" => (FR_LEXICON, include_str!("social_puzzles.tsv")),
+            "en-wespa-v1" => (EN_LEXICON, include_str!("social_puzzles_en.tsv")),
+            _ => anyhow::bail!("profil social incompatible"),
+        };
+        ensure!(
+            engine.digest == expected_digest,
+            "lexique social incompatible"
+        );
+        let puzzles = catalog
             .lines()
             .map(|line| {
                 let fields = line.split('\t').collect::<Vec<_>>();
@@ -256,7 +342,7 @@ impl Social {
                     .chars()
                     .map(|letter| engine.symbol_id(letter))
                     .collect::<Result<Vec<_>>>()?;
-                Ok(Puzzle {
+                let puzzle = Puzzle {
                     date: fields[0],
                     opening_word: fields[1],
                     opening_start,
@@ -265,16 +351,52 @@ impl Social {
                     identity: fields[5],
                     board_codes,
                     rack_codes,
-                })
+                };
+                ensure!(
+                    puzzle.identity == puzzle.identity_for_rack(&engine, puzzle.rack),
+                    "identité de position sociale incompatible"
+                );
+                Ok(puzzle)
             })
             .collect::<Result<Vec<_>>>()?;
-        ensure!(
-            puzzles.len() >= tournament::CATALOG_SIZE,
-            "catalogue social incomplet"
-        );
-        let conn = Connection::open(db)?;
+        ensure!(puzzles.len() == 164, "catalogue social incomplet");
+        let mut conn = Connection::open(db)?;
         conn.busy_timeout(Duration::from_secs(5))?;
         conn.execute_batch("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;")?;
+        let scope = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
+        scope.execute_batch(
+            "CREATE TABLE IF NOT EXISTS social_scope(
+            singleton INTEGER PRIMARY KEY CHECK(singleton=1), profile TEXT NOT NULL
+        );",
+        )?;
+        let profile: Option<String> = scope
+            .query_row(
+                "SELECT profile FROM social_scope WHERE singleton=1",
+                [],
+                |row| row.get(0),
+            )
+            .optional()?;
+        if let Some(profile) = profile {
+            ensure!(
+                profile == engine.profile.id,
+                "base sociale d’une autre langue"
+            );
+        } else {
+            let existing: bool = scope.query_row(
+                "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type='table' AND name='social_users')",
+                [],
+                |row| row.get(0),
+            )?;
+            ensure!(
+                !existing || engine.profile.language == "fr",
+                "base sociale française"
+            );
+            scope.execute(
+                "INSERT INTO social_scope(singleton,profile) VALUES(1,?1)",
+                [&engine.profile.id],
+            )?;
+        }
+        scope.commit()?;
         conn.execute_batch(SCHEMA)?;
         conn.execute_batch(tournament::SCHEMA)?;
         Ok(Self {
@@ -287,38 +409,62 @@ impl Social {
     }
 }
 
-pub(crate) async fn serve(db: &FilePath, engine: Engine, address: &str) -> Result<()> {
+pub(crate) async fn serve(
+    db: &FilePath,
+    engine: Engine,
+    en_db: &FilePath,
+    en_engine: Engine,
+    address: &str,
+) -> Result<()> {
+    ensure!(
+        db != en_db,
+        "bases sociales française et anglaise identiques"
+    );
+    ensure!(
+        engine.profile.language == "fr",
+        "profil social français requis"
+    );
     let app = Arc::new(Social::open(db, engine)?);
+    let english = Arc::new(Social::open(en_db, en_engine)?);
     let listener = tokio::net::TcpListener::bind(address).await?;
     eprintln!("Lettrine social sur http://{address}");
-    axum::serve(listener, router(app)).await?;
+    axum::serve(listener, bilingual_router(app, english)).await?;
     Ok(())
 }
 
 fn router(app: Arc<Social>) -> Router {
     Router::new()
         .route("/health", get(|| async { "ok" }))
-        .route("/api/social/session", post(session))
-        .route("/api/social/me", get(me))
-        .route("/api/social/turns", get(turns))
+        .nest("/api/social", api_routes(app))
+}
+
+fn bilingual_router(french: Arc<Social>, english: Arc<Social>) -> Router {
+    router(french).nest(
+        "/api/social-en",
+        api_routes(english).layer(middleware::map_response(english_errors)),
+    )
+}
+
+fn api_routes(app: Arc<Social>) -> Router {
+    Router::new()
+        .route("/session", post(session))
+        .route("/me", get(me))
+        .route("/turns", get(turns))
+        .route("/profile", post(save_profile).delete(delete_profile))
+        .route("/friends/{id}", delete(unfriend))
+        .route("/friends/{id}/block", post(block_friend))
+        .route("/invites", post(invite))
+        .route("/invites/accept", post(accept))
+        .route("/duels", post(create_duel))
+        .route("/duels/{id}", get(get_duel))
+        .route("/duels/{id}/play", post(play))
+        .route("/duels/{id}/rematch", post(rematch))
+        .route("/duels/{id}/mirror", post(mirror))
+        .route("/google/challenge", post(google_challenge))
+        .route("/google", post(google_link))
+        .route("/tournament", get(tournament::get_weekend))
         .route(
-            "/api/social/profile",
-            post(save_profile).delete(delete_profile),
-        )
-        .route("/api/social/friends/{id}", delete(unfriend))
-        .route("/api/social/friends/{id}/block", post(block_friend))
-        .route("/api/social/invites", post(invite))
-        .route("/api/social/invites/accept", post(accept))
-        .route("/api/social/duels", post(create_duel))
-        .route("/api/social/duels/{id}", get(get_duel))
-        .route("/api/social/duels/{id}/play", post(play))
-        .route("/api/social/duels/{id}/rematch", post(rematch))
-        .route("/api/social/duels/{id}/mirror", post(mirror))
-        .route("/api/social/google/challenge", post(google_challenge))
-        .route("/api/social/google", post(google_link))
-        .route("/api/social/tournament", get(tournament::get_weekend))
-        .route(
-            "/api/social/tournament/{id}/slots/{number}/play",
+            "/tournament/{id}/slots/{number}/play",
             post(tournament::play_slot),
         )
         .layer(DefaultBodyLimit::max(12 * 1024))
@@ -485,7 +631,7 @@ async fn session(
         .map(nickname)
         .transpose()?
         .map(str::to_owned);
-    write(app, move |_, db| {
+    write(app, move |app, db| {
         let existing = db
             .query_row(
                 "SELECT user_id FROM social_sessions WHERE token=?1",
@@ -497,7 +643,14 @@ async fn session(
             existing
         } else {
             let id = random_hex::<16>();
-            let name = supplied_name.unwrap_or_else(|| format!("Joueur {}", &id[..5]));
+            let name = supplied_name.unwrap_or_else(|| {
+                let role = if app.engine.profile.language == "en" {
+                    "Player"
+                } else {
+                    "Joueur"
+                };
+                format!("{role} {}", &id[..5])
+            });
             db.execute(
                 "INSERT INTO social_users(id,nickname) VALUES(?1,?2)",
                 params![id, name],
@@ -1401,10 +1554,14 @@ mod tests {
     }
 
     pub(super) async fn server(app: Arc<Social>) -> (String, JoinHandle<()>) {
+        serve_test(router(app)).await
+    }
+
+    async fn serve_test(router: Router) -> (String, JoinHandle<()>) {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = format!("http://{}", listener.local_addr().unwrap());
         let handle = tokio::spawn(async move {
-            axum::serve(listener, router(app)).await.unwrap();
+            axum::serve(listener, router).await.unwrap();
         });
         (address, handle)
     }
@@ -1417,7 +1574,26 @@ mod tests {
         body: Value,
         status: StatusCode,
     ) -> Value {
-        let mut req = reqwest::Client::new().request(method, format!("{base}/api/social/{path}"));
+        request_path(
+            base,
+            method,
+            &format!("/api/social/{path}"),
+            token,
+            body,
+            status,
+        )
+        .await
+    }
+
+    async fn request_path(
+        base: &str,
+        method: Method,
+        path: &str,
+        token: &str,
+        body: Value,
+        status: StatusCode,
+    ) -> Value {
+        let mut req = reqwest::Client::new().request(method, format!("{base}{path}"));
         if !token.is_empty() {
             req = req.bearer_auth(token);
         }
@@ -1429,6 +1605,189 @@ mod tests {
         let body: Value = response.json().await.unwrap();
         assert_eq!(actual, status, "{path}: {body}");
         body
+    }
+
+    pub(super) fn english_engine() -> Engine {
+        Engine::load(
+            FilePath::new("data/en/words.txt"),
+            "ENABLE2K".into(),
+            crate::profiles::load("en-wespa-v1").unwrap(),
+        )
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn french_and_english_sessions_duels_and_tournaments_are_isolated() {
+        let french = Arc::new(Social::open(FilePath::new(":memory:"), engine()).unwrap());
+        let english = Arc::new(Social::open(FilePath::new(":memory:"), english_engine()).unwrap());
+        english
+            .tournament_time
+            .store(20_771 * 86_400, std::sync::atomic::Ordering::Relaxed);
+        let (base, server) = serve_test(bilingual_router(french, english.clone())).await;
+        let en = |method, path: &str, token: &str, body, status| {
+            let base = base.clone();
+            let path = format!("/api/social-en/{path}");
+            let token = token.to_owned();
+            async move { request_path(&base, method, &path, &token, body, status).await }
+        };
+        let fr_token = "1".repeat(64);
+        let a = "a".repeat(64);
+        let b = "b".repeat(64);
+        request(
+            &base,
+            Method::POST,
+            "session",
+            "",
+            json!({"token":fr_token,"nickname":"Alice FR"}),
+            StatusCode::OK,
+        )
+        .await;
+        let denied_en = en(
+            Method::GET,
+            "me",
+            &fr_token,
+            Value::Null,
+            StatusCode::UNAUTHORIZED,
+        )
+        .await;
+        assert_eq!(denied_en["error"], "Session unavailable. Sign in again.");
+        let alice = en(
+            Method::POST,
+            "session",
+            "",
+            json!({"token":a}),
+            StatusCode::OK,
+        )
+        .await;
+        assert!(
+            alice["profile"]["nickname"]
+                .as_str()
+                .unwrap()
+                .starts_with("Player ")
+        );
+        let bob = en(
+            Method::POST,
+            "session",
+            "",
+            json!({"token":b,"nickname":"Bob EN"}),
+            StatusCode::OK,
+        )
+        .await;
+        let denied_fr = request(
+            &base,
+            Method::GET,
+            "me",
+            &a,
+            Value::Null,
+            StatusCode::UNAUTHORIZED,
+        )
+        .await;
+        assert_eq!(
+            denied_fr["error"],
+            "Session indisponible. Reconnectez-vous."
+        );
+        let invite = en(Method::POST, "invites", &a, json!({}), StatusCode::OK).await;
+        en(
+            Method::POST,
+            "invites/accept",
+            &b,
+            json!({"token":invite["token"]}),
+            StatusCode::OK,
+        )
+        .await;
+        let response = reqwest::Client::new()
+            .post(format!("{base}/api/social-en/duels"))
+            .bearer_auth(&a)
+            .header("X-Lettrine-Duel-Version", "2")
+            .json(&json!({"friend_id":bob["profile"]["id"]}))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let duel: Value = response.json().await.unwrap();
+        assert_eq!(duel["duel"]["puzzle"]["opening_word"], "DATE");
+        let puzzle = &english.puzzles[0];
+        assert_eq!(duel["duel"]["puzzle"]["catalog_identity"], puzzle.identity);
+        let id = duel["duel"]["id"].as_str().unwrap();
+        let bob_duel = en(
+            Method::GET,
+            &format!("duels/{id}"),
+            &b,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
+        let rack_a = duel["duel"]["puzzle"]["rack"].as_str().unwrap();
+        let rack_b = bob_duel["duel"]["puzzle"]["rack"].as_str().unwrap();
+        assert_ne!(rack_a, rack_b);
+        let placement_a = candidate(&english, puzzle, rack_a, rack_b);
+        let placement_b = candidate(&english, puzzle, rack_b, rack_a);
+        let duel_path = format!("duels/{id}/play");
+        en(
+            Method::POST,
+            &duel_path,
+            &a,
+            placement_a.clone(),
+            StatusCode::OK,
+        )
+        .await;
+        let finished = en(
+            Method::POST,
+            &duel_path,
+            &b,
+            placement_b.clone(),
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(finished["duel"]["status"], "finished");
+        assert!(finished["duel"]["score"].as_i64().unwrap() > 0);
+        let mirror = en(
+            Method::POST,
+            &format!("duels/{id}/mirror"),
+            &a,
+            json!({}),
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(mirror["duel"]["puzzle"]["rack"], rack_b);
+        assert_eq!(mirror["duel"]["puzzle"]["opening_word"], "DATE");
+        assert_eq!(mirror["duel"]["kind"], "mirror");
+        let mirror_path = format!("duels/{}/play", mirror["duel"]["id"].as_str().unwrap());
+        en(Method::POST, &mirror_path, &a, placement_b, StatusCode::OK).await;
+        let finished = en(Method::POST, &mirror_path, &b, placement_a, StatusCode::OK).await;
+        assert_eq!(finished["duel"]["status"], "finished");
+        assert_eq!(
+            finished["duel"]["score"],
+            finished["duel"]["original_opponent_score"]
+        );
+        assert_eq!(
+            finished["duel"]["opponent_score"],
+            finished["duel"]["original_score"]
+        );
+        let weekend = en(Method::GET, "tournament", &a, Value::Null, StatusCode::OK).await;
+        assert_eq!(weekend["status"], "open");
+        for (index, puzzle) in english.puzzles.iter().take(3).enumerate() {
+            assert_eq!(
+                weekend["slots"][index]["puzzle"]["identity"],
+                puzzle.identity
+            );
+            let path = format!(
+                "tournament/{}/slots/{}/play",
+                weekend["id"].as_i64().unwrap(),
+                index + 1
+            );
+            let played = en(
+                Method::POST,
+                &path,
+                &a,
+                candidate(&english, puzzle, puzzle.rack, puzzle.rack),
+                StatusCode::OK,
+            )
+            .await;
+            assert_eq!(played["completed"], index + 1);
+            assert_eq!(played["card_background_unlocked"], index == 2);
+        }
+        server.abort();
     }
 
     async fn turn_feed(base: &str, token: &str) -> Value {

@@ -22,29 +22,33 @@ final class Lexicon {
     final String license;
     final String hash;
     final int size;
+    final GameLanguage language;
     Bot.Policy expert = Bot.BASE_EXPERT;
     boolean trained;
 
-    private Lexicon(String label, String license, String hash, int size) {
+    private Lexicon(String label, String license, String hash, int size, GameLanguage language) {
         this.label = label;
         this.license = license;
         this.hash = hash;
         this.size = size;
+        this.language = language;
     }
 
-    static Lexicon load(Context context) throws Exception {
+    static Lexicon load(Context context, GameLanguage language) throws Exception {
         StringBuilder metadata = new StringBuilder();
+        String metadataFile = language == GameLanguage.FRENCH ? "lexicon.json" : "lexicon-en.json";
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                context.getAssets().open("lexicon.json"), StandardCharsets.UTF_8))) {
+                context.getAssets().open(metadataFile), StandardCharsets.UTF_8))) {
             for (String line; (line = reader.readLine()) != null; ) metadata.append(line);
         }
         JSONObject meta = new JSONObject(metadata.toString());
         Lexicon dictionary;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                context.getAssets().open("words-fr.txt"), StandardCharsets.US_ASCII), 65536)) {
+                context.getAssets().open("words-" + language.code + ".txt"), StandardCharsets.US_ASCII), 65536)) {
             dictionary = read(reader, meta.getString("label"), meta.getString("license"),
-                    meta.getString("sha256"), meta.getInt("count"));
+                    meta.getString("sha256"), meta.getInt("count"), language);
         }
+        if (language != GameLanguage.FRENCH) return dictionary;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 context.getAssets().open("bot-policy.json"), StandardCharsets.UTF_8))) {
             StringBuilder source = new StringBuilder();
@@ -67,7 +71,12 @@ final class Lexicon {
 
     static Lexicon read(BufferedReader reader, String label, String license, String hash, int size)
             throws java.io.IOException {
-        Lexicon dictionary = new Lexicon(label, license, hash, size);
+        return read(reader, label, license, hash, size, GameLanguage.FRENCH);
+    }
+
+    static Lexicon read(BufferedReader reader, String label, String license, String hash, int size,
+                        GameLanguage language) throws java.io.IOException {
+        Lexicon dictionary = new Lexicon(label, license, hash, size, language);
         int rank = 0;
         for (String word; (word = reader.readLine()) != null; ) dictionary.add(word, ++rank);
         if (rank != size) throw new IllegalStateException("Liste incomplète");

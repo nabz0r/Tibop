@@ -3,7 +3,7 @@
     <string name="two_move_intro">Deux poses sur le même plateau. Garde les lettres restantes pour le deuxième coup.</string>
     <string name="two_move_catalog_progress">%1$d sur %2$d terminés</string>
     <string name="two_move_catalog_record">Record · %1$s</string>
-    <string name="two_move_unavailable">Ces défis demandent le lexique français fourni avec Lettrine.</string>
+    <string name="two_move_unavailable">Ces défis demandent le lexique français fourni avec WordRivet.</string>
     <string name="two_move_phase">Pose %1$d sur 2</string>
     <string name="two_move_first">Valider le 1er coup</string>
     <string name="two_move_second">Valider le 2e coup</string>

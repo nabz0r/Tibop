@@ -3,6 +3,7 @@ package fr.lettrine.game;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
+import android.graphics.PorterDuff;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
@@ -94,6 +95,7 @@ final class DailyChallengeCard {
         };
         image.setImageResource(R.drawable.daily_letter_board);
         image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        image.setColorFilter(0x44252e61, PorterDuff.Mode.SRC_ATOP);
         image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         return image;
     }

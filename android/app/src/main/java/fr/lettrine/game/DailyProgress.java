@@ -15,8 +15,8 @@ final class DailyProgress {
 
     private final SharedPreferences preferences;
 
-    DailyProgress(Context context) {
-        preferences = context.getSharedPreferences("daily_progress", Context.MODE_PRIVATE);
+    DailyProgress(Context context, GameLanguage language) {
+        preferences = context.getSharedPreferences(language.storageName("daily_progress"), Context.MODE_PRIVATE);
     }
 
     Snapshot snapshot(LocalDate today) {

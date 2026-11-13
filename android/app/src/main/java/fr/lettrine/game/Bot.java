@@ -10,14 +10,6 @@ import java.util.concurrent.CancellationException;
 
 final class Bot {
     static final int ADAPTIVE = 5;
-    static final String[] NAMES = {"", "Promeneur", "Habitué", "Stratège", "Maître", "Adaptatif"};
-    static final String[] DESCRIPTIONS = {
-            "", "Des coups courts et un rythme souple.",
-            "Des coups réguliers, avec quelques ouvertures.",
-            "Exploite les cases bonus et les rallonges.",
-            "Arbitre le score, le chevalet et la fin de partie.",
-            "Ajuste sa difficulté à votre Elo local et à l’écart de score."
-    };
     static final int[] RATINGS = {0, 800, 1050, 1300, 1550, 0};
     private static final int ALL_LETTERS = (1 << 26) - 1;
     private static final int SHORTLIST = 36;
@@ -74,7 +66,7 @@ final class Bot {
         if (bagSize >= FrenchGame.RACK_SIZE) {
             for (int i = 0; i < rack.size(); i++) {
                 char tile = rack.get(i);
-                if (tile != FrenchGame.JOKER && (FrenchGame.value(tile) >= 4 || rack.indexOf(tile) != i)) returned.add(i);
+                if (tile != FrenchGame.JOKER && (lexicon.language.value(tile) >= 4 || rack.indexOf(tile) != i)) returned.add(i);
             }
             if (returned.isEmpty()) {
                 for (int i = 0; i < rack.size(); i++) {
@@ -176,7 +168,7 @@ final class Bot {
             int existing = 0;
             for (int previous; (previous = FrenchGame.step(start, perpendicular, -1)) >= 0
                     && board[previous] != 0; ) {
-                if (!blanks[previous]) existing += FrenchGame.value(board[previous]);
+                if (!blanks[previous]) existing += lexicon.language.value(board[previous]);
                 start = previous;
             }
             int after = FrenchGame.step(pos, perpendicular, 1);
@@ -185,7 +177,7 @@ final class Bot {
             crossScore[pos] = 0;
             if (!crossWord[pos]) return;
             for (int next = after; next >= 0 && board[next] != 0; next = FrenchGame.step(next, perpendicular, 1)) {
-                if (!blanks[next]) existing += FrenchGame.value(board[next]);
+                if (!blanks[next]) existing += lexicon.language.value(board[next]);
             }
             crossScore[pos] = existing;
             int prefix = lexicon.root();
@@ -218,7 +210,7 @@ final class Bot {
                 int child = lexicon.child(node, board[pos] - 'A');
                 if (child != 0) {
                     extend(next, child, rackMask, placed, length + 1,
-                            mainScore + (blanks[pos] ? 0 : FrenchGame.value(board[pos])),
+                            mainScore + (blanks[pos] ? 0 : lexicon.language.value(board[pos])),
                             wordMultiplier, sideScore, connected);
                 }
                 return;
@@ -235,7 +227,7 @@ final class Bot {
                 int child = lexicon.child(node, letter);
                 chosenLetter[placed] = letter;
                 if (counts[letter] > 0) {
-                    int val = FrenchGame.value((char) ('A' + letter)) * FrenchGame.LETTER_MULTIPLIER[pos];
+                    int val = lexicon.language.value((char) ('A' + letter)) * FrenchGame.LETTER_MULTIPLIER[pos];
                     int cross = crossWord[pos] ? (crossScore[pos] + val) * wm : 0;
                     chosenBlank[placed] = false;
                     if (--counts[letter] == 0) rackMask &= ~bit;
@@ -295,7 +287,7 @@ final class Bot {
                 if (remaining == 0) return 160;
                 int residue = 0;
                 for (int i = 0; i < counts.length; i++) {
-                    residue += counts[i] * FrenchGame.value((char) ('A' + i));
+                    residue += counts[i] * lexicon.language.value((char) ('A' + i));
                 }
                 return -policy.endPenalty * residue;
             }

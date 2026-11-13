@@ -1,0 +1,11 @@
+<resources>
+    <string name="elo_chart_title">Elo Progress</string>
+    <string name="elo_chart_empty">Finish a rated game against NAB to see your progress.</string>
+    <string name="elo_chart_rated_games">Rated games against NAB</string>
+    <string name="elo_chart_previous">Previous Elo point</string>
+    <string name="elo_chart_next">Next Elo point</string>
+    <string name="elo_chart_before_first">%1$s Elo\nBefore your first rated game</string>
+    <string name="elo_chart_unchanged">unchanged</string>
+    <string name="elo_chart_game">Game %1$s of %2$s</string>
+    <string name="elo_chart_latest">Latest game</string>
+</resources>

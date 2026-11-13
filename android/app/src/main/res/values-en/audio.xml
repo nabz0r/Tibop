@@ -1,0 +1,9 @@
+<resources>
+    <string name="music_pick">Choose a soundtrack</string>
+    <string name="music_volume">Music volume</string>
+    <string name="tile_sounds">Tile sounds</string>
+    <string-array name="music_tracks">
+        <item>Quiet Garden</item>
+        <item>Evening Workshop</item>
+    </string-array>
+</resources>

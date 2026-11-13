@@ -13,8 +13,6 @@ final class FrenchGame {
     static final int CENTER = 7 * SIZE + 7;
     static final int RACK_SIZE = 7;
     static final char JOKER = '?';
-    private static final int[] DISTRIBUTION = {9,2,2,3,15,2,2,2,8,1,1,5,3,6,6,2,1,6,6,6,6,2,1,1,1,1};
-    private static final int[] VALUES = {1,3,3,2,1,4,2,4,1,8,10,1,2,1,1,3,8,1,1,1,1,4,10,10,10,10};
     static final int[] LETTER_MULTIPLIER = new int[CELLS];
     static final int[] WORD_MULTIPLIER = new int[CELLS];
 
@@ -39,10 +37,10 @@ final class FrenchGame {
     }
 
     static int value(char letter) {
-        return letter >= 'A' && letter <= 'Z' ? VALUES[letter - 'A'] : 0;
+        return GameLanguage.FRENCH.value(letter);
     }
 
-    static int tileCount(char letter) { return DISTRIBUTION[letter - 'A']; }
+    static int tileCount(char letter) { return GameLanguage.FRENCH.tileCount(letter); }
 
     static int step(int pos, int direction, int amount) {
         if (direction == 1) {
@@ -91,8 +89,9 @@ final class FrenchGame {
 
     static Preview preview(char[] board, boolean[] blanks, List<Character> rack,
                            Lexicon lexicon, List<Tile> tiles) {
-        if (tiles.isEmpty()) return Preview.invalid("Posez des lettres sur le plateau.");
-        if (tiles.size() > RACK_SIZE) return Preview.invalid("Trop de lettres.");
+        GameLanguage language = lexicon.language;
+        if (tiles.isEmpty()) return Preview.invalid(language.text("Posez des lettres sur le plateau.", "Place tiles on the board."));
+        if (tiles.size() > RACK_SIZE) return Preview.invalid(language.text("Trop de lettres.", "Too many tiles."));
         Tile[] placement = new Tile[CELLS];
         boolean[] used = new boolean[RACK_SIZE];
         int first = tiles.get(0).position;
@@ -104,11 +103,11 @@ final class FrenchGame {
             int pos = tile.position;
             if (board[pos] != 0 || placement[pos] != null || used[tile.rackIndex]
                     || tile.rackIndex >= rack.size()) {
-                return Preview.invalid("Cette case ou cette lettre est indisponible.");
+                return Preview.invalid(language.text("Cette case ou cette lettre est indisponible.", "That square or tile is unavailable."));
             }
             char actual = rack.get(tile.rackIndex);
             if ((tile.blank && actual != JOKER) || (!tile.blank && tile.letter != actual)) {
-                return Preview.invalid("Cette lettre n’est pas sur votre chevalet.");
+                return Preview.invalid(language.text("Cette lettre n’est pas sur votre chevalet.", "That tile is not on your rack."));
             }
             placement[pos] = tile;
             used[tile.rackIndex] = true;
@@ -117,25 +116,25 @@ final class FrenchGame {
             from = Math.min(from, pos);
             to = Math.max(to, pos);
         }
-        if (!sameRow && !sameCol) return Preview.invalid("Alignez les nouvelles lettres.");
+        if (!sameRow && !sameCol) return Preview.invalid(language.text("Alignez les nouvelles lettres.", "Place the new tiles in one row or column."));
         boolean opening = empty(board);
-        if (opening && placement[CENTER] == null) return Preview.invalid("Le premier mot couvre l’étoile centrale.");
-        int direction = wordDirection(board, blanks, placement, tiles, sameRow);
+        if (opening && placement[CENTER] == null) return Preview.invalid(language.text("Le premier mot couvre l’étoile centrale.", "The first word must cover the centre star."));
+        int direction = wordDirection(board, blanks, placement, tiles, sameRow, language);
         for (int pos = from; pos <= to; pos += direction) {
             if (board[pos] == 0 && placement[pos] == null) {
-                return Preview.invalid("Comblez les trous entre les lettres.");
+                return Preview.invalid(language.text("Comblez les trous entre les lettres.", "Fill the gaps between tiles."));
             }
         }
-        List<FormedWord> formed = formedWords(board, blanks, placement, tiles, direction);
+        List<FormedWord> formed = formedWords(board, blanks, placement, tiles, direction, language);
         FormedWord main = formed.get(0);
-        if (main.word.length() < 2) return Preview.invalid("Formez un mot d’au moins deux lettres.");
+        if (main.word.length() < 2) return Preview.invalid(language.text("Formez un mot d’au moins deux lettres.", "Make a word of at least two letters."));
         if (!opening && !main.touchesExisting && formed.size() == 1) {
-            return Preview.invalid("Reliez le mot aux lettres déjà posées.");
+            return Preview.invalid(language.text("Reliez le mot aux lettres déjà posées.", "Connect your word to the tiles already on the board."));
         }
         List<String> words = new ArrayList<>(formed.size());
         int score = 0;
         for (FormedWord word : formed) {
-            if (!lexicon.contains(word.word)) return Preview.invalid("« " + word.word + " » est absent du lexique.");
+            if (!lexicon.contains(word.word)) return Preview.invalid(language.text("« " + word.word + " » est absent du lexique.", word.word + " is not in the dictionary."));
             words.add(word.word);
             score += word.score;
         }
@@ -144,26 +143,30 @@ final class FrenchGame {
     }
 
     private static int wordDirection(char[] board, boolean[] blanks, Tile[] placement,
-                                     List<Tile> tiles, boolean sameRow) {
-        if (!sameRow || (tiles.size() == 1 && run(board, blanks, placement, tiles.get(0).position, 1).word.length() < 2)) {
+                                     List<Tile> tiles, boolean sameRow, GameLanguage language) {
+        if (!sameRow || (tiles.size() == 1 && run(board, blanks, placement, tiles.get(0).position, 1, language).word.length() < 2)) {
             return SIZE;
         }
         return 1;
     }
 
     private static List<FormedWord> formedWords(char[] board, boolean[] blanks, Tile[] placement,
-                                                List<Tile> tiles, int direction) {
+                                                List<Tile> tiles, int direction, GameLanguage language) {
         List<FormedWord> words = new ArrayList<>();
-        words.add(run(board, blanks, placement, tiles.get(0).position, direction));
+        words.add(run(board, blanks, placement, tiles.get(0).position, direction, language));
         int other = direction == 1 ? SIZE : 1;
         for (Tile tile : tiles) {
-            FormedWord cross = run(board, blanks, placement, tile.position, other);
+            FormedWord cross = run(board, blanks, placement, tile.position, other, language);
             if (cross.word.length() > 1) words.add(cross);
         }
         return words;
     }
 
     static List<FormedWord> recordedWords(char[] board, boolean[] blanks, List<Tile> tiles) {
+        return recordedWords(board, blanks, tiles, GameLanguage.FRENCH);
+    }
+
+    static List<FormedWord> recordedWords(char[] board, boolean[] blanks, List<Tile> tiles, GameLanguage language) {
         if (tiles.isEmpty() || tiles.size() > RACK_SIZE) return List.of();
         Tile[] placement = new Tile[CELLS];
         int first = tiles.get(0).position;
@@ -181,14 +184,15 @@ final class FrenchGame {
             to = Math.max(to, pos);
         }
         if (!sameRow && !sameCol) return List.of();
-        int direction = wordDirection(board, blanks, placement, tiles, sameRow);
+        int direction = wordDirection(board, blanks, placement, tiles, sameRow, language);
         for (int pos = from; pos <= to; pos += direction) {
             if (board[pos] == 0 && placement[pos] == null) return List.of();
         }
-        return formedWords(board, blanks, placement, tiles, direction);
+        return formedWords(board, blanks, placement, tiles, direction, language);
     }
 
-    private static FormedWord run(char[] board, boolean[] blanks, Tile[] placement, int pos, int direction) {
+    private static FormedWord run(char[] board, boolean[] blanks, Tile[] placement, int pos, int direction,
+                                  GameLanguage language) {
         for (int previous; (previous = step(pos, direction, -1)) >= 0; ) {
             if (board[previous] == 0 && placement[previous] == null) break;
             pos = previous;
@@ -201,11 +205,11 @@ final class FrenchGame {
             Tile tile = placement[pos];
             if (tile != null) {
                 word.append(tile.letter);
-                if (!tile.blank) score += value(tile.letter) * LETTER_MULTIPLIER[pos];
+                if (!tile.blank) score += language.value(tile.letter) * LETTER_MULTIPLIER[pos];
                 multiplier *= WORD_MULTIPLIER[pos];
             } else if (board[pos] != 0) {
                 word.append(board[pos]);
-                if (!blanks[pos]) score += value(board[pos]);
+                if (!blanks[pos]) score += language.value(board[pos]);
                 touchesExisting = true;
             } else {
                 break;
@@ -218,6 +222,7 @@ final class FrenchGame {
     final long seed;
     final String[] names;
     final int[] levels;
+    final GameLanguage language;
     final ArrayList<ArrayList<Character>> racks = new ArrayList<>();
     final ArrayList<Character> bag = new ArrayList<>(102);
     final char[] board = new char[CELLS];
@@ -229,13 +234,22 @@ final class FrenchGame {
     String end;
 
     FrenchGame(String[] names, int[] levels) {
-        this(names, levels, new Random().nextLong());
+        this(names, levels, GameLanguage.FRENCH);
+    }
+
+    FrenchGame(String[] names, int[] levels, GameLanguage language) {
+        this(names, levels, new Random().nextLong(), language);
     }
 
     FrenchGame(String[] names, int[] levels, long seed) {
-        this(UUID.randomUUID().toString(), seed, names, levels);
+        this(names, levels, seed, GameLanguage.FRENCH);
+    }
+
+    FrenchGame(String[] names, int[] levels, long seed, GameLanguage language) {
+        this(UUID.randomUUID().toString(), seed, names, levels, language);
         for (int i = 0; i < 26; i++) {
-            for (int copies = 0; copies < DISTRIBUTION[i]; copies++) bag.add((char) ('A' + i));
+            char letter = (char) ('A' + i);
+            for (int copies = 0; copies < language.tileCount(letter); copies++) bag.add(letter);
         }
         bag.add(JOKER);
         bag.add(JOKER);
@@ -245,6 +259,10 @@ final class FrenchGame {
     }
 
     FrenchGame(String id, long seed, String[] names, int[] levels) {
+        this(id, seed, names, levels, GameLanguage.FRENCH);
+    }
+
+    FrenchGame(String id, long seed, String[] names, int[] levels, GameLanguage language) {
         if (names.length < 2 || names.length > 4 || levels.length != names.length) {
             throw new IllegalArgumentException("La partie accepte deux à quatre joueurs.");
         }
@@ -252,6 +270,7 @@ final class FrenchGame {
         this.seed = seed;
         this.names = names.clone();
         this.levels = levels.clone();
+        this.language = language;
         scores = new int[names.length];
         for (String name : names) racks.add(new ArrayList<>(RACK_SIZE));
     }
@@ -279,32 +298,37 @@ final class FrenchGame {
         }
         scores[active] += preview.score;
         history.add(new Move(active, "play", preview.word, preview.score, List.copyOf(tiles), 0, rackBefore, bagBefore));
-        passes = 0;
+        boolean zeroTurn = language.usesDuelRules(names.length) && preview.score == 0;
         draw(active);
         if (rack.isEmpty() && bag.isEmpty()) finish(active);
-        else advance();
+        else nextTurn(zeroTurn);
         return preview;
     }
 
     void pass() {
         checkActive();
         history.add(new Move(active, "pass", "", 0, List.of(), 0, activeRack(), bag.size()));
-        if (++passes >= names.length * 3) finish(-1);
-        else advance();
+        nextTurn(true);
     }
 
     void exchange(List<Integer> indices) {
         checkActive();
         ArrayList<Character> rack = racks.get(active);
-        if (bag.size() < RACK_SIZE) throw new IllegalArgumentException("Il faut sept lettres dans le sac.");
+        if (bag.size() < RACK_SIZE) {
+            throw new IllegalArgumentException(language.text("Il faut sept lettres dans le sac.",
+                    "The bag must contain at least seven tiles."));
+        }
         boolean[] selected = new boolean[RACK_SIZE];
         for (int index : indices) {
             if (index < 0 || index >= rack.size() || selected[index]) {
-                throw new IllegalArgumentException("Sélection de lettres invalide.");
+                throw new IllegalArgumentException(language.text("Sélection de lettres invalide.", "Invalid tile selection."));
             }
             selected[index] = true;
         }
-        if (indices.isEmpty()) throw new IllegalArgumentException("Sélectionnez des lettres à échanger.");
+        if (indices.isEmpty()) {
+            throw new IllegalArgumentException(language.text("Sélectionnez des lettres à échanger.",
+                    "Select the tiles you want to exchange."));
+        }
         String rackBefore = activeRack();
         int bagBefore = bag.size();
         ArrayList<Character> returned = new ArrayList<>(indices.size());
@@ -315,24 +339,30 @@ final class FrenchGame {
         bag.addAll(returned);
         Collections.shuffle(bag, new Random(seed ^ (history.size() * 0x9E3779B97F4A7C15L)));
         history.add(new Move(active, "exchange", "", 0, List.of(), indices.size(), rackBefore, bagBefore));
-        passes = 0;
-        advance();
+        nextTurn(language.usesDuelRules(names.length));
     }
 
     private void finish(int outgoing) {
         int total = 0;
+        boolean doubleResidue = outgoing >= 0 && language.usesDuelRules(names.length);
         for (int i = 0; i < names.length; i++) {
-            int residue = racks.get(i).stream().mapToInt(FrenchGame::value).sum();
+            int residue = racks.get(i).stream().mapToInt(language::value).sum();
             total += residue;
-            scores[i] -= residue;
+            if (!doubleResidue) scores[i] -= residue;
         }
-        if (outgoing >= 0) scores[outgoing] += total;
+        if (outgoing >= 0) scores[outgoing] += doubleResidue ? total * 2 : total;
         end = outgoing >= 0 ? "rack_out" : "consecutive_passes";
+    }
+
+    private void nextTurn(boolean zeroTurn) {
+        passes = zeroTurn ? passes + 1 : 0;
+        if (passes >= names.length * 3) finish(-1);
+        else advance();
     }
 
     private void advance() { active = (active + 1) % names.length; }
 
     private void checkActive() {
-        if (end != null) throw new IllegalStateException("La partie est terminée.");
+        if (end != null) throw new IllegalStateException(language.text("La partie est terminée.", "The game has ended."));
     }
 }

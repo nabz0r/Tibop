@@ -87,6 +87,16 @@ public class MatchReviewTest {
         }
     }
 
+    @Test public void englishReviewExplainsAnAlternativeUsingTheEnglishScore() throws Exception {
+        var english = Lexicon.read(new BufferedReader(new StringReader("AX\n")), "Test", "", "", 1,
+                GameLanguage.ENGLISH);
+        var turn = MatchReview.analyze(List.of(pass(0, "AX")), english, 0, true).get(0);
+        assertEquals(18, turn.alternative().preview().score());
+        assertTrue(turn.text(0).contains("AX scores 18 points. Your move scored 0 points."));
+        assertTrue(turn.text(0).contains("The alternative scores 18 points more."));
+        assertNotNull(turn.practice());
+    }
+
     private static Lexicon lexicon() throws Exception {
         return Lexicon.read(new BufferedReader(new StringReader("AS\nAET\nZA\nET\nSE\nZZ\n")),
                 "Test", "", "test", 6);

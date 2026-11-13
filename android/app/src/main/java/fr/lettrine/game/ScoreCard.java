@@ -23,11 +23,11 @@ import java.util.concurrent.TimeUnit;
 
 final class ScoreCard {
     private static final int SIZE = 1080;
-    private static final int FOREST = 0xff182f25;
-    private static final int DARK = 0xff0d211a;
-    private static final int IVORY = 0xfffbf1da;
-    private static final int SAGE = 0xffbad2af;
-    private static final int GOLD = 0xffe3c680;
+    private static final int COBALT = 0xff233e91;
+    private static final int INK = 0xff101f49;
+    private static final int IVORY = 0xfffcf5e5;
+    private static final int ICE = 0xffd3ddff;
+    private static final int VERMILION = 0xfff18a69;
     private static final int NIGHT = 0xff101829;
     private static final int NIGHT_INK = 0xff080e19;
     private static final int AMBER = 0xfff1c47a;
@@ -83,12 +83,12 @@ final class ScoreCard {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         boolean nocturne = style == CardStyleStore.Style.NOCTURNE;
         if (nocturne) drawNocturne(canvas, paint);
-        else drawForest(ui, canvas, paint, size);
+        else drawCobalt(ui, canvas, paint, size);
 
         int light = nocturne ? MOONLIGHT : IVORY;
-        int secondary = nocturne ? AMBER : SAGE;
-        int accent = nocturne ? AMBER : GOLD;
-        paint.setColor(nocturne ? 0xa8f1c47a : 0x75e3c680);
+        int secondary = nocturne ? AMBER : ICE;
+        int accent = nocturne ? AMBER : VERMILION;
+        paint.setColor(nocturne ? 0xa8f1c47a : 0x88d3ddff);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(2);
         canvas.drawRoundRect(27, 27, SIZE - 27, SIZE - 27, 38, 38, paint);
@@ -96,8 +96,9 @@ final class ScoreCard {
 
         paint.setColor(light);
         canvas.drawRoundRect(74, 74, 137, 137, 13, 13, paint);
-        text(canvas, paint, "L", 91, 122, 45, nocturne ? NIGHT : FOREST, SERIF, 42);
-        text(canvas, paint, "Lettrine", 155, 120, 42, light, SERIF, 350);
+        String brand = ui.context.getString(R.string.app_name);
+        text(canvas, paint, brand.substring(0, 1), 84, 122, 45, nocturne ? NIGHT : COBALT, SERIF, 45);
+        text(canvas, paint, brand, 155, 120, 42, light, SERIF, 350);
         text(canvas, paint, title, 73, 300, 90, light, SERIF, 600);
         text(canvas, paint, date, 78, 373, 38, secondary, MEDIUM, 535);
 
@@ -108,8 +109,8 @@ final class ScoreCard {
         return image;
     }
 
-    private static void drawForest(ViewKit ui, Canvas canvas, Paint paint, int size) {
-        canvas.drawColor(FOREST);
+    private static void drawCobalt(ViewKit ui, Canvas canvas, Paint paint, int size) {
+        canvas.drawColor(COBALT);
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = size <= 480 ? 2 : 1;
         Bitmap photo = BitmapFactory.decodeResource(ui.context.getResources(), R.drawable.daily_letter_board, options);
@@ -117,11 +118,11 @@ final class ScoreCard {
             float width = SIZE * (float) photo.getWidth() / photo.getHeight();
             canvas.drawBitmap(photo, null, new RectF(SIZE - width, 0, SIZE, SIZE), paint);
             photo.recycle();
-            paint.setShader(new LinearGradient(SIZE - width, 0, 850, 0, new int[]{FOREST, FOREST, 0x00182f25},
+            paint.setShader(new LinearGradient(SIZE - width, 0, 850, 0, new int[]{COBALT, COBALT, COBALT & 0xffffff},
                     new float[]{0, 0.34f, 1}, Shader.TileMode.CLAMP));
             canvas.drawRect(SIZE - width, 0, SIZE, SIZE, paint);
         }
-        paint.setShader(new LinearGradient(0, 770, 0, SIZE, 0x000d211a, DARK, Shader.TileMode.CLAMP));
+        paint.setShader(new LinearGradient(0, 770, 0, SIZE, INK & 0xffffff, INK, Shader.TileMode.CLAMP));
         canvas.drawRect(0, 770, SIZE, SIZE, paint);
         paint.setShader(null);
     }

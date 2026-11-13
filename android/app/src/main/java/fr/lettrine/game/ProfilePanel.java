@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Locale;
 
 final class ProfilePanel {
-    private static final Locale FRENCH = Locale.FRANCE;
     private static final int[] SEX_LABELS = {R.string.profile_unset, R.string.profile_sex_female, R.string.profile_sex_male,
             R.string.profile_sex_non_binary, R.string.profile_sex_other};
 
@@ -176,7 +175,8 @@ final class ProfilePanel {
         removePhoto.setVisibility(hasPhoto ? View.VISIBLE : View.GONE);
         String name = store.nickname();
         displayedName.setText(name.isEmpty() ? label(R.string.profile_guest) : name);
-        initials.setText(name.isEmpty() ? "L" : new String(Character.toChars(name.codePointAt(0))).toUpperCase(FRENCH));
+        initials.setText(name.isEmpty() ? label(R.string.app_name).substring(0, 1)
+                : new String(Character.toChars(name.codePointAt(0))).toUpperCase(locale()));
     }
 
     private EditText input(String value, int type) {
@@ -207,7 +207,7 @@ final class ProfilePanel {
     private void selectCountry() {
         List<Country> countries = new ArrayList<>();
         for (String code : ProfileStore.countryCodes()) countries.add(new Country(code, countryLabel(code)));
-        Collator collator = Collator.getInstance(FRENCH);
+        Collator collator = Collator.getInstance(locale());
         countries.sort((left, right) -> collator.compare(left.name(), right.name()));
         countries.add(0, new Country("", countryLabel("")));
         LinearLayout chooser = ui.column();
@@ -338,7 +338,7 @@ final class ProfilePanel {
 
     private View stat(int title, int value) {
         LinearLayout card = ui.card();
-        card.addView(ui.title(NumberFormat.getIntegerInstance(FRENCH).format(value), 25));
+        card.addView(ui.title(NumberFormat.getIntegerInstance(locale()).format(value), 25));
         ui.gap(card, 4);
         card.addView(ui.body(label(title)));
         return card;
@@ -363,12 +363,14 @@ final class ProfilePanel {
     }
 
     private String countryLabel(String code) {
-        return code.isEmpty() ? label(R.string.profile_unset) : new Locale("", code).getDisplayCountry(FRENCH);
+        return code.isEmpty() ? label(R.string.profile_unset) : new Locale("", code).getDisplayCountry(locale());
     }
 
-    private static String searchable(String value) {
-        return Normalizer.normalize(value.toLowerCase(FRENCH), Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+    private String searchable(String value) {
+        return Normalizer.normalize(value.toLowerCase(locale()), Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
     }
+
+    private Locale locale() { return AppLocale.locale(ui.context); }
 
     private String label(int resource) { return ui.context.getString(resource); }
 

@@ -1,0 +1,25 @@
+<resources>
+    <string name="help_title">How to Play</string>
+    <string name="help_entry">Rules, tutorial, and offline AI</string>
+    <string name="help_tutorial">Tutorial</string>
+    <string name="help_rules_tab">Game and offline AI</string>
+    <string name="help_tutorial_intro">Your first move</string>
+    <string name="help_tutorial_copy">Turn SHIP into SHIPS to score 11 points.</string>
+    <string name="help_tutorial_select">Choose the S tile</string>
+    <string name="help_tutorial_select_copy">Tap the S on the rack below the board.</string>
+    <string name="help_tutorial_place">Place S on H12</string>
+    <string name="help_tutorial_place_copy">It’s the square just to the right of SHIP. 2L doubles the value of S.</string>
+    <string name="help_tutorial_validate">Play your 11-point move</string>
+    <string name="help_tutorial_validate_copy">You can see your score before playing. Tap Play move to see the result.</string>
+    <string name="help_tutorial_action">Try it on the board</string>
+    <string name="help_tutorial_clear">Clear your placement, then place only the S on H12.</string>
+    <string name="help_tutorial_done">Well played. The 2L square doubled the value of S.</string>
+    <string name="help_rules">Forming a word</string>
+    <string name="help_rules_copy">The first word covers the center star. After that, connect to a letter on the board. New tiles must form a single row or column. Every word created must be in the built-in dictionary.</string>
+    <string name="help_scoring">Scoring</string>
+    <string name="help_scoring_copy">Add the tile values of the words you form. 2L and L3 multiply a letter. 2W and 3W multiply the word. Bonuses apply the first time you cover a square. A blank tile is worth zero. Playing all seven tiles in one move earns 50 extra points.</string>
+    <string name="help_local_bot">NAB plays on your device</string>
+    <string name="help_local_bot_copy">NAB is your solo opponent. Its engine looks for legal moves in the built-in dictionary. Adaptive difficulty uses your local Elo and the score difference during the game.</string>
+    <string name="help_local_model">Offline AI explains moves</string>
+    <string name="help_local_model_copy">The engine checks the move and its score. The built-in SmolLM2 model uses those facts to explain a bonus square, a crossing word, or another detail. NAB and the explanations work in airplane mode.</string>
+</resources>

@@ -25,8 +25,9 @@ final class GameStore {
     private final ArrayList<JSONObject> history = new ArrayList<>();
     private long loadedRevision = -1;
 
-    GameStore(Context context) throws IOException, JSONException {
-        this(context.getFilesDir());
+    GameStore(Context context, GameLanguage language) throws IOException, JSONException {
+        this(language == GameLanguage.FRENCH ? context.getFilesDir()
+                : context.getDir("matches-en", Context.MODE_PRIVATE));
     }
 
     GameStore(File filesDir) throws IOException, JSONException {

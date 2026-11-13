@@ -56,6 +56,20 @@ public class MoveExplanationTest {
         assertTrue(MoveExplanation.create(history, 3).facts().contains("1 consecutive passes"));
     }
 
+    @Test public void englishExplanationUsesEnglishTileValuesAndPassRule() {
+        int center = FrenchGame.CENTER;
+        var opening = play("AX", 18, new FrenchGame.Tile(center, 0, 'A', false),
+                new FrenchGame.Tile(center + 1, 1, 'X', false));
+        var explanation = MoveExplanation.create(List.of(opening), 0, GameLanguage.ENGLISH);
+        assertTrue(explanation.text(0).contains("AX scores 18 points."));
+        assertTrue(explanation.text(0).contains("H8 (double word)"));
+        assertTrue(explanation.facts().contains("AX for 18 points"));
+
+        var pass = new FrenchGame.Move(0, "pass", "", 0, List.of(), 0, "PRIVATE", 87);
+        assertTrue(MoveExplanation.create(List.of(pass), 0, GameLanguage.ENGLISH)
+                .text(0).contains("six consecutive scoreless turns"));
+    }
+
     private static FrenchGame.Move play(String word, int score, FrenchGame.Tile... tiles) {
         return new FrenchGame.Move(0, "play", word, score, List.of(tiles), 0, "PRIVATE", 87);
     }

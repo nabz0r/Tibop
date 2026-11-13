@@ -1,0 +1,30 @@
+<resources>
+    <string name="tournament_title">Weekend Tournament</string>
+    <string name="tournament_summary">Play three moves and compare your results with friends.</string>
+    <string name="tournament_entry_detail">3 puzzles · Friends ranking</string>
+    <string name="tournament_round">Puzzle %1$d</string>
+    <string name="tournament_open">Closes %1$s</string>
+    <string name="tournament_closed">Tournament ended</string>
+    <string name="tournament_next">Next tournament %1$s</string>
+    <string name="tournament_upcoming">Opens %1$s</string>
+    <plurals name="tournament_progress">
+        <item quantity="one">%1$d of 3 puzzles played</item>
+        <item quantity="other">%1$d of 3 puzzles played</item>
+    </plurals>
+    <string name="tournament_loading">Loading tournament…</string>
+    <string name="tournament_response_error">Couldn’t read the tournament. Refresh to try again.</string>
+    <string name="tournament_round_action">Play puzzle %1$d</string>
+    <string name="tournament_round_done">Move accepted</string>
+    <string name="tournament_round_upcoming">Upcoming</string>
+    <string name="tournament_round_missed">Puzzle missed</string>
+    <string name="tournament_ranking">Friends ranking</string>
+    <string name="tournament_ranking_empty">The ranking shows everyone who completed all three puzzles.</string>
+    <string name="tournament_ranking_you">%1$s · you</string>
+    <string name="tournament_ranking_place">%1$d. %2$s</string>
+    <string name="tournament_round_intro">You get one move on this board. It counts toward the weekend ranking.</string>
+    <string name="tournament_confirm">Send this move?</string>
+    <string name="tournament_confirm_copy">Your score is final once you send this move.</string>
+    <string name="tournament_continue">Back to tournament</string>
+    <string name="tournament_result">Puzzle complete</string>
+    <string name="tournament_total">Total · %1$s</string>
+</resources>

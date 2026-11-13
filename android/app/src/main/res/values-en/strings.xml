@@ -1,0 +1,14 @@
+<resources>
+    <string name="local_pass_device">Pass the device to %1$s.</string>
+    <string name="bluetooth_disconnected">The Bluetooth connection ended.</string>
+    <string name="ambient_sound">Music</string>
+    <string name="replay_position">%1$d/%2$d  ·  %3$s</string>
+    <string name="move_explanation_last">Explain the last move</string>
+    <string name="move_explanation_current">Explain this move</string>
+    <string name="move_explanation_title">Move %1$d explanation</string>
+    <string name="move_explanation_loading">Analyzing on this device…</string>
+    <string name="move_explanation_model">Explanation from the built-in model</string>
+    <string name="move_explanation_engine">Game engine explanation · model unavailable</string>
+    <string name="move_explanation_partial">A score breakdown is unavailable for this move.</string>
+    <string name="move_explanation_close">Close</string>
+</resources>

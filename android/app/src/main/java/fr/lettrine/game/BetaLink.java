@@ -6,10 +6,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-record BetaLink(String origin, String invitation) {
+record BetaLink(String origin, String invitation, GameLanguage language) {
     private static final String APP = "lettrine://beta/v1/?";
     private static final Pattern TOKEN = Pattern.compile("[0-9a-f]{32}");
-    private static final Pattern PARAMETERS = Pattern.compile("origin=([^&]+)(?:&invite=([0-9a-f]{32}))?");
+    private static final Pattern PARAMETERS = Pattern.compile("origin=([^&]+)(?:&invite=([0-9a-f]{32}))?(?:&lang=(en))?");
+
+    BetaLink(String origin, String invitation) {
+        this(origin, invitation, invitation == null ? null : GameLanguage.FRENCH);
+    }
 
     static BetaLink parse(String value) {
         if (value == null || value.length() > 720) return null;
@@ -17,21 +21,23 @@ record BetaLink(String origin, String invitation) {
             if (value.startsWith(APP)) {
                 Matcher fields = PARAMETERS.matcher(value.substring(APP.length()));
                 if (!fields.matches()) return null;
-                return verified(URLDecoder.decode(fields.group(1), StandardCharsets.UTF_8.name()), fields.group(2));
+                return verified(URLDecoder.decode(fields.group(1), StandardCharsets.UTF_8.name()), fields.group(2), fields.group(3));
             }
             URI uri = URI.create(value);
             if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null || !"/beta".equals(uri.getRawPath())
                     || uri.getRawQuery() != null) return null;
-            return verified("https://" + uri.getRawAuthority(), uri.getRawFragment());
+            String invitation = uri.getRawFragment();
+            String language = invitation != null && invitation.startsWith("en/") ? "en" : null;
+            return verified("https://" + uri.getRawAuthority(), language == null ? invitation : invitation.substring(3), language);
         } catch (IllegalArgumentException | java.io.UnsupportedEncodingException invalid) {
             return null;
         }
     }
 
-    private static BetaLink verified(String address, String invitation) {
+    private static BetaLink verified(String address, String invitation, String language) {
         String origin = SocialClient.origin(address);
         if (origin == null || !origin.startsWith("https://") || invitation != null
                 && !TOKEN.matcher(invitation).matches()) return null;
-        return new BetaLink(origin, invitation);
+        return new BetaLink(origin, invitation, language == null && invitation == null ? null : GameLanguage.fromCode(language));
     }
 }

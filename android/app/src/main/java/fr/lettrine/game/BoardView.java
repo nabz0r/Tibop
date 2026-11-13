@@ -38,6 +38,7 @@ final class BoardView extends View {
     private final int tileFace;
     private final int freshFace;
     private final int tileInk;
+    private final GameLanguage language;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rectangle = new RectF();
     private final Path frameClip = new Path();
@@ -53,6 +54,8 @@ final class BoardView extends View {
     private final int[] cellColors = new int[FrenchGame.CELLS];
     private final int tileRim;
     private final int freshRim;
+    private final String[] wordBonuses = new String[4];
+    private final String[] letterBonuses = new String[4];
     private LinearGradient frameShading;
     private float side;
     private float zoom = 1;
@@ -75,6 +78,7 @@ final class BoardView extends View {
         super(ui.context);
         touchSlop = android.view.ViewConfiguration.get(ui.context).getScaledTouchSlop();
         Palette palette = ui.palette;
+        language = ui.language;
         SkinStore.BoardSkin boardSkin = ui.skins.board();
         SkinStore.TileSkin tileSkin = ui.skins.tiles();
         this.interaction = interaction;
@@ -91,7 +95,12 @@ final class BoardView extends View {
         for (int i = 0; i < cellColors.length; i++) cellColors[i] = boardSkin == null ? palette.bonus(i) : bonus(boardSkin, i);
         setFocusable(interaction != null);
         setClickable(interaction != null);
-        setContentDescription(interaction == null ? "Plateau de la partie" : "Plateau 15 sur 15. Pincez pour zoomer.");
+        setContentDescription(ui.context.getString(interaction == null
+                ? R.string.board_read_only : R.string.board_interactive));
+        for (int multiplier = 2; multiplier <= 3; multiplier++) {
+            wordBonuses[multiplier] = ui.context.getString(R.string.board_word_bonus, multiplier);
+            letterBonuses[multiplier] = ui.context.getString(R.string.board_letter_bonus, multiplier);
+        }
         scaleDetector = new ScaleGestureDetector(ui.context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
             @Override public boolean onScaleBegin(ScaleGestureDetector detector) {
                 endedScale = true;
@@ -279,7 +288,7 @@ final class BoardView extends View {
                 boolean blank = tile != null ? tile.blank() : blanks[i];
                 label(canvas, String.valueOf(letter), x + unit * 0.46f, y + unit * 0.43f,
                         unit * 0.55f, tileInk, bold);
-                label(canvas, String.valueOf(blank ? 0 : FrenchGame.value(letter)), x + unit * 0.76f,
+                label(canvas, String.valueOf(blank ? 0 : language.value(letter)), x + unit * 0.76f,
                         y + unit * 0.70f, unit * 0.25f, tileInk, bold);
                 if (blank) {
                     paint.setColor(tileInk);
@@ -289,8 +298,8 @@ final class BoardView extends View {
                 paint.setColor(cellColors[i]);
                 canvas.drawRoundRect(rectangle, rounding, rounding, paint);
                 String mark = i == FrenchGame.CENTER ? "✦"
-                        : FrenchGame.WORD_MULTIPLIER[i] > 1 ? "M" + FrenchGame.WORD_MULTIPLIER[i]
-                        : FrenchGame.LETTER_MULTIPLIER[i] > 1 ? "L" + FrenchGame.LETTER_MULTIPLIER[i] : "";
+                        : FrenchGame.WORD_MULTIPLIER[i] > 1 ? wordBonuses[FrenchGame.WORD_MULTIPLIER[i]]
+                        : FrenchGame.LETTER_MULTIPLIER[i] > 1 ? letterBonuses[FrenchGame.LETTER_MULTIPLIER[i]] : "";
                 if (!mark.isEmpty()) {
                     label(canvas, mark, x + unit * 0.5f, y + unit * 0.5f,
                             unit * (i == FrenchGame.CENTER ? 0.57f : 0.33f), cellInk, bold);
@@ -427,7 +436,8 @@ final class BoardView extends View {
         int next = FrenchGame.step(focused, direction, amount);
         if (next >= 0) {
             focused = next;
-            announceForAccessibility("Case " + (char) ('A' + next / FrenchGame.SIZE) + (next % FrenchGame.SIZE + 1));
+            announceForAccessibility(getContext().getString(R.string.board_square,
+                    (char) ('A' + next / FrenchGame.SIZE), next % FrenchGame.SIZE + 1));
             invalidate();
         }
         return true;

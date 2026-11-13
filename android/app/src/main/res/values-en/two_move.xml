@@ -1,0 +1,29 @@
+<resources>
+    <string name="two_move_title">Two Moves Ahead</string>
+    <string name="two_move_intro">Play twice on the same board. Save some tiles for your second move.</string>
+    <string name="two_move_catalog_progress">%1$d of %2$d complete</string>
+    <string name="two_move_catalog_record">Best · %1$s</string>
+    <string name="two_move_unavailable">These puzzles require the built-in WordRivet dictionary.</string>
+    <string name="two_move_phase">Move %1$d of 2</string>
+    <string name="two_move_first">Play first move</string>
+    <string name="two_move_second">Play second move</string>
+    <string name="two_move_edit_first">Edit first move</string>
+    <string name="two_move_pick">Tap a tile, then a square.</string>
+    <string name="two_move_keep">Play with your remaining tiles.</string>
+    <string name="two_move_running_total">Total · %1$s</string>
+    <string name="two_move_result">Puzzle complete · %1$s</string>
+    <string name="two_move_breakdown">First move %1$s · second move %2$s</string>
+    <string name="two_move_hint">Get a hint from NAB</string>
+    <string name="two_move_hint_hide">Hide hint</string>
+    <string name="two_move_nab_hint">NAB · %1$s</string>
+    <string name="two_move_replay">Watch NAB’s replay</string>
+    <string name="two_move_replay_phase">NAB’s replay · move %1$d of 2</string>
+    <string name="two_move_replay_next">Show second move</string>
+    <string name="two_move_replay_previous">Show first move</string>
+    <string name="two_move_replay_note">Look at the tiles NAB saves for the second move.</string>
+    <string name="two_move_yours">Back to my puzzle</string>
+    <string name="two_move_retry">Play again</string>
+    <string name="two_move_catalog">All puzzles</string>
+    <string name="two_move_board">Puzzle board. %1$s</string>
+    <string name="two_move_highlight">Hint square %1$c%2$d.</string>
+</resources>

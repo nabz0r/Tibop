@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#18352a">
-  <meta name="description" content="Relève le défi de lettres d’un ami dans Lettrine et essaie de battre son score.">
-  <title>Bats mon score · Lettrine</title>
+  <meta name="theme-color" content="#252e61">
+  <meta name="description" content="Relève le défi de lettres d’un ami dans WordRivet et essaie de battre son score.">
+  <title>Bats mon score · WordRivet</title>
   <style>
     :root {
       color-scheme: light;
-      --ink: #18352a;
+      --ink: #252e61;
       --muted: #465e50;
       --paper: #fffaf0;
       --page: #f1efe4;
@@ -42,7 +42,7 @@
       isolation: isolate;
       overflow: hidden;
       padding: 1.65rem;
-      background: linear-gradient(135deg, #284e3e, #17342a 72%);
+      background: linear-gradient(135deg, #394b9f, #1c2440 72%);
       color: var(--paper);
     }
     .hero p { margin: 0; color: #d1dfbd; }
@@ -90,38 +90,45 @@
 </head>
 <body>
   <main>
-    <p class="brand"><span aria-hidden="true">L</span> Lettrine</p>
+    <p class="brand"><span aria-hidden="true">L</span> WordRivet</p>
     <article>
       <header class="hero">
         <p id="date">Défi de lettres</p>
-        <h1>Bats mon score</h1>
+        <h1 id="h1">Bats mon score</h1>
         <span class="tile" aria-hidden="true">L</span>
       </header>
       <div class="body">
         <div id="challenge" hidden>
-          <p class="target"><strong id="score"></strong><span>à battre</span></p>
-          <p>Retrouve le même plateau et le même chevalet dans Lettrine.</p>
-          <a class="button primary" id="open">Ouvrir dans Lettrine</a>
+          <p class="target"><strong id="score"></strong><span id="target-label">à battre</span></p>
+          <p id="intro">Retrouve le même plateau et le même chevalet dans WordRivet.</p>
+          <a class="button primary" id="open">Ouvrir dans WordRivet</a>
         </div>
         <p id="invalid">Ouvre le lien complet qui accompagne la carte pour retrouver le défi.</p>
         <div class="install">
-          <p>Sur Android, installe Lettrine puis reviens à cette invitation.</p>
-          <a class="button" href="https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk">Télécharger l’APK Android</a>
+          <p id="install">Sur Android, installe WordRivet puis reviens à cette invitation.</p>
+          <a id="download" class="button" href="https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk">Télécharger l’APK Android</a>
         </div>
       </div>
     </article>
   </main>
   <script>
-    const invite = /^v1\/(\d{4})-(\d{2})-(\d{2})\/(0|[1-9]\d{0,3})\/[0-9a-f]{24}$/;
+    const invite = /^v1\/(?:en\/)?(\d{4})-(\d{2})-(\d{2})\/(0|[1-9]\d{0,3})\/[0-9a-f]{24}$/;
     const payload = location.hash.slice(1);
+    const english = payload.startsWith('v1/en/');
     const fields = invite.exec(payload);
+    if (english) {
+      document.documentElement.lang = 'en';
+      document.title = "Beat my score \u00b7 WordRivet";
+      const labels = {"h1": "Beat my score", "date": "Word challenge", "target-label": "to beat", "intro": "Play the same board and rack in WordRivet.", "open": "Open in WordRivet", "invalid": "Open the complete link that came with the score card.", "install": "Install WordRivet on Android, then come back to this invitation.", "download": "Download the Android APK"};
+      for (const [id, text] of Object.entries(labels)) document.getElementById(id).textContent = text;
+    }
     if (fields) {
       const [, year, month, day, points] = fields;
       const date = new Date(0);
       date.setUTCFullYear(+year, +month - 1, +day);
       if (+year > 0 && date.getUTCFullYear() === +year && date.getUTCMonth() === +month - 1 && date.getUTCDate() === +day) {
-        const formatter = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-        document.getElementById('date').textContent = 'Défi du ' + formatter.format(date);
+        const formatter = new Intl.DateTimeFormat(english ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+        document.getElementById('date').textContent = (english ? '' : 'Défi du ') + formatter.format(date);
         document.getElementById('score').textContent = points + (+points === 1 ? ' point' : ' points');
         document.getElementById('open').href = 'lettrine://defi/' + payload;
         document.getElementById('challenge').hidden = false;

@@ -4,7 +4,6 @@ const SLOTS: usize = 3;
 const DAY_SECONDS: i64 = 86_400;
 const WEEK_DAYS: i64 = 7;
 const FIRST_WEEKEND: i64 = 20_771; // 14 November 2026, the first Saturday of the tournament.
-pub(super) const CATALOG_SIZE: usize = 164;
 
 pub(super) const SCHEMA: &str = "
     CREATE TABLE IF NOT EXISTS social_tournament_scores(
@@ -51,7 +50,7 @@ impl Weekend {
 
     fn puzzle(self, number: usize, app: &Social) -> &Puzzle {
         let index = ((self.id - FIRST_WEEKEND) / WEEK_DAYS) as usize * SLOTS + number - 1;
-        &app.puzzles[index % CATALOG_SIZE]
+        &app.puzzles[index % app.puzzles.len()]
     }
 
     fn next_starts_at(self) -> i64 {
@@ -203,7 +202,7 @@ fn standings(db: &Connection, weekend: Weekend, user: &str) -> Api<Vec<Value>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::social::tests::{engine, request, server};
+    use crate::social::tests::{engine, english_engine, request, server};
     use axum::http::Method;
     use std::sync::atomic::Ordering;
 
@@ -513,12 +512,16 @@ mod tests {
     #[tokio::test]
     #[ignore = "serveur QA local en mémoire pour émulateur"]
     async fn serve_weekend_for_android_qa() {
-        let app = Arc::new(Social::open(FilePath::new(":memory:"), engine()).unwrap());
-        app.tournament_time.store(START, Ordering::Relaxed);
+        let french = Arc::new(Social::open(FilePath::new(":memory:"), engine()).unwrap());
+        let english = Arc::new(Social::open(FilePath::new(":memory:"), english_engine()).unwrap());
+        french.tournament_time.store(START, Ordering::Relaxed);
+        english.tournament_time.store(START, Ordering::Relaxed);
         let listener = tokio::net::TcpListener::bind("127.0.0.1:8794")
             .await
             .unwrap();
         eprintln!("Tournoi QA sur http://127.0.0.1:8794");
-        axum::serve(listener, router(app)).await.unwrap();
+        axum::serve(listener, bilingual_router(french, english))
+            .await
+            .unwrap();
     }
 }

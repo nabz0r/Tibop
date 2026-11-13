@@ -462,7 +462,10 @@ Retrouvez vos fichiers de parties et téléchargez Lettrine pour Android.|Find y
 Télécharger des parties|Download games
 Utilisez le format CSV pour ouvrir les résultats dans un tableur.|Use CSV to open results in a spreadsheet.
 Lettrine pour Android|Lettrine for Android
-Version 0.12.0|Version 0.12.0
+Version 0.13.0|Version 0.13.0
+WordRivet pour Android|WordRivet for Android
+Deux coups d’avance|Two Moves Ahead
+Douze défis hors ligne par langue. Jouez deux mots avec le même chevalet, puis regardez le rejeu de NAB.|Twelve offline puzzles in each language. Play two words from one rack, then watch NAB’s replay.
 Duels et tournoi en ligne|Online duels and tournament
 Ouvrez le lien de la bêta Android pour rejoindre vos amis. Activez les notifications dans Amis pour être prévenu quand vous pouvez jouer.|Open the Android beta link to join your friends. Enable notifications in Friends to know when you can play.
 Terminez les trois défis d’un week-end pour débloquer ce fond de carte à partager. Retrouvez-le dans votre collection.|Finish all three challenges on a weekend to unlock this share-card background. Find it in your collection.

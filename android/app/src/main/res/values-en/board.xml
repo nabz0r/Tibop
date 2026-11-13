@@ -1,0 +1,26 @@
+<resources>
+    <string name="board_read_only">Game board</string>
+    <string name="board_interactive">15 by 15 board. Pinch to zoom.</string>
+    <string name="board_word_bonus">%1$dW</string>
+    <string name="board_letter_bonus">%1$dL</string>
+    <string name="board_square">Square %1$c%2$d</string>
+    <string name="daily_card_date">EEEE, MMMM d</string>
+    <string name="daily_share_date">MMMM d, uuuu</string>
+    <string name="tournament_date_pattern">EEEE, MMMM d, HH:mm</string>
+    <string-array name="bot_difficulties">
+        <item></item>
+        <item>Casual</item>
+        <item>Regular</item>
+        <item>Strategist</item>
+        <item>Master</item>
+        <item>Adaptive</item>
+    </string-array>
+    <string-array name="bot_difficulties_detail">
+        <item></item>
+        <item>Short plays and an easy pace.</item>
+        <item>Steady play with a few openings.</item>
+        <item>Uses bonus squares and word extensions.</item>
+        <item>Balances scoring, rack management, and the endgame.</item>
+        <item>Adjusts to your local Elo and the current score gap.</item>
+    </string-array>
+</resources>

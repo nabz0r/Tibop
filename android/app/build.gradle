@@ -26,8 +26,8 @@ android {
         applicationId 'fr.lettrine.game'
         minSdk 26
         targetSdk 36
-        versionCode 13
-        versionName '0.12.0'
+        versionCode 14
+        versionName '0.13.0'
         buildConfigField 'String', 'SOCIAL_BASE_URL', '"' + socialUrl + '"'
         manifestPlaceholders.admobAppId = ads ? adApp : 'disabled'
         if (ads) {
@@ -36,6 +36,8 @@ android {
     }
 
     buildFeatures.buildConfig = true
+
+    bundle.language.enableSplit = false
 
     compileOptions {
         coreLibraryDesugaringEnabled true

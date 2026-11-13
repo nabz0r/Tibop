@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">WordRivet</string>
+    <string name="theme_rivet" translatable="false">Rivet</string>
+    <string name="theme_dusk">Crépuscule</string>
+    <string name="theme_sand">Sable</string>
+    <string name="app_save">Enregistrer</string>
+</resources>

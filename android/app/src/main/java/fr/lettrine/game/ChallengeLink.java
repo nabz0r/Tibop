@@ -9,17 +9,18 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-record ChallengeLink(LocalDate date, int score, String identity) {
+record ChallengeLink(LocalDate date, int score, String identity, GameLanguage language) {
     private static final String WEBSITE = "https://nabz0r.github.io/scrabnble/defi/#";
     private static final String APP = "lettrine://defi/";
     private static final String VERSION = "v1/";
     private static final Pattern IDENTITY = Pattern.compile("[0-9a-f]{24}");
     private static final Pattern PAYLOAD = Pattern.compile(VERSION
-            + "([0-9]{4}-[0-9]{2}-[0-9]{2})/(0|[1-9][0-9]{0,3})/(" + IDENTITY + ")");
+            + "(?:(en)/)?([0-9]{4}-[0-9]{2}-[0-9]{2})/(0|[1-9][0-9]{0,3})/(" + IDENTITY + ")");
     private static final String HEX = "0123456789abcdef";
 
     ChallengeLink {
         Objects.requireNonNull(date);
+        Objects.requireNonNull(language);
         if (date.getYear() < 1 || date.getYear() > 9999 || score < 0 || score > 9999
                 || identity == null || !IDENTITY.matcher(identity).matches()) {
             throw new IllegalArgumentException("Invitation invalide.");
@@ -27,7 +28,7 @@ record ChallengeLink(LocalDate date, int score, String identity) {
     }
 
     static ChallengeLink create(DailyChallenge challenge, Lexicon lexicon, int score) {
-        return new ChallengeLink(challenge.date(), score, positionIdentity(challenge, lexicon));
+        return new ChallengeLink(challenge.date(), score, positionIdentity(challenge, lexicon), lexicon.language);
     }
 
     static ChallengeLink parse(String value) {
@@ -39,21 +40,23 @@ record ChallengeLink(LocalDate date, int score, String identity) {
         Matcher fields = PAYLOAD.matcher(value.substring(base.length()));
         if (!fields.matches()) return null;
         try {
-            return new ChallengeLink(LocalDate.parse(fields.group(1)), Integer.parseInt(fields.group(2)), fields.group(3));
+            return new ChallengeLink(LocalDate.parse(fields.group(2)), Integer.parseInt(fields.group(3)),
+                    fields.group(4), GameLanguage.fromCode(fields.group(1)));
         } catch (DateTimeParseException | IllegalArgumentException invalid) {
             return null;
         }
     }
 
     boolean matches(DailyChallenge challenge, Lexicon lexicon) {
-        return challenge != null && date.equals(challenge.date()) && identity.equals(positionIdentity(challenge, lexicon));
+        return language == lexicon.language && challenge != null && date.equals(challenge.date())
+                && identity.equals(positionIdentity(challenge, lexicon));
     }
 
     String uri() { return WEBSITE + payload(); }
 
     String appUri() { return APP + payload(); }
 
-    private String payload() { return VERSION + date + "/" + score + "/" + identity; }
+    private String payload() { return VERSION + language.text("", "en/") + date + "/" + score + "/" + identity; }
 
     private static String positionIdentity(DailyChallenge challenge, Lexicon lexicon) {
         return positionIdentity(challenge.position(), lexicon);

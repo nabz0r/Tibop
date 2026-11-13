@@ -29,7 +29,7 @@ values = [str(weights[key]) for key in keys] if active else []
 PY
 engine=android/app/src/main/java/fr/lettrine/game
 "$javac_bin" --release 17 -cp "$android_jar" -d "$work/classes" \
-    "$engine/"{Bot,FrenchGame,Lexicon,DailyChallenge,PracticePosition,MatchReview,MoveExplanation}.java \
+    "$engine/"{Bot,FrenchGame,GameLanguage,Lexicon,DailyChallenge,PracticePosition,MatchReview,MoveExplanation}.java \
     tools/android_gameplay/GameplaySimulation.java
 "$java_bin" -Xmx512m -cp "$work/classes:$android_jar" fr.lettrine.game.GameplaySimulation \
     "$work" "${1:-40}" "${2:-20261113}" "${3:-4}" "${4:-0}"

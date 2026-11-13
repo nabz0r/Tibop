@@ -1,0 +1,15 @@
+<resources>
+    <string name="social_beta_title">Join the online beta</string>
+    <string name="social_beta_confirm">Use %1$s for friends, duels, and tournaments? Everyone in your group must use this address.</string>
+    <string name="social_beta_connect">Use this server</string>
+    <string name="social_beta_invalid">This beta link is invalid.</string>
+    <string name="turn_notifications_title">Turn notifications</string>
+    <string name="turn_notifications_on">On</string>
+    <string name="turn_notifications_off">Off</string>
+    <string name="turn_notifications_detail">Get notified when a friend’s duel is waiting for your move. Android may delay background checks.</string>
+    <string name="turn_notifications_system">Allow app notifications in Android Settings.</string>
+    <string name="turn_notifications_enable">Turn on</string>
+    <string name="turn_notifications_disable">Turn off</string>
+    <string name="turn_notifications_open_settings">Android Settings</string>
+    <string name="turn_notification_unavailable">This duel is no longer available. Open Friends to see your games.</string>
+</resources>

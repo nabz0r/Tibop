@@ -1,0 +1,10 @@
+<resources>
+    <string name="rewarded_title">Bonus Puzzle</string>
+    <string name="rewarded_details">Play a practice puzzle after a short video.</string>
+    <string name="rewarded_watch">Watch video</string>
+    <string name="rewarded_play">Play bonus puzzle</string>
+    <string name="rewarded_loading">Preparing the video…</string>
+    <string name="rewarded_unavailable">The video is unavailable. You can keep playing.</string>
+    <string name="rewarded_privacy">Ad privacy</string>
+    <string name="rewarded_confirm">The video unlocks a practice puzzle you can play at your own pace.</string>
+</resources>

@@ -15,7 +15,6 @@ import org.json.JSONObject;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.function.Consumer;
 
 final class TournamentPanel {
@@ -25,7 +24,6 @@ final class TournamentPanel {
     private static final int GOLD = 0xffe8c88d;
     private static final int SAGE = 0xffd1e2c7;
     private static final long LAST_SUPPORTED_SECOND = 253_402_300_799L;
-    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("EEEE d MMMM 'à' HH:mm", Locale.FRENCH);
 
     private final ViewKit ui;
     private final SocialClient client;
@@ -319,8 +317,10 @@ final class TournamentPanel {
         return banner;
     }
 
-    private static String time(long seconds) {
-        return TIME.format(Instant.ofEpochSecond(seconds).atZone(ZoneId.systemDefault()));
+    private String time(long seconds) {
+        DateTimeFormatter time = DateTimeFormatter.ofPattern(label(R.string.tournament_date_pattern),
+                AppLocale.locale(ui.context));
+        return time.format(Instant.ofEpochSecond(seconds).atZone(ZoneId.systemDefault()));
     }
 
     private String label(int resource, Object... values) { return ui.context.getString(resource, values); }

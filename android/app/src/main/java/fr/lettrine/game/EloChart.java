@@ -34,14 +34,14 @@ final class EloChart {
 
     static LinearLayout card(ViewKit ui, List<JSONObject> games) {
         LinearLayout card = ui.card();
-        card.addView(ui.title("Évolution de l’Elo", 23));
+        card.addView(ui.title(ui.context.getString(R.string.elo_chart_title), 23));
         ui.gap(card, 8);
         List<Point> points = ratedGames(games);
         if (points.isEmpty()) {
-            card.addView(ui.body("Terminez une partie cotée contre NAB pour voir votre courbe."));
+            card.addView(ui.body(ui.context.getString(R.string.elo_chart_empty)));
             return card;
         }
-        card.addView(ui.body("Parties cotées contre NAB"));
+        card.addView(ui.body(ui.context.getString(R.string.elo_chart_rated_games)));
         ui.gap(card, 6);
 
         Curve curve = new Curve(ui, points);
@@ -53,8 +53,8 @@ final class EloChart {
         details.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         TextView previous = ui.textButton("‹", () -> curve.select(curve.selected - 1));
         TextView next = ui.textButton("›", () -> curve.select(curve.selected + 1));
-        previous.setContentDescription("Point Elo précédent");
-        next.setContentDescription("Point Elo suivant");
+        previous.setContentDescription(ui.context.getString(R.string.elo_chart_previous));
+        next.setContentDescription(ui.context.getString(R.string.elo_chart_next));
         for (TextView button : List.of(previous, next)) {
             button.setMinHeight(ui.dp(48));
             button.setMinWidth(ui.dp(48));
@@ -67,7 +67,7 @@ final class EloChart {
         card.addView(controls);
 
         curve.onSelection = index -> {
-            details.setText(pointLabel(points, index));
+            details.setText(pointLabel(ui, points, index));
             ui.enabled(previous, index > 0);
             ui.enabled(next, index < points.size());
         };
@@ -87,29 +87,33 @@ final class EloChart {
         return points;
     }
 
-    private static String pointLabel(List<Point> points, int index) {
-        if (index == 0) return number(points.get(0).before) + " Elo\nAvant la première partie cotée";
+    private static String pointLabel(ViewKit ui, List<Point> points, int index) {
+        Locale locale = AppLocale.locale(ui.context);
+        if (index == 0) return ui.context.getString(R.string.elo_chart_before_first, number(locale, points.get(0).before));
 
         Point point = points.get(index - 1);
         long change = (long) point.after - point.before;
-        String delta = change == 0 ? " stable" : "  (" + (change > 0 ? "+" : "") + number(change) + ")";
-        StringBuilder label = new StringBuilder(number(point.after)).append(" Elo").append(delta)
-                .append("\nPartie ").append(number(index)).append(" sur ").append(number(points.size()));
+        String delta = change == 0 ? " " + ui.context.getString(R.string.elo_chart_unchanged)
+                : "  (" + (change > 0 ? "+" : "") + number(locale, change) + ")";
+        StringBuilder label = new StringBuilder(number(locale, point.after)).append(" Elo").append(delta)
+                .append("\n").append(ui.context.getString(R.string.elo_chart_game,
+                        number(locale, index), number(locale, points.size())));
         if (point.finishedAt > 0) {
-            label.append(" · ").append(DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.FRANCE)
+            label.append(" · ").append(DateFormat.getDateInstance(DateFormat.MEDIUM, locale)
                     .format(new Date(point.finishedAt)));
         }
-        boolean knownLevel = point.opponentLevel > 0 && point.opponentLevel < Bot.NAMES.length;
+        String[] levels = ui.context.getResources().getStringArray(R.array.bot_difficulties);
+        boolean knownLevel = point.opponentLevel > 0 && point.opponentLevel < levels.length;
         if (knownLevel || point.opponentElo > 0) {
             label.append("\nNAB");
-            if (knownLevel) label.append(" · ").append(Bot.NAMES[point.opponentLevel]);
-            if (point.opponentElo > 0) label.append(" · ").append(number(point.opponentElo)).append(" Elo");
+            if (knownLevel) label.append(" · ").append(levels[point.opponentLevel]);
+            if (point.opponentElo > 0) label.append(" · ").append(number(locale, point.opponentElo)).append(" Elo");
         }
         return label.toString();
     }
 
-    private static String number(long value) {
-        return NumberFormat.getIntegerInstance(Locale.FRANCE).format(value);
+    private static String number(Locale locale, long value) {
+        return NumberFormat.getIntegerInstance(locale).format(value);
     }
 
     private static final class Curve extends View {
@@ -146,9 +150,10 @@ final class EloChart {
             long padding = Math.max(20, (max - min) / 10);
             low = Math.max(0, (min - padding) / 10 * 10);
             high = (max + padding + 9) / 10 * 10;
-            lowLabel = number(low);
-            midLabel = number((low + high) / 2);
-            highLabel = number(high);
+            Locale locale = AppLocale.locale(ui.context);
+            lowLabel = number(locale, low);
+            midLabel = number(locale, (low + high) / 2);
+            highLabel = number(locale, high);
             paint.setTypeface(ui.medium);
             paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10,
                     getResources().getDisplayMetrics()));
@@ -201,9 +206,9 @@ final class EloChart {
 
             paint.setColor(ui.palette.muted());
             paint.setTextAlign(Paint.Align.LEFT);
-            canvas.drawText("Départ", left, getHeight() - ui.dp(2), paint);
+            canvas.drawText(ui.context.getString(R.string.app_replay_start), left, getHeight() - ui.dp(2), paint);
             paint.setTextAlign(Paint.Align.RIGHT);
-            canvas.drawText("Dernière partie", right, getHeight() - ui.dp(2), paint);
+            canvas.drawText(ui.context.getString(R.string.elo_chart_latest), right, getHeight() - ui.dp(2), paint);
         }
 
         private void gridLine(Canvas canvas, float y, String label) {

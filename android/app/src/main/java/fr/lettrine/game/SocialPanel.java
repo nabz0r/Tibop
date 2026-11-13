@@ -85,6 +85,7 @@ final class SocialPanel {
         value = value.strip();
         if (value.startsWith(WEB_INVITE)) value = value.substring(WEB_INVITE.length());
         else if (value.startsWith(APP_INVITE)) value = value.substring(APP_INVITE.length());
+        if (value.startsWith("en/")) value = value.substring(3);
         return TOKEN.matcher(value).matches() ? value : null;
     }
 
@@ -279,7 +280,8 @@ final class SocialPanel {
                 return;
             }
             String base = betaInviteBase.get();
-            String message = label(R.string.social_share_invitation, (base == null ? WEB_INVITE : base) + token);
+            String message = label(R.string.social_share_invitation,
+                    (base == null ? WEB_INVITE + ui.language.text("", "en/") : base) + token);
             Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, message);
             try { ui.context.startActivity(Intent.createChooser(send, label(R.string.social_invite))); }
             catch (ActivityNotFoundException exception) { showNotice(label(R.string.social_share_error)); }

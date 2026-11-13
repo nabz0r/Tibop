@@ -170,7 +170,21 @@ async fn main() -> Result<()> {
             let db = PathBuf::from(
                 env::var("LETTRINE_SOCIAL_DB").unwrap_or_else(|_| "results/social.sqlite".into()),
             );
-            social::serve(&db, engine, &address).await?;
+            let en_db = env::var_os("LETTRINE_SOCIAL_EN_DB")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| {
+                    let mut filename = db.as_os_str().to_owned();
+                    filename.push(".en");
+                    PathBuf::from(filename)
+                });
+            let en_profile = profiles::load("en-wespa-v1")?;
+            let en_path = en_profile
+                .lexicon
+                .path
+                .clone()
+                .ok_or_else(|| anyhow::anyhow!("lexique social anglais indisponible"))?;
+            let en_engine = Engine::load(&en_path, en_profile.lexicon.name.clone(), en_profile)?;
+            social::serve(&db, engine, &en_db, en_engine, &address).await?;
         }
         "serve" => {
             let engine = load_engine()?;

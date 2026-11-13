@@ -16,7 +16,7 @@ cleanup() {
 trap cleanup EXIT
 mkdir "$work/classes"
 "$javac_bin" --release 17 -cp "$platform" -d "$work/classes" \
-    android/app/src/main/java/fr/lettrine/game/GameStore.java tools/android_gameplay/GameStoreSimulation.java
+    android/app/src/main/java/fr/lettrine/game/{GameStore,GameLanguage}.java tools/android_gameplay/GameStoreSimulation.java
 "$dex" --min-api 26 --lib "$platform" --output "$work/storage.jar" "$work/classes/fr/lettrine/game/"*.class
 remote=$("${device[@]}" shell mktemp -d /data/local/tmp/lettrine-store.XXXXXX)
 "${device[@]}" push "$work/storage.jar" "$remote/storage.jar"

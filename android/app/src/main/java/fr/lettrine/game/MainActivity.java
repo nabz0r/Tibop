@@ -54,7 +54,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -91,6 +90,7 @@ public final class MainActivity extends Activity {
     private String pendingSocialInvite;
     private Object pendingTurnNavigation;
     private Lexicon lexicon;
+    private GameLanguage gameLanguage;
     private FrenchGame game;
     private MatchCodec.State guestState;
     private Screen screen = Screen.HOME;
@@ -136,40 +136,45 @@ public final class MainActivity extends Activity {
         @Override public void onReceive(Context context, Intent intent) { refreshDailyHome(); }
     };
 
+    @Override protected void attachBaseContext(Context base) {
+        super.attachBaseContext(AppLocale.wrap(base));
+    }
+
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        gameLanguage = AppLocale.language(this);
         preferences = getSharedPreferences("preferences", MODE_PRIVATE);
         audio = new GameAudio(this, preferences);
         audio.prepareEffects();
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         soloSelection = Math.max(1, Math.min(Bot.ADAPTIVE, preferences.getInt("solo_level", 1)));
         rewarded = new RewardedPractice(this);
-        dailyProgress = new DailyProgress(this);
+        dailyProgress = new DailyProgress(this, gameLanguage);
         skinStore = new SkinStore(this);
         profileStore = new ProfileStore(this);
-        socialClient = new SocialClient(this, this::socialBaseUrl, profileStore::nickname);
+        socialClient = new SocialClient(this, gameLanguage, this::socialBaseUrl, profileStore::nickname);
         skin = Math.max(0, Math.min(Palette.THEMES.length - 1, preferences.getInt("skin", 0)));
         updateAppearance();
         getWindow().setStatusBarColor(Color.TRANSPARENT);
-        getWindow().setNavigationBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Build.VERSION.SDK_INT < 29 ? ui.palette.page() : Color.TRANSPARENT);
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                 | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         if (Build.VERSION.SDK_INT >= 29) getWindow().setNavigationBarContrastEnforced(false);
         try {
-            store = new GameStore(this);
+            store = new GameStore(this, gameLanguage);
             List<JSONObject> saved = store.savedGames();
             if (!saved.isEmpty()) restoreMatch(saved.get(0));
         } catch (Exception exception) {
-            toast("Une sauvegarde locale n’a pas pu être lue.");
+            toast(getString(R.string.app_saved_read_error));
         }
         showHome();
         receiveNavigation(getIntent());
         rewarded.refreshConsent(this::refreshRewardSettings);
         worker.submit(() -> {
             try {
-                Lexicon loaded = Lexicon.load(this);
+                Lexicon loaded = Lexicon.load(this, gameLanguage);
                 String source;
-                try (InputStream stream = getAssets().open("lexicon-notice.md")) {
+                try (InputStream stream = getAssets().open(gameLanguage.storageName("lexicon-notice") + ".md")) {
                     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                     byte[] buffer = new byte[4096];
                     for (int length; (length = stream.read(buffer)) >= 0; ) bytes.write(buffer, 0, length);
@@ -197,7 +202,7 @@ public final class MainActivity extends Activity {
             } catch (Exception exception) {
                 main.post(() -> {
                     if (isDestroyed()) return;
-                    lexiconError = "Le lexique intégré n’a pas pu être chargé.";
+                    lexiconError = getString(R.string.app_dictionary_load_error);
                     pendingChallenge = null;
                     if (screen == Screen.HOME) showHome();
                 });
@@ -207,6 +212,7 @@ public final class MainActivity extends Activity {
 
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        setIntent(intent);
         receiveNavigation(intent);
     }
 
@@ -253,6 +259,14 @@ public final class MainActivity extends Activity {
                     if (screen == Screen.GAME && !persist()) return;
                     preferences.edit().putString("social_endpoint", link.origin())
                             .putString("social_beta_origin", link.origin()).apply();
+                    if (link.language() != null && link.language() != gameLanguage) {
+                        Intent next = new Intent(this, MainActivity.class).setAction(Intent.ACTION_VIEW)
+                                .setData(Uri.parse("lettrine://amis/v1/" + link.language().text("", "en/")
+                                        + link.invitation()));
+                        switchLanguage(link.language(), next);
+                        return;
+                    }
+                    setIntent(new Intent(this, MainActivity.class));
                     pendingSocialInvite = link.invitation();
                     refreshTurnNotifications();
                     showSocial();
@@ -265,6 +279,12 @@ public final class MainActivity extends Activity {
         if (uri != null && "lettrine".equals(uri.getScheme()) && "amis".equals(uri.getAuthority())) {
             String token = SocialPanel.invitationToken(intent.getDataString());
             if (token != null) {
+                GameLanguage language = GameLanguage.fromCode(uri.getPath().startsWith("/v1/en/") ? "en" : "fr");
+                if (language != gameLanguage) {
+                    switchLanguage(language, intent);
+                    return;
+                }
+                setIntent(new Intent(this, MainActivity.class));
                 pendingSocialInvite = token;
                 showSocial();
             } else toast(getString(R.string.social_navigation_invite_invalid));
@@ -275,6 +295,11 @@ public final class MainActivity extends Activity {
             toast(getString(R.string.daily_invitation_invalid));
             return;
         }
+        if (invitation.language() != gameLanguage) {
+            switchLanguage(invitation.language(), intent);
+            return;
+        }
+        setIntent(new Intent(this, MainActivity.class));
         if (lexicon == null && lexiconError == null) {
             showHome();
             pendingChallenge = () -> openDailyChallenge(invitation);
@@ -431,9 +456,9 @@ public final class MainActivity extends Activity {
             LinearLayout nav = ui.row();
             nav.setBackgroundColor(ui.palette.paper());
             nav.setPadding(ui.dp(10), ui.dp(2), ui.dp(10), ui.dp(2));
-            ui.weight(nav, navItem("Jouer", next == Screen.HOME, this::showHome));
+            ui.weight(nav, navItem(getString(R.string.app_play), next == Screen.HOME, this::showHome));
             ui.weight(nav, navItem(getString(R.string.social_navigation_friends), next == Screen.SOCIAL, this::showSocial));
-            ui.weight(nav, navItem("Historique", next == Screen.HISTORY, this::showHistory));
+            ui.weight(nav, navItem(getString(R.string.app_history), next == Screen.HISTORY, this::showHistory));
             ui.weight(nav, navItem(getString(R.string.social_navigation_profile), next == Screen.PROFILE, this::showProfile));
             shell.addView(nav, new LinearLayout.LayoutParams(-1, -2));
         }
@@ -451,15 +476,20 @@ public final class MainActivity extends Activity {
     }
 
     private void top(String label, Runnable back, TextView extra) {
+        top(label, back, extra, null);
+    }
+
+    private void top(String label, Runnable back, TextView extra, TextView secondExtra) {
         LinearLayout row = ui.row();
         if (back != null) {
             TextView arrow = ui.textButton("‹", back);
             arrow.setTextSize(27);
-            arrow.setContentDescription("Retour");
+            arrow.setContentDescription(getString(R.string.app_back));
             row.addView(arrow);
             ui.space(row, 5);
         } else {
-            TextView badge = ui.text("L", 18, ui.palette.heroInk(), ui.serif);
+            TextView badge = ui.text(getString(R.string.app_name).substring(0, 1), 18,
+                    ui.palette.heroInk(), ui.serif);
             badge.setGravity(Gravity.CENTER);
             badge.setBackground(ui.shape(ui.palette.deep(), 8));
             row.addView(badge, new LinearLayout.LayoutParams(ui.dp(29), ui.dp(29)));
@@ -467,6 +497,10 @@ public final class MainActivity extends Activity {
         }
         ui.weight(row, ui.text(label, 16, ui.palette.ink(), ui.medium));
         if (extra != null) row.addView(extra);
+        if (secondExtra != null) {
+            ui.space(row, 5);
+            row.addView(secondExtra);
+        }
         row.setMinimumHeight(ui.dp(43));
         content.addView(row);
     }
@@ -485,25 +519,28 @@ public final class MainActivity extends Activity {
         skinStore.refresh(store, dailyProgress);
         page(Screen.HOME, true);
         homeDate = LocalDate.now();
-        TextView rating = ui.text("Elo " + currentRating(), 12, ui.palette.accent(), ui.medium);
+        TextView rating = ui.text(getString(R.string.app_elo_badge, currentRating()), 12, ui.palette.accent(), ui.medium);
         ui.inset(rating, 11, 7);
         rating.setBackground(ui.shape(ui.palette.ordinary(), 14));
-        top("Lettrine", null, rating);
+        boolean english = AppLocale.language(this) == GameLanguage.ENGLISH;
+        TextView language = ui.textButton(english ? "FR" : "EN",
+                () -> selectLanguage(english ? GameLanguage.FRENCH : GameLanguage.ENGLISH));
+        language.setContentDescription(getString(english ? R.string.locale_use_french : R.string.locale_use_english));
+        top(getString(R.string.app_name), null, rating, language);
         ui.gap(content, 8);
+        content.addView(TwoMoveHomeCard.create(ui, () -> openChallenge(this::openTwoMoves)));
+        ui.gap(content, 10);
         DailyProgress.Snapshot today = dailyProgress.snapshot(homeDate);
         boolean completed = today.bestScore() != null;
         String status = completed ? DailyResult.bestLabel(ui, today.bestScore()) : getString(R.string.daily_home_open);
-        content.addView(DailyChallengeCard.create(ui, DailyResult.dateLabel(homeDate), status,
+        content.addView(DailyChallengeCard.create(ui, DailyResult.dateLabel(ui, homeDate), status,
                 DailyResult.streakLabel(ui, today.streak()), getString(completed ? R.string.daily_replay : R.string.daily_play),
                 () -> openChallenge(() -> openDailyChallenge(null))));
         MatchCodec.State ongoing = state();
         if (ongoing != null && ongoing.end() == null && (!mode.equals("bluetooth") || bluetoothReady)) {
             ui.gap(content, 13);
-            content.addView(ui.button("Reprendre la partie", true, this::showGame));
+            content.addView(ui.button(getString(R.string.app_resume), true, this::showGame));
         }
-        ui.gap(content, 10);
-        content.addView(ui.option("↳", getString(R.string.two_move_title), getString(R.string.two_move_home),
-                () -> openChallenge(this::openTwoMoves)));
         ui.gap(content, 9);
         content.addView(ui.option("✦", getString(R.string.practice_first), getString(R.string.practice_first_home),
                 () -> openChallenge(() -> openFirstChallenge(this::showHome, false))));
@@ -511,25 +548,33 @@ public final class MainActivity extends Activity {
         content.addView(ui.option("▤", getString(R.string.games_title), getString(R.string.games_home_detail),
                 this::showGames));
         ui.gap(content, 19);
-        content.addView(ui.micro("NOUVELLE PARTIE", ui.palette.accent()));
+        content.addView(ui.micro(getString(R.string.app_new_game), ui.palette.accent()));
         ui.gap(content, 8);
-        content.addView(ui.option("✦", "Contre un bot", "Quatre niveaux et un bot adaptatif", () -> {
+        content.addView(ui.option("✦", getString(R.string.app_vs_bot), getString(R.string.app_vs_bot_detail), () -> {
             if (ready()) openSolo(Screen.HOME);
         }));
         ui.gap(content, 8);
-        content.addView(ui.option("2–4", "Entre amis", "À tour de rôle sur cet appareil", () -> {
+        content.addView(ui.option("2–4", getString(R.string.app_local), getString(R.string.app_local_detail), () -> {
             if (ready()) openLocal(Screen.HOME);
         }));
         ui.gap(content, 8);
-        content.addView(ui.option("↔", "Bluetooth", "Deux appareils déjà associés", () -> {
+        content.addView(ui.option("↔", "Bluetooth", getString(R.string.app_bluetooth_detail), () -> {
             if (ready()) showBluetooth();
         }));
         ui.gap(content, 8);
         content.addView(ui.option("?", getString(R.string.help_title), getString(R.string.help_entry), this::showHelp));
         if (lexicon == null) {
             ui.gap(content, 11);
-            content.addView(ui.body(lexiconError == null ? "Chargement du lexique…" : lexiconError));
+            content.addView(ui.body(lexiconError == null ? getString(R.string.app_dictionary_loading) : lexiconError));
         }
+    }
+
+    private String moveCount(int count) {
+        return getResources().getQuantityString(R.plurals.app_move_count, count, count);
+    }
+
+    private String points(int score) {
+        return getResources().getQuantityString(R.plurals.practice_points, score, score);
     }
 
     private int currentRating() { return store == null ? DEFAULT_RATING : store.elo(); }
@@ -540,7 +585,7 @@ public final class MainActivity extends Activity {
 
     private boolean ready() {
         if (lexicon != null) return true;
-        toast(lexiconError == null ? "Le lexique se charge…" : lexiconError);
+        toast(lexiconError == null ? getString(R.string.app_dictionary_loading_notice) : lexiconError);
         return false;
     }
 
@@ -551,7 +596,7 @@ public final class MainActivity extends Activity {
 
     private void openTwoMoves() {
         page(Screen.TWO_MOVES, false);
-        top("Lettrine", this::leaveTwoMoves, null);
+        top(getString(R.string.app_name), this::leaveTwoMoves, null);
         twoMoveScreen = new TwoMoveChallengeScreen(ui, lexicon);
         content.addView(twoMoveScreen.view());
     }
@@ -573,7 +618,7 @@ public final class MainActivity extends Activity {
 
     private void showHelp() {
         page(Screen.HELP, false);
-        top("Lettrine", this::showHome, null);
+        top(getString(R.string.app_name), this::showHome, null);
         heading(getString(R.string.help_title), "");
         content.addView(new HelpPanel(ui, () -> openChallenge(() -> openFirstChallenge(this::showHelp, true))).view());
     }
@@ -592,13 +637,13 @@ public final class MainActivity extends Activity {
         }
         page(Screen.PRACTICE, false);
         practiceBack = this::showHome;
-        top("Lettrine", this::leavePractice, null);
+        top(getString(R.string.app_name), this::leavePractice, null);
         ui.gap(content, 5);
         String title = getString(invitation == null ? R.string.daily_title : R.string.daily_invitation_title);
         String goal = getString(R.string.daily_goal, challenge.openingWord());
         if (invitation != null) goal = getString(R.string.daily_invitation_goal,
                 DailyResult.points(ui, invitation.score())) + "\n" + goal;
-        content.addView(DailyChallengeCard.heading(ui, title, DailyResult.dateLabel(date), goal));
+        content.addView(DailyChallengeCard.heading(ui, title, DailyResult.dateLabel(ui, date), goal));
         ui.gap(content, 11);
         DailyResult dailyResult = new DailyResult(ui, date.equals(today) ? dailyProgress : null,
                 challenge, lexicon, invitation);
@@ -624,7 +669,7 @@ public final class MainActivity extends Activity {
                               boolean tutorial, Runnable back) {
         page(Screen.PRACTICE, false);
         practiceBack = back;
-        top(first ? "Lettrine" : getString(R.string.match_review), this::leavePractice, null);
+        top(first ? getString(R.string.app_name) : getString(R.string.match_review), this::leavePractice, null);
         heading(title, goal);
         content.addView(new PracticePanel(ui, position, lexicon, first, tutorial).view());
     }
@@ -637,7 +682,7 @@ public final class MainActivity extends Activity {
 
     private void showGames() {
         page(Screen.GAMES, false);
-        top("Lettrine", this::showHome, null);
+        top(getString(R.string.app_name), this::showHome, null);
         heading(getString(R.string.games_title), "");
         List<JSONObject> games;
         try {
@@ -739,7 +784,7 @@ public final class MainActivity extends Activity {
 
     private void abandonMatch(String id, String title) {
         dialog(getString(R.string.games_abandon_title), title)
-                .setNegativeButton("Annuler", null)
+                .setNegativeButton(getString(R.string.social_cancel), null)
                 .setPositiveButton(R.string.games_abandon, (ignored, which) -> {
                     try {
                         store.removeGame(id);
@@ -757,48 +802,50 @@ public final class MainActivity extends Activity {
             preferences.edit().putInt("solo_level", selection).apply();
         }
         page(Screen.SOLO, false);
-        top("Partie solo", this::leaveGameSetup, null);
-        heading("Choisir un bot", "Elo local " + currentRating() + "  ·  Niveaux indicatifs");
+        top(getString(R.string.app_solo), this::leaveGameSetup, null);
+        heading(getString(R.string.app_choose_bot), getString(R.string.app_level_elo_note, currentRating()));
         for (int level = 1; level <= Bot.ADAPTIVE; level++) {
             int id = level;
             String description = level == 4 && lexicon.trained
-                    ? "Évaluation du chevalet entraînée par duels entre bots." : Bot.DESCRIPTIONS[level];
-            String caption = level == Bot.ADAPTIVE ? description : Bot.RATINGS[level] + " Elo  ·  " + description;
-            LinearLayout card = ui.option(level == selection ? "✓" : "·", Bot.NAMES[level], caption,
+                    ? getString(R.string.app_bot_trained) : getResources().getStringArray(R.array.bot_difficulties_detail)[level];
+            String caption = level == Bot.ADAPTIVE ? description : getString(R.string.app_level_elo, Bot.RATINGS[level], description);
+            LinearLayout card = ui.option(level == selection ? "✓" : "·", botName(level), caption,
                     () -> showSolo(id));
             if (level == selection) card.setBackground(ui.touch(ui.palette.ordinary(), 16, ui.palette.accent()));
             content.addView(card);
             ui.gap(content, 8);
         }
         ui.gap(content, 7);
-        content.addView(ui.button("Commencer", true, () -> switchMatch(() ->
-                newMatch("solo", new String[]{"Vous", Bot.NAMES[selection]}, new int[]{0, selection}))));
+        content.addView(ui.button(getString(R.string.app_start_game), true, () -> switchMatch(() ->
+                newMatch("solo", new String[]{getString(R.string.app_you), botName(selection)}, new int[]{0, selection}))));
     }
+
+    private String botName(int level) { return getResources().getStringArray(R.array.bot_difficulties)[level]; }
 
     private void showLocal(int count, String[] previous) {
         page(Screen.LOCAL, false);
-        top("Partie locale", this::leaveGameSetup, null);
-        heading("Entre amis", "Le chevalet est masqué à chaque changement de joueur.");
+        top(getString(R.string.app_local_game), this::leaveGameSetup, null);
+        heading(getString(R.string.app_local), getString(R.string.app_local_privacy));
         LinearLayout counts = ui.row();
         List<EditText> names = new ArrayList<>();
         for (int number = 2; number <= 4; number++) {
             int next = number;
             if (number > 2) ui.space(counts, 8);
-            ui.weight(counts, ui.button(number + " joueurs", count == number, () -> showLocal(next, getNames(names))));
+            ui.weight(counts, ui.button(getString(R.string.app_players, number), count == number, () -> showLocal(next, getNames(names))));
         }
         content.addView(counts);
         ui.gap(content, 16);
         for (int index = 0; index < count; index++) {
-            String fallback = "Joueur " + (index + 1);
+            String fallback = getString(R.string.app_player, index + 1);
             EditText name = input(fallback, previous != null && previous.length > index ? previous[index] : "");
             names.add(name);
             content.addView(name, new LinearLayout.LayoutParams(-1, ui.dp(48)));
             ui.gap(content, 8);
         }
         ui.gap(content, 9);
-        content.addView(ui.button("Commencer", true, () -> switchMatch(() -> {
+        content.addView(ui.button(getString(R.string.app_start_game), true, () -> switchMatch(() -> {
             String[] entered = getNames(names);
-            for (int i = 0; i < entered.length; i++) if (entered[i].isEmpty()) entered[i] = "Joueur " + (i + 1);
+            for (int i = 0; i < entered.length; i++) if (entered[i].isEmpty()) entered[i] = getString(R.string.app_player, i + 1);
             newMatch("local", entered, new int[entered.length]);
         })));
         content.setFocusableInTouchMode(true);
@@ -830,7 +877,7 @@ public final class MainActivity extends Activity {
             return;
         }
         dialog(getString(R.string.games_bluetooth_title), getString(R.string.games_bluetooth_body))
-                .setNegativeButton("Annuler", null)
+                .setNegativeButton(getString(R.string.social_cancel), null)
                 .setPositiveButton(R.string.games_bluetooth_continue, (view, which) -> {
                     resetMatch();
                     next.run();
@@ -839,7 +886,7 @@ public final class MainActivity extends Activity {
 
     private void newMatch(String newMode, String[] names, int[] levels) {
         if (!ready() || store == null) return;
-        FrenchGame next = new FrenchGame(names, levels);
+        FrenchGame next = new FrenchGame(names, levels, gameLanguage);
         int rating = currentRating();
         try {
             store.saveGame(MatchCodec.saved(next, newMode, rating, 0, 0, false));
@@ -941,7 +988,7 @@ public final class MainActivity extends Activity {
             skinStore.refresh(store, dailyProgress);
             if (!mode.equals("bluetooth")) store.removeGame(finished.id());
         } catch (Exception exception) {
-            toast("L’historique n’a pas pu être enregistré.");
+            toast(getString(R.string.app_history_save_error));
         }
     }
 
@@ -952,7 +999,7 @@ public final class MainActivity extends Activity {
     }
 
     private void explainMove(List<FrenchGame.Move> history, int moveIndex) {
-        MoveExplanation explanation = MoveExplanation.create(history, moveIndex);
+        MoveExplanation explanation = MoveExplanation.create(history, moveIndex, gameLanguage);
         if (explanation == null) return;
         showExplanation(getString(R.string.move_explanation_title, moveIndex + 1),
                 explanation.facts(), explanation.options(), explanation::text);
@@ -1017,11 +1064,11 @@ public final class MainActivity extends Activity {
         final TextView status = ui.body("");
         final TextView preview = ui.text("", 14, ui.palette.ink(), ui.medium);
         final TextView confirm = ui.button(getString(R.string.practice_ready), true, MainActivity.this::commit);
-        final TextView recall = ui.textButton("Retirer", () -> {
+        final TextView recall = ui.textButton(getString(R.string.app_recall_tiles), () -> {
             clearStaged();
             updateArena(-1);
         });
-        final TextView tools = ui.textButton("Options", MainActivity.this::turnOptions);
+        final TextView tools = ui.textButton(getString(R.string.app_turn_tools), MainActivity.this::turnOptions);
         final TextView review = ui.button(getString(R.string.match_review), true, MainActivity.this::reviewFinishedGame);
         final TextView explain = ui.button(getString(R.string.move_explanation_last), false, () -> {
             MatchCodec.State current = state();
@@ -1040,7 +1087,7 @@ public final class MainActivity extends Activity {
     private void showGame() {
         if (state() == null) { showHome(); return; }
         page(Screen.GAME, false);
-        top(mode.equals("local") ? "Entre amis" : mode.equals("bluetooth") ? "Bluetooth" : "Partie solo",
+        top(mode.equals("local") ? getString(R.string.app_local) : mode.equals("bluetooth") ? "Bluetooth" : getString(R.string.app_solo),
                 this::leaveGame, mode.equals("bluetooth") ? null : ui.textButton(getString(R.string.games_title), () -> {
                     if (persist()) showGames();
                 }));
@@ -1053,12 +1100,12 @@ public final class MainActivity extends Activity {
         content.addView(arena.board, new LinearLayout.LayoutParams(-1, -2));
         LinearLayout controls = ui.row();
         TextView minus = ui.textButton("−", () -> arena.board.zoomBy(0.8f));
-        minus.setContentDescription("Réduire le zoom");
+        minus.setContentDescription(getString(R.string.practice_zoom_out));
         TextView plus = ui.textButton("+", () -> arena.board.zoomBy(1.25f));
-        plus.setContentDescription("Agrandir le plateau");
+        plus.setContentDescription(getString(R.string.practice_zoom));
         TextView reset = ui.textButton("", () -> arena.board.resetZoom());
         arena.board.onZoom(zoom -> reset.setText(getString(R.string.practice_zoom_percent, Math.round(zoom * 100))));
-        reset.setContentDescription("Réinitialiser le zoom");
+        reset.setContentDescription(getString(R.string.practice_zoom_reset));
         ui.weight(controls, arena.status);
         controls.addView(minus);
         controls.addView(reset);
@@ -1107,8 +1154,8 @@ public final class MainActivity extends Activity {
         List<FrenchGame.Tile> recent = current.history().isEmpty() ? List.of()
                 : current.history().get(current.history().size() - 1).tiles();
         arena.board.update(current.board(), current.blanks(), staged, recent, animatedPosition);
-        arena.status.setText(current.end() != null ? current.history().size() + " coups"
-                : "Sac " + current.bagSize() + "  ·  Tour " + (current.history().size() + 1));
+        arena.status.setText(current.end() != null ? moveCount(current.history().size())
+                : getString(R.string.app_bag_turn, current.bagSize(), current.history().size() + 1));
         arena.rack.removeAllViews();
 
         boolean canPlay = myTurn(current) && !analysing;
@@ -1117,10 +1164,10 @@ public final class MainActivity extends Activity {
         arena.preview.setBackground(ui.shape(draft && result.valid() ? ui.palette.ordinary() : ui.palette.paper(),
                 12, draft && result.valid() ? ui.palette.accent() : ui.palette.line()));
         if (current.end() != null) {
-            ui.weight(arena.rack, ui.button("Voir l’historique", true, this::showHistory));
+            ui.weight(arena.rack, ui.button(getString(R.string.app_view_history), true, this::showHistory));
             arena.preview.setText(resultTitle(current));
         } else if (privacy) {
-            ui.weight(arena.rack, ui.button("Afficher mon chevalet", true, () -> {
+            ui.weight(arena.rack, ui.button(getString(R.string.app_show_rack), true, () -> {
                 privacy = false;
                 updateArena(-1);
             }));
@@ -1128,14 +1175,14 @@ public final class MainActivity extends Activity {
         } else if (mode.equals("bluetooth") && !bluetoothReady) {
             arena.preview.setText(R.string.bluetooth_disconnected);
         } else if (!myTurn(current)) {
-            arena.preview.setText(waiting ? "Validation par l’hôte…"
-                    : current.names()[current.active()] + (botThinking ? " réfléchit…" : " joue."));
+            arena.preview.setText(waiting ? getString(R.string.app_host_validating)
+                    : getString(botThinking ? R.string.app_thinking : R.string.app_playing, current.names()[current.active()]));
         } else {
             renderRack(current);
-            arena.preview.setText(analysing ? "Analyse en cours…" : staged.isEmpty()
+            arena.preview.setText(analysing ? getString(R.string.app_analyzing) : staged.isEmpty()
                     ? getString(R.string.practice_guide)
                     : result.valid() ? getString(R.string.practice_status_valid) + "  ·  " + result.word()
-                    + "  ·  " + getResources().getQuantityString(R.plurals.practice_points, result.score(), result.score())
+                    + "  ·  " + points(result.score())
                     : getString(R.string.practice_status_invalid) + "\n" + result.error());
         }
         ui.enabled(arena.confirm, canPlay && result.valid());
@@ -1171,10 +1218,10 @@ public final class MainActivity extends Activity {
             glyph.setGravity(Gravity.CENTER);
             token.addView(glyph);
             if (!occupied[index]) {
-                TextView value = ui.text(Integer.toString(FrenchGame.value(letter)), 10, ui.tileInk(), ui.medium);
+                TextView value = ui.text(Integer.toString(gameLanguage.value(letter)), 10, ui.tileInk(), ui.medium);
                 value.setGravity(Gravity.CENTER);
                 token.addView(value);
-                token.setContentDescription(letter == '?' ? "Joker" : "Lettre " + letter);
+                token.setContentDescription(letter == FrenchGame.JOKER ? getString(R.string.practice_joker) : getString(R.string.practice_letter, letter));
                 token.setOnClickListener(view -> {
                     if (analysing) return;
                     selected = selected == index ? -1 : index;
@@ -1187,7 +1234,7 @@ public final class MainActivity extends Activity {
     }
 
     private FrenchGame.Preview evaluate(MatchCodec.State current) {
-        if (lexicon == null || staged.isEmpty()) return FrenchGame.Preview.invalid("Posez des lettres.");
+        if (lexicon == null || staged.isEmpty()) return FrenchGame.Preview.invalid(getString(R.string.app_place_tiles));
         return FrenchGame.preview(current.board(), current.blanks(), current.rack(), lexicon, staged);
     }
 
@@ -1230,9 +1277,9 @@ public final class MainActivity extends Activity {
         if (letter == FrenchGame.JOKER) {
             String[] letters = new String[26];
             for (int i = 0; i < letters.length; i++) letters[i] = Character.toString((char) ('A' + i));
-            dialog("Quelle lettre pour le joker ?", null)
+            dialog(getString(R.string.practice_joker_choice), null)
                     .setItems(letters, (ignored, index) -> stage(position, rackIndex, (char) ('A' + index), true))
-                    .setNegativeButton("Annuler", null).show();
+                    .setNegativeButton(getString(R.string.social_cancel), null).show();
         } else stage(position, rackIndex, letter, false);
     }
 
@@ -1280,7 +1327,7 @@ public final class MainActivity extends Activity {
                 }
                 case "pass" -> game.pass();
                 case "exchange" -> game.exchange(exchange);
-                default -> { return "Action inconnue."; }
+                default -> { return getString(R.string.app_action_unknown); }
             }
             return null;
         } catch (IllegalArgumentException | IllegalStateException exception) {
@@ -1341,14 +1388,14 @@ public final class MainActivity extends Activity {
     private void turnOptions() {
         MatchCodec.State current = state();
         if (!myTurn(current)) return;
-        String[] choices = {"Mélanger le chevalet", "Échanger des lettres", "Passer", "Chercher un coup"};
-        dialog("Options du tour", null).setItems(choices, (ignored, choice) -> {
+        String[] choices = {getString(R.string.app_shuffle_rack), getString(R.string.app_exchange_tiles), getString(R.string.app_pass_turn), getString(R.string.app_find_move)};
+        dialog(getString(R.string.app_turn_options), null).setItems(choices, (ignored, choice) -> {
             switch (choice) {
                 case 0 -> { Collections.shuffle(rackOrder); updateArena(-1); }
                 case 1 -> exchangeDialog(current);
-                case 2 -> dialog("Passer ce tour ?", "Les lettres du chevalet sont conservées.")
-                        .setNegativeButton("Annuler", null)
-                        .setPositiveButton("Passer", (view, button) -> action("pass", List.of(), List.of())).show();
+                case 2 -> dialog(getString(R.string.app_pass_confirm), getString(R.string.app_keep_tiles))
+                        .setNegativeButton(getString(R.string.social_cancel), null)
+                        .setPositiveButton(getString(R.string.app_pass_turn), (view, button) -> action("pass", List.of(), List.of())).show();
                 case 3 -> analyzeCurrent(current);
                 default -> { }
             }
@@ -1356,24 +1403,24 @@ public final class MainActivity extends Activity {
     }
 
     private void exchangeDialog(MatchCodec.State current) {
-        if (current.bagSize() < FrenchGame.RACK_SIZE) { toast("Il faut sept lettres dans le sac."); return; }
+        if (current.bagSize() < FrenchGame.RACK_SIZE) { toast(getString(R.string.app_exchange_minimum)); return; }
         String[] labels = new String[current.rack().size()];
         for (int i = 0; i < labels.length; i++) labels[i] = Character.toString(current.rack().get(i));
         boolean[] checked = new boolean[labels.length];
-        dialog("Échanger les lettres cochées", null)
+        dialog(getString(R.string.app_exchange_selected), null)
                 .setMultiChoiceItems(labels, checked, (view, index, value) -> checked[index] = value)
-                .setNegativeButton("Annuler", null)
-                .setPositiveButton("Échanger", (view, button) -> {
+                .setNegativeButton(getString(R.string.social_cancel), null)
+                .setPositiveButton(getString(R.string.app_exchange), (view, button) -> {
                     List<Integer> exchange = new ArrayList<>();
                     for (int i = 0; i < checked.length; i++) if (checked[i]) exchange.add(i);
-                    if (exchange.isEmpty()) toast("Sélectionnez au moins une lettre.");
+                    if (exchange.isEmpty()) toast(getString(R.string.app_exchange_empty));
                     else action("exchange", List.of(), exchange);
                 }).show();
     }
 
     private void analyzeCurrent(MatchCodec.State current) {
         if (mode.equals("bluetooth") || mode.equals("local")) {
-            toast("L’aide au placement est disponible en solo.");
+            toast(getString(R.string.app_hint_solo));
             return;
         }
         analysing = true;
@@ -1396,7 +1443,7 @@ public final class MainActivity extends Activity {
                 if (screen != Screen.GAME) return;
                 if (result == null || result.tiles().isEmpty()) {
                     updateArena(-1);
-                    toast("Aucun placement trouvé.");
+                    toast(getString(R.string.app_hint_no_move));
                     return;
                 }
                 clearStaged();
@@ -1404,7 +1451,7 @@ public final class MainActivity extends Activity {
                 assisted = true;
                 persist();
                 updateArena(result.tiles().get(0).position());
-                toast("Placement proposé : " + result.score() + " points. Elo inchangé pour cette partie.");
+                toast(getString(R.string.app_hint_score, points(result.score())));
             });
         });
     }
@@ -1415,8 +1462,8 @@ public final class MainActivity extends Activity {
         for (int i = 0; i < current.scores().length; i++) {
             if (current.scores()[i] == maximum) winners.add(current.names()[i]);
         }
-        return winners.size() == 1 ? winners.get(0) + " remporte la partie."
-                : "Égalité : " + String.join(", ", winners) + ".";
+        return winners.size() == 1 ? getString(R.string.app_winner, winners.get(0))
+                : getString(R.string.app_draw, String.join(", ", winners));
     }
 
     private BluetoothAdapter adapter() {
@@ -1435,15 +1482,15 @@ public final class MainActivity extends Activity {
             if (state() == null) closeLink();
             showHome();
         }, null);
-        heading("Jouer à deux", "Associez d’abord les téléphones dans les réglages Bluetooth d’Android.");
+        heading(getString(R.string.app_bluetooth_two), getString(R.string.app_bluetooth_pair));
         if (link != null && state() != null && mode.equals("bluetooth")) {
-            content.addView(ui.button("Reprendre la partie", true, this::showGame));
+            content.addView(ui.button(getString(R.string.app_resume), true, this::showGame));
             return;
         }
         if (link != null) {
             content.addView(ui.body(bluetoothStatus));
             ui.gap(content, 11);
-            content.addView(ui.button("Annuler la connexion", false, () -> {
+            content.addView(ui.button(getString(R.string.app_bluetooth_cancel), false, () -> {
                 closeLink();
                 showBluetooth();
             }));
@@ -1451,20 +1498,20 @@ public final class MainActivity extends Activity {
         }
         BluetoothAdapter adapter = adapter();
         if (adapter == null) {
-            content.addView(ui.body("Cet appareil ne propose pas le Bluetooth classique."));
+            content.addView(ui.body(getString(R.string.app_bluetooth_missing)));
             return;
         }
         if (!bluetoothPermission()) {
             String permission = Manifest.permission.BLUETOOTH_CONNECT;
             if (preferences.getBoolean("bluetooth_permission_requested", false)
                     && !shouldShowRequestPermissionRationale(permission)) {
-                content.addView(ui.body("Autorisez les appareils à proximité dans les réglages de Lettrine."));
+                content.addView(ui.body(getString(R.string.app_bluetooth_nearby_hint)));
                 ui.gap(content, 8);
-                content.addView(ui.button("Ouvrir les réglages de Lettrine", true, () -> startActivityForResult(
+                content.addView(ui.button(getString(R.string.app_bluetooth_settings), true, () -> startActivityForResult(
                         new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", getPackageName(), null)),
                         APP_SETTINGS)));
             } else {
-                content.addView(ui.button("Autoriser les appareils à proximité", true, () -> {
+                content.addView(ui.button(getString(R.string.app_bluetooth_nearby), true, () -> {
                     preferences.edit().putBoolean("bluetooth_permission_requested", true).apply();
                     requestPermissions(new String[]{permission}, BLUETOOTH_PERMISSION);
                 }));
@@ -1472,30 +1519,30 @@ public final class MainActivity extends Activity {
             return;
         }
         if (!adapter.isEnabled()) {
-            content.addView(ui.button("Activer le Bluetooth", true, this::enableBluetooth));
+            content.addView(ui.button(getString(R.string.app_bluetooth_enable), true, this::enableBluetooth));
             return;
         }
         List<BluetoothDevice> devices;
         try {
             devices = new ArrayList<>(adapter.getBondedDevices());
         } catch (SecurityException exception) {
-            content.addView(ui.body("L’autorisation Bluetooth n’est plus disponible."));
+            content.addView(ui.body(getString(R.string.app_bluetooth_permission)));
             return;
         }
-        EditText name = input("Votre prénom", bluetoothName);
+        EditText name = input(getString(R.string.app_bluetooth_your_name), bluetoothName);
         content.addView(name, new LinearLayout.LayoutParams(-1, ui.dp(48)));
         ui.gap(content, 11);
-        content.addView(ui.button("Héberger", true, () -> {
+        content.addView(ui.button(getString(R.string.app_bluetooth_host_game), true, () -> {
             String entered = name.getText().toString().trim();
             switchMatch(() -> beginLink(null, entered));
         }));
         ui.gap(content, 15);
-        content.addView(ui.micro("APPAREILS ASSOCIÉS", ui.palette.accent()));
+        content.addView(ui.micro(getString(R.string.app_bluetooth_devices), ui.palette.accent()));
         ui.gap(content, 8);
         devices.sort((left, right) -> deviceName(left).compareToIgnoreCase(deviceName(right)));
-        if (devices.isEmpty()) content.addView(ui.body("Aucun appareil associé."));
+        if (devices.isEmpty()) content.addView(ui.body(getString(R.string.app_bluetooth_no_devices)));
         for (BluetoothDevice device : devices) {
-            content.addView(ui.option("↔", deviceName(device), "Rejoindre une partie hébergée", () -> {
+            content.addView(ui.option("↔", deviceName(device), getString(R.string.app_bluetooth_join), () -> {
                 String entered = name.getText().toString().trim();
                 switchMatch(() -> beginLink(device, entered));
             }));
@@ -1514,14 +1561,14 @@ public final class MainActivity extends Activity {
             String name = device.getName();
             if (name != null && !name.isEmpty()) return name;
         } catch (SecurityException ignored) { }
-        return "Appareil Bluetooth";
+        return getString(R.string.app_bluetooth_device);
     }
 
     private void enableBluetooth() {
         try {
             startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), ENABLE_BLUETOOTH);
         } catch (SecurityException exception) {
-            toast("L’autorisation Bluetooth n’est plus disponible.");
+            toast(getString(R.string.app_bluetooth_permission));
             showBluetooth();
         }
     }
@@ -1545,13 +1592,13 @@ public final class MainActivity extends Activity {
     private void beginLink(BluetoothDevice peer, String name) {
         if (!ready() || !bluetoothPermission()) return;
         BluetoothAdapter adapter = adapter();
-        if (adapter == null || !adapter.isEnabled()) { toast("Activez d’abord le Bluetooth."); return; }
+        if (adapter == null || !adapter.isEnabled()) { toast(getString(R.string.app_bluetooth_enable_first)); return; }
         resetMatch();
         mode = "bluetooth";
         gameBack = Screen.HOME;
         bluetoothHost = peer == null;
-        bluetoothName = name.isEmpty() ? (bluetoothHost ? "Hôte" : "Invité") : name;
-        bluetoothStatus = bluetoothHost ? "En attente d’un joueur…" : "Connexion à " + deviceName(peer) + "…";
+        bluetoothName = name.isEmpty() ? (bluetoothHost ? getString(R.string.app_bluetooth_host) : getString(R.string.profile_guest)) : name;
+        bluetoothStatus = bluetoothHost ? getString(R.string.app_bluetooth_waiting) : getString(R.string.app_bluetooth_connecting, deviceName(peer));
         BluetoothLink next = new BluetoothLink(new BluetoothLink.Listener() {
             @Override public void connected(BluetoothLink connection) {
                 main.post(() -> {
@@ -1567,14 +1614,14 @@ public final class MainActivity extends Activity {
                 });
             }
 
-            @Override public void lost(BluetoothLink connection, String reason) {
+            @Override public void lost(BluetoothLink connection, int reason) {
                 main.post(() -> {
                     if (link != connection) return;
                     closeLink();
-                    bluetoothStatus = reason;
+                    bluetoothStatus = getString(reason);
                     if (state() == null) showBluetooth();
                     else updateArena(-1);
-                    toast(reason);
+                    toast(bluetoothStatus);
                 });
             }
         });
@@ -1599,15 +1646,15 @@ public final class MainActivity extends Activity {
                     if (row.getInt("version") != MatchCodec.VERSION
                             || !lexicon.hash.equals(row.getString("lexicon"))) {
                         closeLink();
-                        bluetoothStatus = "Les deux appareils doivent utiliser la même version et le même lexique.";
+                        bluetoothStatus = getString(R.string.app_bluetooth_incompatible);
                         showBluetooth();
                         return;
                     }
                     if (!bluetoothHost || game != null) return;
-                    String other = row.optString("name", "Invité").trim();
-                    if (other.isEmpty()) other = "Invité";
+                    String other = row.optString("name", getString(R.string.profile_guest)).trim();
+                    if (other.isEmpty()) other = getString(R.string.profile_guest);
                     if (other.length() > 18) other = other.substring(0, 18);
-                    game = new FrenchGame(new String[]{bluetoothName, other}, new int[2]);
+                    game = new FrenchGame(new String[]{bluetoothName, other}, new int[2], gameLanguage);
                     bluetoothReady = true;
                     link.send(MatchCodec.visible(game, 1));
                     showGame();
@@ -1615,10 +1662,11 @@ public final class MainActivity extends Activity {
                 case "state" -> {
                     if (bluetoothHost) return;
                     MatchCodec.State next = MatchCodec.readState(row);
-                    if (next.seat() != 1 || next.names().length != 2 || row.getInt("version") != MatchCodec.VERSION
+                    if (next.language() != gameLanguage || next.seat() != 1 || next.names().length != 2
+                            || row.getInt("version") != MatchCodec.VERSION
                             || (guestState != null && (!guestState.id().equals(next.id())
                             || next.history().size() < guestState.history().size()))) {
-                        throw new JSONException("État inattendu");
+                        throw new JSONException(getString(R.string.app_bluetooth_unexpected));
                     }
                     guestState = next;
                     bluetoothReady = true;
@@ -1646,15 +1694,15 @@ public final class MainActivity extends Activity {
                     if (bluetoothHost) return;
                     waiting = false;
                     updateArena(-1);
-                    toast(row.optString("message", "L’hôte a refusé ce coup."));
+                    toast(row.optString("message", getString(R.string.app_bluetooth_refused)));
                 }
                 default -> { }
             }
         } catch (JSONException | IllegalArgumentException exception) {
-            if (link != null && bluetoothHost) link.send(MatchCodec.object("type", "invalid", "message", "Coup invalide."));
+            if (link != null && bluetoothHost) link.send(MatchCodec.object("type", "invalid", "message", getString(R.string.app_invalid_move)));
             else {
                 closeLink();
-                toast("Le message Bluetooth n’a pas pu être lu.");
+                toast(getString(R.string.app_bluetooth_read_error));
                 if (state() == null) showBluetooth();
                 else updateArena(-1);
             }
@@ -1663,8 +1711,16 @@ public final class MainActivity extends Activity {
 
     private void showSettings() {
         page(Screen.SETTINGS, false);
-        top("Lettrine", this::showProfile, null);
-        heading("Réglages", "");
+        top(getString(R.string.app_name), this::showProfile, null);
+        heading(getString(R.string.app_settings), "");
+        boolean english = AppLocale.language(this) == GameLanguage.ENGLISH;
+        content.addView(ui.option("Aa", getString(R.string.locale_settings), english ? "English" : "Français",
+                () -> dialog(getString(R.string.locale_settings), null)
+                        .setSingleChoiceItems(new String[]{"Français", "English"}, english ? 1 : 0, (choice, index) -> {
+                            choice.dismiss();
+                            selectLanguage(index == 0 ? GameLanguage.FRENCH : GameLanguage.ENGLISH);
+                        }).show()));
+        ui.gap(content, 12);
         LinearLayout settings = ui.card();
         Switch musicSwitch = soundSwitch(R.string.ambient_sound, "music");
         settings.addView(musicSwitch);
@@ -1719,11 +1775,11 @@ public final class MainActivity extends Activity {
                 getString(TurnNotifications.enabled(this) && TurnNotifications.available(this)
                         ? R.string.turn_notifications_on : R.string.turn_notifications_off), this::editTurnNotifications));
         ui.gap(content, 18);
-        content.addView(ui.micro("APPARENCE", ui.palette.accent()));
+        content.addView(ui.micro(getString(R.string.app_appearance), ui.palette.accent()));
         ui.gap(content, 8);
         for (int i = 0; i < Palette.THEMES.length; i++) {
             int theme = i;
-            content.addView(ui.option(skin == i ? "✓" : "✦", Palette.THEMES[i].name(), "", () -> {
+            content.addView(ui.option(skin == i ? "✓" : "✦", getString(Palette.THEMES[i].name()), "", () -> {
                 skin = theme;
                 preferences.edit().putInt("skin", skin).apply();
                 updateAppearance();
@@ -1734,10 +1790,21 @@ public final class MainActivity extends Activity {
         if (lexicon != null) {
             ui.gap(content, 8);
             String label = lexicon.label;
-            content.addView(ui.option("Aa", label, "Lexique français et licence", () -> dialog(label,
-                    (notice == null || notice.trim().isEmpty() ? "Lexique intégré au moment de la compilation." : notice)
-                            + "\n\nEmpreinte SHA-256 : " + lexicon.hash).setPositiveButton("Fermer", null).show()));
+            content.addView(ui.option("Aa", label, getString(R.string.app_dictionary_license), () -> dialog(label,
+                    (notice == null || notice.trim().isEmpty() ? getString(R.string.app_dictionary_bundled) : notice)
+                            + "\n\n" + getString(R.string.app_dictionary_hash, lexicon.hash)).setPositiveButton(getString(R.string.move_explanation_close), null).show()));
         }
+    }
+
+    private void selectLanguage(GameLanguage language) {
+        switchLanguage(language, new Intent(this, MainActivity.class));
+    }
+
+    private void switchLanguage(GameLanguage language, Intent destination) {
+        if (language == gameLanguage || screen == Screen.GAME && !persist()) return;
+        AppLocale.select(this, language);
+        setIntent(destination);
+        recreate();
     }
 
     private void editTurnNotifications() {
@@ -1808,7 +1875,7 @@ public final class MainActivity extends Activity {
         if (!ready()) return;
         FrameLayout origin = frame;
         dialog(getString(R.string.rewarded_title), getString(R.string.rewarded_confirm))
-                .setNegativeButton("Annuler", null)
+                .setNegativeButton(getString(R.string.social_cancel), null)
                 .setPositiveButton(R.string.rewarded_watch, (ignored, which) -> rewarded.request(
                         () -> screen == Screen.SETTINGS && frame == origin,
                         () -> preferences.edit().putString("rewarded_date", date.toString()).apply(),
@@ -1829,14 +1896,14 @@ public final class MainActivity extends Activity {
         }
         page(Screen.PRACTICE, false);
         practiceBack = this::showSettings;
-        top("Lettrine", this::leavePractice, null);
+        top(getString(R.string.app_name), this::leavePractice, null);
         heading(getString(R.string.rewarded_title), getString(R.string.daily_goal, challenge.openingWord()));
         content.addView(new PracticePanel(ui, challenge.position(), lexicon, false, false).view());
     }
 
     private void showProfile() {
         page(Screen.PROFILE, true);
-        top("Lettrine", null, ui.textButton("Réglages", this::showSettings));
+        top(getString(R.string.app_name), null, ui.textButton(getString(R.string.app_settings), this::showSettings));
         heading(getString(R.string.profile_title), "");
         content.addView(ui.option("◇", getString(R.string.skins_title), getString(R.string.collection_profile_detail), this::showCollection));
         ui.gap(content, 10);
@@ -1845,12 +1912,12 @@ public final class MainActivity extends Activity {
     }
 
     private void updateAppearance() {
-        ui = new ViewKit(this, Palette.THEMES[skin], skinStore.selection(), audio);
+        ui = new ViewKit(this, Palette.THEMES[skin], skinStore.selection(), audio, gameLanguage);
     }
 
     private void showCollection() {
         page(Screen.COLLECTION, false);
-        top("Lettrine", this::showProfile, null);
+        top(getString(R.string.app_name), this::showProfile, null);
         content.addView(new SkinPanel(ui, skinStore, store, dailyProgress, this::updateAppearance).view());
     }
 
@@ -1858,7 +1925,7 @@ public final class MainActivity extends Activity {
         try {
             startActivityForResult(ProfilePanel.photoPicker(), PROFILE_PHOTO);
         } catch (android.content.ActivityNotFoundException exception) {
-            toast("Le sélecteur de photos est indisponible.");
+            toast(getString(R.string.app_photo_picker));
         }
     }
 
@@ -1872,12 +1939,12 @@ public final class MainActivity extends Activity {
         field.setText(socialBaseUrl());
         AlertDialog change = dialog(getString(R.string.social_navigation_endpoint),
                 getString(R.string.social_navigation_endpoint_help)).setView(field)
-                .setNegativeButton("Annuler", null)
+                .setNegativeButton(getString(R.string.social_cancel), null)
                 .setNeutralButton(R.string.social_navigation_endpoint_default, (d, action) -> {
                     preferences.edit().remove("social_endpoint").apply();
                     refreshSocialEndpoint();
                 })
-                .setPositiveButton("Enregistrer", null).create();
+                .setPositiveButton(R.string.app_save, null).create();
         change.setOnShowListener(d -> change.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
             String address = field.getText().toString().strip();
             if (!address.isEmpty() && !SocialClient.validBase(address)) {
@@ -1902,7 +1969,7 @@ public final class MainActivity extends Activity {
 
     private void showSocial() {
         page(Screen.SOCIAL, true);
-        top("Lettrine", null, ui.textButton(getString(R.string.social_navigation_endpoint), this::editSocialEndpoint));
+        top(getString(R.string.app_name), null, ui.textButton(getString(R.string.social_navigation_endpoint), this::editSocialEndpoint));
         heading(getString(R.string.social_navigation_friends), "");
         String invite = pendingSocialInvite;
         if (socialClient.configured()) pendingSocialInvite = null;
@@ -1912,7 +1979,7 @@ public final class MainActivity extends Activity {
 
     private void showTournament() {
         page(Screen.TOURNAMENT, false);
-        top("Lettrine", this::showSocial, null);
+        top(getString(R.string.app_name), this::showSocial, null);
         content.addView(new TournamentPanel(ui, socialClient, this::showTournamentRound).view());
     }
 
@@ -1927,7 +1994,7 @@ public final class MainActivity extends Activity {
         if (!ready()) return;
         TurnNotifications.dismiss(this, duel.optString("id"));
         page(Screen.SOCIAL_DUEL, false);
-        top("Lettrine", this::showSocial, null);
+        top(getString(R.string.app_name), this::showSocial, null);
         heading(getString(SocialDuelPanel.isMirror(duel) ? R.string.social_mirror_title
                 : R.string.social_navigation_duel), "");
         content.addView(new SocialDuelPanel(ui, socialClient, duel, lexicon, this::showSocial).view());
@@ -1937,7 +2004,8 @@ public final class MainActivity extends Activity {
         String origin = SocialClient.origin(socialBaseUrl());
         if (origin == null) return null;
         return origin.equals(preferences.getString("social_beta_origin", ""))
-                || origin.equals(SocialClient.origin(BuildConfig.SOCIAL_BASE_URL)) ? origin + "/beta#" : null;
+                || origin.equals(SocialClient.origin(BuildConfig.SOCIAL_BASE_URL))
+                ? origin + "/beta#" + gameLanguage.text("", "en/") : null;
     }
 
     private void connectGoogle(String clientId) {
@@ -1985,8 +2053,8 @@ public final class MainActivity extends Activity {
 
     private void showHistory() {
         page(Screen.HISTORY, true);
-        top("Lettrine", null, null);
-        heading("Historique", "");
+        top(getString(R.string.app_name), null, null);
+        heading(getString(R.string.app_history), "");
         List<JSONObject> games = store == null ? List.of() : store.history();
         LinearLayout summary = ui.card();
         int wins = 0, solo = 0, best = Integer.MIN_VALUE, bingos = 0;
@@ -2006,31 +2074,30 @@ public final class MainActivity extends Activity {
                         && move.optJSONArray("tiles").length() == 7) bingos++;
             }
         }
-        summary.addView(ui.title(games.size() + (games.size() == 1 ? " partie" : " parties"), 25));
+        summary.addView(ui.title(getResources().getQuantityString(R.plurals.app_history_game_count, games.size(), games.size()), 25));
         ui.gap(summary, 8);
-        summary.addView(ui.body("Elo local " + currentRating() + (best == Integer.MIN_VALUE ? "" : "  ·  Record " + best + " pts")));
+        summary.addView(ui.body(getString(R.string.app_history_elo, currentRating()) + (best == Integer.MIN_VALUE ? "" : "  ·  " + getString(R.string.app_history_best, points(best)))));
         if (solo > 0) {
             ui.gap(summary, 4);
-            summary.addView(ui.body(wins + "/" + solo + " victoires en solo  ·  Moyenne " + Math.round(points / (double) solo)
-                    + " pts  ·  " + bingos + " scrabbles"));
+            summary.addView(ui.body(getString(R.string.app_history_solo, wins, solo, points((int) Math.round(points / (double) solo)), bingos)));
         }
         content.addView(summary);
         ui.gap(content, 12);
         content.addView(EloChart.card(ui, games));
         ui.gap(content, 12);
         if (games.isEmpty()) {
-            content.addView(ui.body("Terminez une partie pour la revoir ici."));
+            content.addView(ui.body(getString(R.string.app_history_empty)));
             return;
         }
-        content.addView(ui.button("Exporter l’historique en JSON", false,
+        content.addView(ui.button(getString(R.string.app_history_export), false,
                 () -> export("lettrine-historique.json", new JSONArray(games).toString())));
         ui.gap(content, 15);
         for (int i = games.size() - 1; i >= Math.max(0, games.size() - historyLimit); i--) {
             JSONObject row = games.get(i);
             String title = scoreText(row);
-            String subtitle = formatMode(row.optString("mode")) + (row.optBoolean("assisted") ? " assisté" : "")
-                    + "  ·  " + row.optInt("turns") + " coups  ·  "
-                    + DateFormat.getDateInstance(DateFormat.SHORT, Locale.FRANCE).format(new Date(row.optLong("finished_at_ms")));
+            String subtitle = formatMode(row.optString("mode")) + (row.optBoolean("assisted") ? getString(R.string.app_history_assisted) : "")
+                    + "  ·  " + moveCount(row.optInt("turns")) + "  ·  "
+                    + DateFormat.getDateInstance(DateFormat.SHORT, AppLocale.locale(this)).format(new Date(row.optLong("finished_at_ms")));
             content.addView(ui.option("↗", title, subtitle, () -> {
                 detail = row;
                 replayIndex = row.optInt("turns");
@@ -2038,7 +2105,7 @@ public final class MainActivity extends Activity {
             }));
             ui.gap(content, 7);
         }
-        if (historyLimit < games.size()) content.addView(ui.button("Afficher plus", false, () -> {
+        if (historyLimit < games.size()) content.addView(ui.button(getString(R.string.app_show_more), false, () -> {
             historyLimit += 20;
             showHistory();
         }));
@@ -2046,15 +2113,15 @@ public final class MainActivity extends Activity {
 
     private String formatMode(String value) {
         return switch (value) {
-            case "local" -> "Entre amis";
+            case "local" -> getString(R.string.app_local);
             case "bluetooth" -> "Bluetooth";
-            default -> "Solo";
+            default -> getString(R.string.app_solo_short);
         };
     }
 
     private String scoreText(JSONObject row) {
         JSONArray names = row.optJSONArray("names"), scores = row.optJSONArray("scores");
-        if (names == null || scores == null) return "Partie terminée";
+        if (names == null || scores == null) return getString(R.string.app_game_finished);
         StringBuilder title = new StringBuilder();
         for (int i = 0; i < Math.min(names.length(), scores.length()); i++) {
             if (i > 0) title.append("  ·  ");
@@ -2118,13 +2185,13 @@ public final class MainActivity extends Activity {
     private void showDetail() {
         if (detail == null) { showHistory(); return; }
         page(Screen.DETAIL, false);
-        top("Rejouer la partie", this::showHistory, null);
+        top(getString(R.string.app_replay_game), this::showHistory, null);
         heading(scoreText(detail), formatMode(detail.optString("mode")) + "  ·  " + detail.optString("lexicon"));
         List<FrenchGame.Move> moves;
         try {
             moves = MatchCodec.readMoves(detail.getJSONArray("moves"));
         } catch (JSONException | IllegalArgumentException exception) {
-            content.addView(ui.body("Cette partie ne peut pas être rejouée."));
+            content.addView(ui.body(getString(R.string.app_replay_unavailable)));
             return;
         }
         JSONObject replayed = detail;
@@ -2143,14 +2210,14 @@ public final class MainActivity extends Activity {
         LinearLayout controls = ui.row();
         TextView label = ui.body("");
         TextView previous = ui.textButton("‹", () -> {});
-        previous.setContentDescription("Coup précédent");
+        previous.setContentDescription(getString(R.string.app_replay_previous));
         TextView next = ui.textButton("›", () -> {});
-        next.setContentDescription("Coup suivant");
+        next.setContentDescription(getString(R.string.app_replay_next));
         controls.addView(previous);
         ui.weight(controls, label);
         controls.addView(next);
         TextView zoom = ui.textButton("+", () -> board.zoomBy(1.25f));
-        zoom.setContentDescription("Agrandir le plateau");
+        zoom.setContentDescription(getString(R.string.practice_zoom));
         controls.addView(zoom);
         controls.addView(ui.textButton("1×", board::resetZoom));
         content.addView(controls);
@@ -2167,8 +2234,8 @@ public final class MainActivity extends Activity {
             }
             FrenchGame.Move shown = replayIndex == 0 ? null : moves.get(replayIndex - 1);
             board.update(letters, blanks, List.of(), shown == null ? List.of() : shown.tiles(), -1);
-            String word = shown == null ? "Départ" : shown.type().equals("play")
-                    ? shown.word() + " +" + shown.score() : shown.type().equals("pass") ? "Passe" : "Échange";
+            String word = shown == null ? getString(R.string.app_replay_start) : shown.type().equals("play")
+                    ? shown.word() + " +" + shown.score() : shown.type().equals("pass") ? getString(R.string.match_review_pass) : getString(R.string.match_review_exchange);
             label.setText(getString(R.string.replay_position, replayIndex, moves.size(), word));
             ui.enabled(previous, replayIndex > 0);
             ui.enabled(next, replayIndex < moves.size());
@@ -2181,7 +2248,7 @@ public final class MainActivity extends Activity {
         ui.gap(content, 9);
         content.addView(explain);
         ui.gap(content, 7);
-        content.addView(ui.button("Exporter cette partie en JSON", false,
+        content.addView(ui.button(getString(R.string.app_game_export), false,
                 () -> export("lettrine-partie.json", detail.toString())));
     }
 
@@ -2206,11 +2273,11 @@ public final class MainActivity extends Activity {
         export = null;
         if (result != RESULT_OK || data == null || data.getData() == null || body == null) return;
         try (OutputStream destination = getContentResolver().openOutputStream(data.getData())) {
-            if (destination == null) throw new java.io.IOException("Fichier indisponible");
+            if (destination == null) throw new java.io.IOException(getString(R.string.app_export_unavailable));
             destination.write(body.getBytes(StandardCharsets.UTF_8));
-            toast("Export enregistré.");
+            toast(getString(R.string.app_export_saved));
         } catch (java.io.IOException exception) {
-            toast("Impossible d’écrire le fichier.");
+            toast(getString(R.string.app_export_error));
         }
     }
 }

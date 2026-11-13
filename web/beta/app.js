@@ -2,13 +2,25 @@
 
 if (window.location.protocol === "https:") {
   const params = new URLSearchParams({ origin: window.location.origin });
-  const invite = window.location.hash.slice(1);
+  const fragment = window.location.hash.slice(1);
+  const english = fragment.startsWith("en/");
+  const invite = english ? fragment.slice(3) : fragment;
   if (/^[a-f0-9]{32}$/.test(invite)) {
     params.set("invite", invite);
-    document.getElementById("title").textContent = "Une invitation vous attend.";
-    document.getElementById("intro").textContent = "Retrouvez votre ami sur Lettrine pour jouer à votre rythme.";
+    if (english) params.set("lang", "en");
+    document.getElementById("title").textContent = english ? "You’re invited." : "Une invitation vous attend.";
+    document.getElementById("intro").textContent = english ? "Play a duel at your own pace in WordRivet."
+      : "Retrouvez votre ami sur WordRivet pour jouer à votre rythme.";
   }
   const button = document.getElementById("open");
+  if (english) {
+    document.documentElement.lang = "en";
+    document.title = "Android beta · WordRivet";
+    document.querySelector(".eyebrow").textContent = "Android beta";
+    document.getElementById("detail").textContent = "Install WordRivet and open this invitation again on Android.";
+    document.querySelector(".download a").textContent = "Download the Android APK";
+    button.textContent = "Open in WordRivet";
+  }
   button.href = "lettrine://beta/v1/?" + params;
   button.hidden = false;
 } else {

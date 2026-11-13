@@ -1,0 +1,13 @@
+<resources>
+    <string name="card_styles">Cards</string>
+    <string name="card_style_classic_detail">The cobalt background for Beat My Score cards.</string>
+    <string name="card_style_nocturne">Golden Nocturne</string>
+    <string name="card_style_nocturne_detail">Blue ink, Art Deco lines, and golden tiles.</string>
+    <string name="card_style_unlock_requirement">Finish all three puzzles in a single weekend.</string>
+    <string name="card_style_tournament_reward">Card background to win</string>
+    <string name="card_style_reward_unlocked">Card background unlocked</string>
+    <string name="card_style_reward_in_use">Your Beat My Score cards use Golden Nocturne. Change the background in Collection.</string>
+    <string name="card_style_reward_collection">Choose this background for your Beat My Score cards under Profile → Collection.</string>
+    <string name="card_style_preview_label">Preview of the %1$s background</string>
+    <string name="card_style_preview_date">November 14</string>
+</resources>

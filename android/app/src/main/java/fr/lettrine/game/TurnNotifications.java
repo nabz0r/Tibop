@@ -154,7 +154,8 @@ final class TurnNotifications {
 
     private static Session readSession(Context context, String origin) {
         if (origin == null) return null;
-        SharedPreferences sessions = context.getSharedPreferences("social_session", Context.MODE_PRIVATE);
+        GameLanguage language = AppLocale.language(context);
+        SharedPreferences sessions = context.getSharedPreferences(language.storageName("social_session"), Context.MODE_PRIVATE);
         String token = sessions.getString("token:" + origin, null);
         return token == null || !sessions.getBoolean("ready:" + origin, false) ? null
                 : new Session(origin, token, settings(context).getLong("account_epoch", 0));

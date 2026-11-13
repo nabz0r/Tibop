@@ -1,0 +1,26 @@
+<resources>
+    <string name="board_read_only">Plateau de la partie</string>
+    <string name="board_interactive">Plateau 15 sur 15. Pincez pour zoomer.</string>
+    <string name="board_word_bonus">M%1$d</string>
+    <string name="board_letter_bonus">L%1$d</string>
+    <string name="board_square">Case %1$c%2$d</string>
+    <string name="daily_card_date">EEEE d MMMM</string>
+    <string name="daily_share_date">d MMMM uuuu</string>
+    <string name="tournament_date_pattern">EEEE d MMMM \'à\' HH:mm</string>
+    <string-array name="bot_difficulties">
+        <item></item>
+        <item>Promeneur</item>
+        <item>Habitué</item>
+        <item>Stratège</item>
+        <item>Maître</item>
+        <item>Adaptatif</item>
+    </string-array>
+    <string-array name="bot_difficulties_detail">
+        <item></item>
+        <item>Des coups courts et un rythme souple.</item>
+        <item>Des coups réguliers, avec quelques ouvertures.</item>
+        <item>Exploite les cases bonus et les rallonges.</item>
+        <item>Arbitre le score, le chevalet et la fin de partie.</item>
+        <item>Ajuste sa difficulté à votre Elo local et à l’écart de score.</item>
+    </string-array>
+</resources>

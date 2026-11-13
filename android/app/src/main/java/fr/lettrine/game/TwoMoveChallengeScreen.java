@@ -26,7 +26,7 @@ final class TwoMoveChallengeScreen {
         this.lexicon = lexicon;
         panel = ui.column();
         catalog = TwoMoveChallenge.catalog(lexicon);
-        progress = ui.context.getSharedPreferences("two_move_challenges", Context.MODE_PRIVATE);
+        progress = ui.context.getSharedPreferences(lexicon.language.storageName("two_move_challenges"), Context.MODE_PRIVATE);
         showCatalog();
     }
 

@@ -76,7 +76,7 @@ final class SocialDuelPanel {
         for (char letter : board) if (letter != 0) used[letter - 'A']++;
         List<Character> letters = new ArrayList<>(FrenchGame.RACK_SIZE);
         for (char letter : rack.toCharArray()) {
-            if (letter < 'A' || letter > 'Z' || ++used[letter - 'A'] > FrenchGame.tileCount(letter)) return null;
+            if (letter < 'A' || letter > 'Z' || ++used[letter - 'A'] > lexicon.language.tileCount(letter)) return null;
             letters.add(letter);
         }
         // The shared duel UI only evaluates the player's move, with the submitted rack indices.

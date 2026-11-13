@@ -1,0 +1,29 @@
+<resources>
+    <string name="daily_title">Daily Puzzle</string>
+    <string name="daily_play">Play puzzle</string>
+    <string name="daily_replay">Play again</string>
+    <string name="daily_home_open">One move to find</string>
+    <string name="daily_goal">Extend %1$s or connect a word to it. Try for the highest score.</string>
+    <string name="daily_board">Puzzle board. %1$s is on the board from %2$s to %3$s.</string>
+    <string name="daily_unavailable">This puzzle is unavailable with this dictionary.</string>
+    <string name="daily_best">Daily best · %1$s</string>
+    <string name="daily_streak">Streak · %1$s</string>
+    <string name="daily_points_label">POINTS</string>
+    <string name="daily_share">Beat My Score</string>
+    <string name="daily_share_text">Daily puzzle · %1$s\nCan you beat my %2$s?\n%3$s</string>
+    <string name="daily_share_link">Copy link</string>
+    <string name="daily_share_link_copied">Link copied.</string>
+    <string name="daily_invitation_title">Beat My Score</string>
+    <string name="daily_invitation_goal">Score to beat · %1$s</string>
+    <string name="daily_invitation_invalid">This puzzle link is invalid.</string>
+    <string name="daily_invitation_incompatible">This position requires a different app or dictionary version.</string>
+    <string name="daily_invitation_beat">New high score! You scored %1$s more.</string>
+    <string name="daily_invitation_tie">You tied the shared score.</string>
+    <string name="daily_invitation_short">You needed %1$s more to tie the shared score.</string>
+    <string name="daily_save_error">Couldn’t save the puzzle score on this device.</string>
+    <string name="daily_share_error">Sharing is unavailable on this device.</string>
+    <plurals name="daily_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+</resources>
