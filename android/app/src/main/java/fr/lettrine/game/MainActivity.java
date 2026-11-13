@@ -1748,6 +1748,7 @@ public final class MainActivity extends Activity {
                                     != PackageManager.PERMISSION_GRANTED) {
                                 if (preferences.getBoolean("turn_permission_requested", false)
                                         && !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+                                    setTurnNotifications(true);
                                     openNotificationSettings();
                                     return;
                                 }
