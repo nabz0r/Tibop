@@ -70,7 +70,7 @@ public final class MainActivity extends Activity {
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
 
     private enum Screen { HOME, GAMES, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW, PRACTICE,
-        SOCIAL, SOCIAL_DUEL, PROFILE, COLLECTION, TOURNAMENT, TOURNAMENT_ROUND, HELP }
+        SOCIAL, SOCIAL_DUEL, PROFILE, COLLECTION, TOURNAMENT, TOURNAMENT_ROUND, HELP, TWO_MOVES }
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -85,6 +85,7 @@ public final class MainActivity extends Activity {
     private SkinStore skinStore;
     private ProfileStore profileStore;
     private ProfilePanel profilePanel;
+    private TwoMoveChallengeScreen twoMoveScreen;
     private SocialClient socialClient;
     private CancellationSignal googleSignIn;
     private String pendingSocialInvite;
@@ -343,6 +344,7 @@ public final class MainActivity extends Activity {
             case DETAIL -> showHistory();
             case REVIEW -> reviewBack.run();
             case PRACTICE -> leavePractice();
+            case TWO_MOVES -> leaveTwoMoves();
             case SOCIAL_DUEL -> showSocial();
             case TOURNAMENT -> showSocial();
             case TOURNAMENT_ROUND -> showTournament();
@@ -373,6 +375,7 @@ public final class MainActivity extends Activity {
         if (next != Screen.HOME || screen != Screen.HOME) pendingTurnNavigation = null;
         if (next != Screen.HOME) pendingChallenge = null;
         if (next != Screen.PROFILE) profilePanel = null;
+        if (next != Screen.TWO_MOVES) twoMoveScreen = null;
         if (next != Screen.SOCIAL && googleSignIn != null) {
             googleSignIn.cancel();
             googleSignIn = null;
@@ -412,7 +415,8 @@ public final class MainActivity extends Activity {
         FrameLayout centered = new FrameLayout(this);
         scroll.addView(centered, new ScrollView.LayoutParams(-1, -2));
         content = ui.column();
-        int margin = next == Screen.PRACTICE || next == Screen.TOURNAMENT_ROUND || next == Screen.SOCIAL_DUEL ? 10 : 17;
+        int margin = next == Screen.PRACTICE || next == Screen.TOURNAMENT_ROUND
+                || next == Screen.SOCIAL_DUEL || next == Screen.TWO_MOVES ? 10 : 17;
         content.setPadding(ui.dp(margin), ui.dp(7), ui.dp(margin), ui.dp(16));
         centered.addView(content, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_HORIZONTAL));
         LinearLayout capturedContent = content;
@@ -498,6 +502,9 @@ public final class MainActivity extends Activity {
             content.addView(ui.button("Reprendre la partie", true, this::showGame));
         }
         ui.gap(content, 10);
+        content.addView(ui.option("↳", getString(R.string.two_move_title), getString(R.string.two_move_home),
+                () -> openChallenge(this::openTwoMoves)));
+        ui.gap(content, 9);
         content.addView(ui.option("✦", getString(R.string.practice_first), getString(R.string.practice_first_home),
                 () -> openChallenge(() -> openFirstChallenge(this::showHome, false))));
         ui.gap(content, 9);
@@ -540,6 +547,17 @@ public final class MainActivity extends Activity {
     private void openChallenge(Runnable action) {
         if (lexicon == null && lexiconError == null) pendingChallenge = action;
         if (ready()) action.run();
+    }
+
+    private void openTwoMoves() {
+        page(Screen.TWO_MOVES, false);
+        top("Lettrine", this::leaveTwoMoves, null);
+        twoMoveScreen = new TwoMoveChallengeScreen(ui, lexicon);
+        content.addView(twoMoveScreen.view());
+    }
+
+    private void leaveTwoMoves() {
+        if (twoMoveScreen == null || !twoMoveScreen.goBack()) showHome();
     }
 
     private void openFirstChallenge(Runnable back, boolean tutorial) {

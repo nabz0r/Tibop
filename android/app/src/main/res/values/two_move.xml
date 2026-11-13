@@ -1,0 +1,29 @@
+<resources>
+    <string name="two_move_title">Deux coups d’avance</string>
+    <string name="two_move_intro">Deux poses sur le même plateau. Garde les lettres restantes pour le deuxième coup.</string>
+    <string name="two_move_catalog_progress">%1$d sur %2$d terminés</string>
+    <string name="two_move_catalog_record">Record · %1$s</string>
+    <string name="two_move_unavailable">Ces défis demandent le lexique français fourni avec Lettrine.</string>
+    <string name="two_move_phase">Pose %1$d sur 2</string>
+    <string name="two_move_first">Valider le 1er coup</string>
+    <string name="two_move_second">Valider le 2e coup</string>
+    <string name="two_move_edit_first">Reprendre le premier coup</string>
+    <string name="two_move_pick">Touche une lettre, puis une case.</string>
+    <string name="two_move_keep">Joue avec les lettres restantes.</string>
+    <string name="two_move_running_total">Total · %1$s</string>
+    <string name="two_move_result">Défi terminé · %1$s</string>
+    <string name="two_move_breakdown">Premier coup %1$s · deuxième coup %2$s</string>
+    <string name="two_move_hint">Un indice de NAB</string>
+    <string name="two_move_hint_hide">Masquer l’indice</string>
+    <string name="two_move_nab_hint">NAB · %1$s</string>
+    <string name="two_move_replay">Voir le rejeu de NAB</string>
+    <string name="two_move_replay_phase">Rejeu de NAB · coup %1$d sur 2</string>
+    <string name="two_move_replay_next">Voir le deuxième coup</string>
+    <string name="two_move_replay_previous">Voir le premier coup</string>
+    <string name="two_move_replay_note">Regarde les lettres que NAB garde pour le deuxième coup.</string>
+    <string name="two_move_yours">Revenir à mon défi</string>
+    <string name="two_move_retry">Rejouer le défi</string>
+    <string name="two_move_catalog">Tous les défis</string>
+    <string name="two_move_board">Plateau du défi. %1$s</string>
+    <string name="two_move_highlight">Case de l’indice %1$c%2$d.</string>
+</resources>

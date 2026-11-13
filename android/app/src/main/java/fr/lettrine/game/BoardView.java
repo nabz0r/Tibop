@@ -177,6 +177,19 @@ final class BoardView extends View {
 
     void resetZoom() { zoomAt(1, side * 0.5f, side * 0.5f); }
 
+    void focusArea(int minRow, int minCol, int maxRow, int maxCol) {
+        if (side <= 0) return;
+        int extent = Math.max(maxRow - minRow, maxCol - minCol) + 1;
+        zoom = Math.max(1f, Math.min(2.15f, side / (unit() * (extent + 2.5f))));
+        float centerX = gridStart() + (0.5f + (minCol + maxCol) / 2f) * unit();
+        float centerY = gridStart() + (0.5f + (minRow + maxRow) / 2f) * unit();
+        offsetX = side * 0.5f - centerX * zoom;
+        offsetY = side * 0.5f - centerY * zoom;
+        clamp();
+        invalidate();
+        if (zoomListener != null) zoomListener.accept(zoom);
+    }
+
     private void zoomAt(float target, float x, float y) {
         float next = Math.max(1f, Math.min(3.5f, target));
         float ratio = next / zoom;

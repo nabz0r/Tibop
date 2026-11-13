@@ -1,10 +1,11 @@
 # Lettrine pour Android
 
-L’[APK 0.11.1](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe. Le [bundle 0.11.1](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK 0.12.0](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe. Le [bundle 0.12.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Jouer
 
 - **Défi du jour** propose une nouvelle position selon la date locale, même en mode avion. Validez un coup légal pour compter la journée dans votre série. Vous pouvez rejouer pour améliorer le record du jour.
+- **Deux coups d’avance** ouvre douze positions hors ligne. Le premier placement reste sur le plateau et vous jouez le second avec les tuiles restantes. Le résultat cumule les deux coups. NAB donne un indice et rejoue une séquence en deux temps sur le plateau. Le record de chaque défi est enregistré sur l’appareil.
 - **Bats mon score** partage une carte PNG avec la date, le score et, lorsqu’elle s’applique, la série. Le lien associé mène à une [page d’invitation](https://nabz0r.github.io/scrabnble/defi/) avec le bouton **Ouvrir dans Lettrine**. L’application retrouve le même plateau et le même chevalet, puis compare le coup du destinataire au score partagé. **Copier le lien** est disponible pour les messageries qui séparent les images du texte. Une invitation pour une autre date se joue hors série.
 - **Profil** réunit le pseudo, la photo, le pays, l’âge et le sexe, tous facultatifs. Les exploits se débloquent à partir de vos parties et de vos défis. La photo, le pays, l’âge et le sexe restent sur cet appareil.
 - **Amis** propose une invitation à usage unique, des duels à un coup sur un plateau commun, la revanche et un classement calculé sur les duels terminés entre membres de votre cercle d’amis. Les deux joueurs peuvent jouer à des moments différents. Le score de l’adversaire est dévoilé une fois les deux coups envoyés.
@@ -128,5 +129,12 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 - Les parties terminées depuis deux fenêtres Android sont archivées ensemble. Le calcul Elo est enchaîné dans l’ordre des écritures.
 - Une notification de duel reste disponible si elle est ouverte hors ligne. En ligne, l’application recharge l’état du duel avant d’afficher son plateau.
 - La revanche miroir réutilise son plateau sans sauter le plateau suivant du catalogue. Sur le web, un brouillon reste disponible après annulation d’un passage ou d’un échange, ou après rechargement dans le même onglet si le tour est encore le même.
+
+## Vérification de la version 0.12.0
+
+- Les 36 tests Android passent. Le moteur valide les deux coups des douze défis avec le lexique livré, la consommation des tuiles, la valeur du joker et le refus d’une troisième pose. Le contrôle statique Android passe également.
+- Les 480 parties contre NAB, les 1 098 parties de stress et les 366 défis du jour de la campagne de régression passent. Le test de stockage sur Android 8 conserve 48 archives concurrentes et enchaîne les calculs Elo.
+- L’APK met à jour la 0.11.1 sur Android 8 et 16 avec les mêmes fichiers de partie, d’historique et de progression quotidienne. Le bundle signé est validé avec `bundletool` et ses APK s’installent sur Android 16 avec des pages de 16 Kio.
+- En mode avion sur Android 16, l’écran affiche le plateau à 215 %. Une pose invalide bloque la validation. Reprendre le premier coup restaure son brouillon. CHATS puis SALUT rapportent 21 points avec six tuiles disponibles au deuxième coup. Le rejeu NAB affiche les deux poses et le record survit au redémarrage.
 
 L’APK joue en français avec le moteur embarqué. Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.
