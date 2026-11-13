@@ -1,7 +1,7 @@
 <resources>
     <string name="social_beta_title">Join the online beta</string>
-    <string name="social_beta_confirm">Use %1$s for friends, duels, and tournaments? Everyone in your group must use this address.</string>
-    <string name="social_beta_connect">Use this server</string>
+    <string name="social_beta_confirm">Use %1$s for friends, duels, and tournaments? WordRivet will send your nickname to this server to create or find your online profile.</string>
+    <string name="social_beta_connect">Connect</string>
     <string name="social_beta_invalid">This beta link is invalid.</string>
     <string name="turn_notifications_title">Turn notifications</string>
     <string name="turn_notifications_on">On</string>

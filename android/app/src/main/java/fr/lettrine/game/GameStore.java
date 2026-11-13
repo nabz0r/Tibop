@@ -17,13 +17,19 @@ import java.util.List;
 
 final class GameStore {
     static final int BASE_ELO = 1100;
-    private static final Object STORE_LOCK = new Object();
+    static final Object STORE_LOCK = new Object();
     private static long historyRevision;
     private final AtomicFile currentFile;
     private final AtomicFile savedGamesFile;
     private final AtomicFile historyFile;
     private final ArrayList<JSONObject> history = new ArrayList<>();
     private long loadedRevision = -1;
+
+    static void invalidateHistory() {
+        synchronized (STORE_LOCK) {
+            historyRevision++;
+        }
+    }
 
     GameStore(Context context, GameLanguage language) throws IOException, JSONException {
         this(language == GameLanguage.FRENCH ? context.getFilesDir()

@@ -3,7 +3,7 @@
     <string name="social_navigation_profile">Profile</string>
     <string name="social_navigation_duel">Duel</string>
     <string name="social_navigation_endpoint">Friends server</string>
-    <string name="social_navigation_endpoint_help">Your test group’s server address. Solo play is available offline.</string>
+    <string name="social_navigation_endpoint_help">Enter your group’s HTTPS server address without /beta. WordRivet uses your nickname to create or find your online profile.</string>
     <string name="social_navigation_endpoint_hint">https://</string>
     <string name="social_navigation_endpoint_invalid">Enter a valid HTTPS address without a path.</string>
     <string name="social_navigation_endpoint_default">Default address</string>

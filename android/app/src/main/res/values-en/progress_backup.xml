@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">Back up and transfer</string>
+    <string name="backup_summary">Export or restore French and English progress</string>
+    <string name="backup_details">The file contains games, history, Elo, puzzles, coins, tickets, themes and the local profile for both languages. It may contain your photo and profile details. Keep it somewhere private. Friends sign-ins stay on their original device.</string>
+    <string name="backup_export">Create a backup</string>
+    <string name="backup_import">Restore a backup</string>
+    <string name="backup_replace">This backup replaces the current local progress for both languages. Export your current progress first if you want to keep it.</string>
+    <string name="backup_working">Transfer in progress…</string>
+    <string name="backup_saved">Backup created.</string>
+    <string name="backup_restored">Progress restored.</string>
+    <string name="backup_picker_error">The Android file picker is unavailable.</string>
+    <string name="backup_write_error">Could not create the backup. Check available storage and the selected folder.</string>
+    <string name="backup_read_error">Could not restore this file. Select a valid WordRivet backup and check available storage.</string>
+    <string name="privacy_title">Privacy</string>
+    <string name="privacy_details">Your games, Elo, profile photo, country, age and gender stay on the device. You choose where to save a transfer file and who receives a shared score card. NAB explains moves on the device.\n\nIn Friends, your group’s server stores your nickname, account, invitations and online results. You can delete this account in Friends. Google sign-in is optional and depends on your server configuration.\n\nRewarded videos are optional. When enabled, the Google SDK handles the ad request and privacy choices. Ad privacy options appear in Settings when the SDK makes them available.</string>
+    <string name="backup_recovery_error">A restore was interrupted. Free up storage if needed, then try recovering your previous progress again.</string>
+    <string name="backup_recovery_retry">Retry recovery</string>
+</resources>

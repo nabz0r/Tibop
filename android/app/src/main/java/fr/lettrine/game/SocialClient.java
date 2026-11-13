@@ -59,14 +59,15 @@ final class SocialClient {
         if (value == null || value.isBlank()) return null;
         try {
             URI uri = URI.create(value.trim());
+            String scheme = uri.getScheme();
             String host = uri.getHost();
             String path = uri.getRawPath();
-            if (host == null || uri.getRawUserInfo() != null || uri.getRawQuery() != null
+            if (scheme == null || host == null || uri.getRawUserInfo() != null || uri.getRawQuery() != null
                     || uri.getRawFragment() != null || !(path.isEmpty() || path.equals("/"))) return null;
             host = host.toLowerCase(Locale.ROOT);
             int port = uri.getPort();
             if (port == 0 || port > 65535 || uri.getRawAuthority().endsWith(":")) return null;
-            String scheme = uri.getScheme().toLowerCase(Locale.ROOT);
+            scheme = scheme.toLowerCase(Locale.ROOT);
             boolean local = host.equals("localhost") || host.equals("127.0.0.1")
                     || host.equals("10.0.2.2") || host.equals("[::1]");
             if (!scheme.equals("https") && !(BuildConfig.DEBUG && scheme.equals("http") && local)) return null;
@@ -125,6 +126,10 @@ final class SocialClient {
 
     void duel(String duel, Callback callback) {
         request("GET", "/duels/" + segment(duel), null, callback);
+    }
+
+    void cancelDuel(String duel, Callback callback) {
+        request("DELETE", "/duels/" + segment(duel), null, callback);
     }
 
     void notifiedDuel(String duel, Callback callback) {
@@ -207,7 +212,7 @@ final class SocialClient {
         main.post(() -> {
             if (worker.isShutdown()) return;
             if (origin.equals(origin(base.get()))) {
-                if (accountChanged) TurnNotifications.accountChanged(context);
+                if (accountChanged) TurnNotifications.accountChanged(context, language);
                 JSONObject referral = result == null ? null : result.optJSONObject("referral");
                 if (referral != null) referralBalance.accept(referral);
                 callback.onResult(result, error);

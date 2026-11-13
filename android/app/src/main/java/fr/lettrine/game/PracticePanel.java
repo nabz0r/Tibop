@@ -8,6 +8,9 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -21,6 +24,7 @@ final class PracticePanel {
     private final boolean tutorial;
     private final DailyResult dailyResult;
     private final Consumer<List<FrenchGame.Tile>> duelSubmit;
+    private final Consumer<List<FrenchGame.Tile>> saveDraft;
     private final char[] letters;
     private final boolean[] blanks;
     private final List<Character> rack;
@@ -47,19 +51,21 @@ final class PracticePanel {
     private FrenchGame.Preview attempt;
 
     PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, boolean first, boolean tutorial) {
-        this(ui, position, lexicon, first, tutorial, null, null);
+        this(ui, position, lexicon, first, tutorial, null, null, "", null);
     }
 
-    PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, boolean first, DailyResult dailyResult) {
-        this(ui, position, lexicon, first, false, dailyResult, null);
+    PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, DailyResult dailyResult,
+                  String draft, Consumer<List<FrenchGame.Tile>> saveDraft) {
+        this(ui, position, lexicon, false, false, dailyResult, null, draft, saveDraft);
     }
 
     PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, Consumer<List<FrenchGame.Tile>> duelSubmit) {
-        this(ui, position, lexicon, false, false, null, duelSubmit);
+        this(ui, position, lexicon, false, false, null, duelSubmit, "", null);
     }
 
     private PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, boolean first, boolean tutorial,
-                          DailyResult dailyResult, Consumer<List<FrenchGame.Tile>> duelSubmit) {
+                          DailyResult dailyResult, Consumer<List<FrenchGame.Tile>> duelSubmit,
+                          String draft, Consumer<List<FrenchGame.Tile>> saveDraft) {
         this.ui = ui;
         this.position = position;
         this.lexicon = lexicon;
@@ -67,6 +73,7 @@ final class PracticePanel {
         this.tutorial = tutorial;
         this.dailyResult = dailyResult;
         this.duelSubmit = duelSubmit;
+        this.saveDraft = saveDraft;
         letters = position.board();
         blanks = position.blanks();
         rack = position.rack();
@@ -99,6 +106,7 @@ final class PracticePanel {
         result.addView(modes);
         retry = ui.textButton(label(R.string.practice_reset), () -> {
             reset();
+            saveDraft();
             showStart();
         });
         if (dailyResult != null) {
@@ -114,6 +122,9 @@ final class PracticePanel {
 
         board = new BoardView(ui, new BoardView.Interaction() {
             @Override public void tap(int square) { tapSquare(square); }
+            @Override public boolean canTap(int square) {
+                return !finished && !submitting && (selected >= 0 || stagedAt(square) >= 0);
+            }
             @Override public void drop(int square, int rackIndex) { place(square, rackIndex); }
             @Override public boolean dragTile(int square) { return !finished && !submitting && stagedAt(square) >= 0; }
             @Override public void moveTile(int from, int to) { moveStaged(from, to); }
@@ -185,7 +196,10 @@ final class PracticePanel {
         ui.gap(playControls, 8);
         LinearLayout actions = ui.row();
         play = ui.button(label(duelSubmit == null ? R.string.practice_ready : R.string.social_submit), true, this::submit);
-        clear = ui.textButton(label(R.string.practice_clear), this::clear);
+        clear = ui.textButton(label(R.string.practice_clear), () -> {
+            clear();
+            saveDraft();
+        });
         ui.weight(actions, play);
         ui.space(actions, 7);
         actions.addView(clear);
@@ -196,9 +210,28 @@ final class PracticePanel {
         panel.addView(playControls);
         if (dailyResult == null) panel.addView(retry);
         reset();
+        restoreDraft(draft);
     }
 
     View view() { return panel; }
+
+    private void restoreDraft(String draft) {
+        if (draft.isEmpty()) return;
+        try {
+            for (FrenchGame.Tile tile : MatchCodec.readTiles(new JSONArray(draft), true)) {
+                if (tile.rackIndex() >= rack.size() || letters[tile.position()] != 0
+                        || used(tile.rackIndex()) || stagedAt(tile.position()) >= 0) continue;
+                if (rack.get(tile.rackIndex()) == (tile.blank() ? FrenchGame.JOKER : tile.letter())) staged.add(tile);
+            }
+            renderAttempt(-1);
+        } catch (JSONException | IllegalArgumentException invalid) {
+            clear();
+        }
+    }
+
+    private void saveDraft() {
+        if (saveDraft != null) saveDraft.accept(List.copyOf(staged));
+    }
 
     private TextView zoomButton(String text, int description, Runnable action) {
         TextView button = ui.text(text, 15, ui.palette.ink(), ui.medium);
@@ -240,6 +273,7 @@ final class PracticePanel {
         for (int i = 0; i < staged.size(); i++) {
             if (staged.get(i).position() == square) {
                 selected = staged.remove(i).rackIndex();
+                saveDraft();
                 renderAttempt(-1);
                 return;
             }
@@ -257,6 +291,7 @@ final class PracticePanel {
         if (index < 0 || to < 0 || letters[to] != 0 || stagedAt(to) >= 0) return;
         FrenchGame.Tile tile = staged.get(index);
         staged.set(index, new FrenchGame.Tile(to, tile.rackIndex(), tile.letter(), tile.blank()));
+        saveDraft();
         ui.audio.tile();
         renderAttempt(to);
     }
@@ -276,6 +311,7 @@ final class PracticePanel {
 
     private void stage(int square, int index, char letter, boolean blank) {
         staged.add(new FrenchGame.Tile(square, index, letter, blank));
+        saveDraft();
         selected = -1;
         board.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
         ui.audio.tile();
@@ -331,6 +367,7 @@ final class PracticePanel {
 
     private void finish(FrenchGame.Preview move) {
         finished = true;
+        if (saveDraft != null) saveDraft.accept(List.of());
         if (tutorial) board.guide(-1);
         attempt = move;
         int referencePoints = position.reference().preview().score();

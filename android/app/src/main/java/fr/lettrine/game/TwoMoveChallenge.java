@@ -25,6 +25,8 @@ final class TwoMoveChallenge {
     record Puzzle(String id, String title, String objective, String hint, String explanation,
                   int hintPosition, Position initial, List<Step> solution) {}
 
+    record BonusSet(String id, List<Puzzle> puzzles) {}
+
     private record Line(String word, int start, int direction) {}
 
     private record Design(String id, String title, String objective, String hint, String explanation,
@@ -171,7 +173,37 @@ final class TwoMoveChallenge {
                     "Allonge LIT de quatre lettres. Garde G, A et L pour le second coup.",
                     "LITERIE donne à ÉGAL son premier E. Les trois dernières tuiles complètent le mot.",
                     "ERIEGAL", List.of(across("LIT", "H8")),
-                    across("LITERIE", "H8"), down("EGAL", "K8"))
+                    across("LITERIE", "H8"), down("EGAL", "K8")),
+            new Design("bonus-orage", "Le ciel se couvre", "Crée un appui devant RAGE.",
+                    "Une voyelle placée avant RAGE peut aussi commencer un mot de cinq lettres.",
+                    "ORAGE offre un O pour écrire OMBRE vers le bas.",
+                    "OMBREIT", List.of(across("RAGE", "H8")),
+                    across("ORAGE", "G8"), down("OMBRE", "G8")),
+            new Design("bonus-soupe", "À table", "Fais partir un mot du dernier jeton de FABLES.",
+                    "Réserve O, U, P et E pour le deuxième coup.",
+                    "Le S retenu au premier coup prolonge FABLE et commence SOUPE.",
+                    "SOUPETA", List.of(across("FABLE", "H8")),
+                    across("FABLES", "H8"), down("SOUPE", "M8")),
+            new Design("bonus-etoffe", "Sur le métier", "Crée un départ de mot à gauche de CARTE.",
+                    "Place un E avant CARTE et garde les deux F.",
+                    "Le E d’ÉCARTE est aussi le premier E d’ÉTOFFE.",
+                    "ETOFFEA", List.of(across("CARTE", "H8")),
+                    across("ECARTE", "G8"), down("ETOFFE", "G8")),
+            new Design("bonus-terre", "Au bord de l’eau", "Prolonge LAC de deux lettres.",
+                    "Place E et T au premier coup. Garde les deux R pour la suite.",
+                    "Le T de LACET lance TERRE vers le bas.",
+                    "ETERREA", List.of(across("LAC", "H8")),
+                    across("LACET", "H8"), down("TERRE", "L8")),
+            new Design("bonus-singe", "À la trace", "Trouve un appui pour un nom d’animal.",
+                    "Ajoute un S à TRACE. Il servira dans les deux mots.",
+                    "TRACES et SINGE se croisent sur le S ajouté.",
+                    "SINGERA", List.of(across("TRACE", "H8")),
+                    across("TRACES", "H8"), down("SINGE", "M8")),
+            new Design("bonus-roche", "Le rameur", "Transforme RAME et prépare un mot vertical.",
+                    "Prolonge RAME avec U et R, en gardant un E dans le chevalet.",
+                    "La dernière lettre de RAMEUR est la première de ROCHE.",
+                    "UROCHEA", List.of(across("RAME", "H8")),
+                    across("RAMEUR", "H8"), down("ROCHE", "M8"))
     );
 
     private static final List<Design> ENGLISH_BONUS_DESIGNS = List.of(
@@ -189,8 +221,42 @@ final class TwoMoveChallenge {
                     "Extend COLD with three tiles and keep I, D and E for the new column.",
                     "COLDEST gives TIDE its first letter. I, D and E complete the crossing.",
                     "ESTIDER", List.of(across("COLD", "H8")),
-                    across("COLDEST", "H8"), down("TIDE", "N8"))
+                    across("COLDEST", "H8"), down("TIDE", "N8")),
+            new Design("en-bonus-snail", "Life by the pond", "Open a column at the end of FROG.",
+                    "Add one letter, and keep N, A, I and L for the second move.",
+                    "The S in FROGS starts SNAIL down the board.",
+                    "SNAILET", List.of(across("FROG", "H8")),
+                    across("FROGS", "H8"), down("SNAIL", "L8")),
+            new Design("en-bonus-pear", "A splash of colour", "Place a new tile before INK.",
+                    "A P before INK can also start the name of a fruit.",
+                    "PINK and PEAR share the new P.",
+                    "PEAROUT", List.of(across("INK", "H8")),
+                    across("PINK", "G8"), down("PEAR", "G8")),
+            new Design("en-bonus-young", "From the dust", "Look for a new starting point to the right of DUST.",
+                    "Extend DUST by one tile. Keep O, U, N and G for the second move.",
+                    "The Y in DUSTY becomes the first letter of YOUNG.",
+                    "YOUNGER", List.of(across("DUST", "H8")),
+                    across("DUSTY", "H8"), down("YOUNG", "L8")),
+            new Design("en-bonus-river", "Downstream", "Play two tiles to extend CAMP.",
+                    "Use E and R at the end of CAMP. Save the other E and R for the crossing.",
+                    "The final R in CAMPER starts RIVER down the board.",
+                    "ERIVERO", List.of(across("CAMP", "H8")),
+                    across("CAMPER", "H8"), down("RIVER", "M8")),
+            new Design("en-bonus-shade", "Lakeside shade", "Open a row at the end of LAKE.",
+                    "Extend LAKE downwards and use that new tile to go right.",
+                    "The S in LAKES gives SHADE a starting point.",
+                    "SHADEIT", List.of(down("LAKE", "H8")),
+                    down("LAKES", "H8"), across("SHADE", "H12")),
+            new Design("en-bonus-stone", "A stepping stone", "Build a crossing above TRIP.",
+                    "Place one tile above TRIP. Leave T, O, N and E on the rack.",
+                    "STRIP adds the S that starts STONE across the board.",
+                    "STONEAR", List.of(down("TRIP", "H8")),
+                    down("STRIP", "H7"), across("STONE", "H7"))
     );
+
+    // Persisted IDs and their ordered groups of three stay stable across versions.
+    private static final List<String> BONUS_SET_IDS = List.of("two-moves-bonus-v1",
+            "two-moves-bonus-2", "two-moves-bonus-3");
 
     private TwoMoveChallenge() {}
 
@@ -199,9 +265,16 @@ final class TwoMoveChallenge {
         return prepareCatalog(designs, lexicon);
     }
 
-    static List<Puzzle> bonusCatalog(Lexicon lexicon) {
+    static List<BonusSet> bonusCircuits(Lexicon lexicon) {
         List<Design> designs = lexicon.language == GameLanguage.ENGLISH ? ENGLISH_BONUS_DESIGNS : BONUS_DESIGNS;
-        return prepareCatalog(designs, lexicon);
+        List<BonusSet> circuits = new ArrayList<>(BONUS_SET_IDS.size());
+        for (int i = 0; i < BONUS_SET_IDS.size(); i++) {
+            int first = i * BonusEconomy.ROUND_COUNT;
+            int end = first + BonusEconomy.ROUND_COUNT;
+            List<Puzzle> puzzles = prepareCatalog(designs.subList(first, end), lexicon);
+            if (puzzles.size() == BonusEconomy.ROUND_COUNT) circuits.add(new BonusSet(BONUS_SET_IDS.get(i), puzzles));
+        }
+        return List.copyOf(circuits);
     }
 
     private static List<Puzzle> prepareCatalog(List<Design> designs, Lexicon lexicon) {
@@ -242,6 +315,11 @@ final class TwoMoveChallenge {
         List<Integer> scores = new ArrayList<>(position.scores);
         scores.add(preview.score());
         return new Step(position, placed, preview, new Position(board, blanks, rack, scores));
+    }
+
+    static boolean hasSecondMove(Position position, Lexicon lexicon) {
+        return position.moves() == 1
+                && !Bot.scoreCandidates(position.board, position.blanks, position.rack, lexicon).isEmpty();
     }
 
     private static Puzzle prepare(Design design, Lexicon lexicon) {

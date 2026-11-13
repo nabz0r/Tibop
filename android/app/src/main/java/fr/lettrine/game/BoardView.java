@@ -8,16 +8,25 @@ import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
+import android.os.Bundle;
 import android.view.DragEvent;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
+
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -27,6 +36,7 @@ final class BoardView extends View {
     interface Interaction {
         void tap(int position);
         void drop(int position, int rackIndex);
+        default boolean canTap(int position) { return true; }
         default boolean dragTile(int position) { return false; }
         default void moveTile(int from, int to) { }
     }
@@ -47,6 +57,7 @@ final class BoardView extends View {
     private final ScaleGestureDetector scaleDetector;
     private final GestureDetector gestureDetector;
     private final Interaction interaction;
+    private final BoardAccessibility accessibility;
     private char[] board = new char[FrenchGame.CELLS];
     private boolean[] blanks = new boolean[FrenchGame.CELLS];
     private final FrenchGame.Tile[] pending = new FrenchGame.Tile[FrenchGame.CELLS];
@@ -93,10 +104,11 @@ final class BoardView extends View {
         tileRim = blend(tileFace, edge, 0.56f);
         freshRim = blend(freshFace, tileSkin == null ? palette.accent() : edge, 0.64f);
         for (int i = 0; i < cellColors.length; i++) cellColors[i] = boardSkin == null ? palette.bonus(i) : bonus(boardSkin, i);
-        setFocusable(interaction != null);
         setClickable(interaction != null);
         setContentDescription(ui.context.getString(interaction == null
                 ? R.string.board_read_only : R.string.board_interactive));
+        accessibility = new BoardAccessibility();
+        ViewCompat.setAccessibilityDelegate(this, accessibility);
         for (int multiplier = 2; multiplier <= 3; multiplier++) {
             wordBonuses[multiplier] = ui.context.getString(R.string.board_word_bonus, multiplier);
             letterBonuses[multiplier] = ui.context.getString(R.string.board_letter_bonus, multiplier);
@@ -126,10 +138,7 @@ final class BoardView extends View {
 
             @Override public boolean onScroll(MotionEvent first, MotionEvent last, float dx, float dy) {
                 if (zoom <= 1 || scaleDetector.isInProgress()) return false;
-                offsetX -= dx;
-                offsetY -= dy;
-                clamp();
-                invalidate();
+                panBy(-dx, -dy);
                 return true;
             }
         });
@@ -164,6 +173,7 @@ final class BoardView extends View {
             animator.start();
         }
         invalidate();
+        accessibility.invalidateRoot();
     }
 
     void zoomBy(float multiplier) {
@@ -175,7 +185,12 @@ final class BoardView extends View {
     }
 
     void guide(int square) {
+        int previous = guided;
         guided = square;
+        if (previous != square) {
+            if (previous >= 0) accessibility.invalidateVirtualView(previous);
+            if (square >= 0) accessibility.invalidateVirtualView(square);
+        }
         invalidate();
     }
 
@@ -196,6 +211,7 @@ final class BoardView extends View {
         offsetY = side * 0.5f - centerY * zoom;
         clamp();
         invalidate();
+        accessibility.invalidateRoot();
         if (zoomListener != null) zoomListener.accept(zoom);
     }
 
@@ -207,6 +223,7 @@ final class BoardView extends View {
         zoom = next;
         clamp();
         invalidate();
+        accessibility.invalidateRoot();
         if (zoomListener != null) zoomListener.accept(zoom);
     }
 
@@ -214,6 +231,18 @@ final class BoardView extends View {
         float min = side * (1 - zoom);
         offsetX = Math.max(min, Math.min(0, offsetX));
         offsetY = Math.max(min, Math.min(0, offsetY));
+    }
+
+    private boolean panBy(float dx, float dy) {
+        float previousX = offsetX;
+        float previousY = offsetY;
+        offsetX += dx;
+        offsetY += dy;
+        clamp();
+        if (offsetX == previousX && offsetY == previousY) return false;
+        invalidate();
+        accessibility.invalidateRoot();
+        return true;
     }
 
     @Override protected void onMeasure(int width, int height) {
@@ -237,6 +266,7 @@ final class BoardView extends View {
                     blend(frame, 0xff000000, 0.28f), Shader.TileMode.CLAMP);
         }
         clamp();
+        accessibility.invalidateRoot();
     }
 
     private float unit() { return side / 16.2f; }
@@ -305,7 +335,8 @@ final class BoardView extends View {
                             unit * (i == FrenchGame.CENTER ? 0.57f : 0.33f), cellInk, bold);
                 }
             }
-            if ((isFocused() && focused == i) || (guided == i && tile == null) || (target == i && board[i] == 0)) {
+            if ((isFocused() && focused == i) || accessibility.getAccessibilityFocusedVirtualViewId() == i
+                    || (guided == i && tile == null) || (target == i && board[i] == 0)) {
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeWidth(unit * 0.10f);
                 paint.setColor(coordinates);
@@ -348,11 +379,26 @@ final class BoardView extends View {
     }
 
     private int position(float x, float y) {
+        if (side <= 0) return -1;
         float start = gridStart();
         int col = (int) Math.floor(((x - offsetX) / zoom - start) / unit());
         int row = (int) Math.floor(((y - offsetY) / zoom - start) / unit());
         return row >= 0 && row < FrenchGame.SIZE && col >= 0 && col < FrenchGame.SIZE
                 ? row * FrenchGame.SIZE + col : -1;
+    }
+
+    @Override public boolean dispatchHoverEvent(MotionEvent event) {
+        return accessibility.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
+    @Override public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        AccessibilityNodeInfoCompat node = AccessibilityNodeInfoCompat.wrap(info);
+        node.setCollectionInfo(AccessibilityNodeInfoCompat.CollectionInfoCompat.obtain(
+                FrenchGame.SIZE, FrenchGame.SIZE, false));
+        node.setClickable(false);
+        node.removeAction(AccessibilityActionCompat.ACTION_CLICK);
+        accessibility.addPanActions(node);
     }
 
     @SuppressLint("ClickableViewAccessibility") // The single-tap detector calls performClick().
@@ -429,17 +475,177 @@ final class BoardView extends View {
             case KeyEvent.KEYCODE_DPAD_LEFT -> { direction = 1; amount = -1; }
             case KeyEvent.KEYCODE_DPAD_RIGHT -> { direction = 1; amount = 1; }
             case KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                return performClick();
+                return activateCell(focused) || super.onKeyDown(keyCode, event);
             }
             default -> { return super.onKeyDown(keyCode, event); }
         }
         int next = FrenchGame.step(focused, direction, amount);
-        if (next >= 0) {
-            focused = next;
-            announceForAccessibility(getContext().getString(R.string.board_square,
-                    (char) ('A' + next / FrenchGame.SIZE), next % FrenchGame.SIZE + 1));
+        if (next < 0) return super.onKeyDown(keyCode, event);
+        accessibility.requestKeyboardFocusForVirtualView(next);
+        return true;
+    }
+
+    @Override protected void onFocusChanged(boolean gain, int direction, Rect previous) {
+        super.onFocusChanged(gain, direction, previous);
+        if (accessibility == null) return;
+        if (gain && !isInTouchMode()) accessibility.requestKeyboardFocusForVirtualView(focused);
+        if (!gain) accessibility.clearKeyboardFocusForVirtualView(accessibility.getKeyboardFocusedVirtualViewId());
+        invalidate();
+    }
+
+    private boolean canActivateCell(int square) {
+        return interaction != null && board[square] == 0 && interaction.canTap(square);
+    }
+
+    private boolean activateCell(int square) {
+        if (!canActivateCell(square)) return false;
+        focused = square;
+        interaction.tap(square);
+        accessibility.sendEventForVirtualView(square, AccessibilityEvent.TYPE_VIEW_CLICKED);
+        return true;
+    }
+
+    private void cellBounds(int square, Rect bounds) {
+        float cellSize = unit() * zoom;
+        float left = offsetX + gridStart() * zoom + (square % FrenchGame.SIZE) * cellSize;
+        float top = offsetY + gridStart() * zoom + (square / FrenchGame.SIZE) * cellSize;
+        bounds.set(Math.round(left), Math.round(top), Math.round(left + cellSize), Math.round(top + cellSize));
+    }
+
+    private boolean revealCell(int square) {
+        Rect bounds = new Rect();
+        cellBounds(square, bounds);
+        int edge = Math.round(side);
+        float dx = bounds.left < 0 ? -bounds.left : Math.min(0, edge - bounds.right);
+        float dy = bounds.top < 0 ? -bounds.top : Math.min(0, edge - bounds.bottom);
+        boolean panned = panBy(dx, dy);
+        cellBounds(square, bounds);
+        return requestRectangleOnScreen(bounds) || panned;
+    }
+
+    private String cellDescription(int square) {
+        Context context = getContext();
+        String coordinate = context.getString(R.string.board_square,
+                (char) ('A' + square / FrenchGame.SIZE), square % FrenchGame.SIZE + 1);
+        FrenchGame.Tile staged = pending[square];
+        char letter = staged == null ? board[square] : staged.letter();
+        String detail;
+        if (letter == 0) {
+            detail = context.getString(R.string.board_accessibility_empty);
+        } else {
+            boolean blank = staged == null ? blanks[square] : staged.blank();
+            int value = blank ? 0 : language.value(letter);
+            String points = context.getResources().getQuantityString(R.plurals.practice_points, value, value);
+            detail = context.getString(blank ? R.string.board_accessibility_blank : R.string.board_accessibility_tile,
+                    letter, points);
+            if (staged != null) detail = context.getString(R.string.board_accessibility_staged, detail);
+        }
+        if (board[square] == 0) {
+            String bonus = cellBonusDescription(square);
+            if (bonus != null) detail = detail + ". " + bonus;
+        }
+        if (guided == square && staged == null) {
+            detail = detail + ". " + context.getString(R.string.board_accessibility_guided);
+        }
+        return context.getString(R.string.board_accessibility_cell, coordinate, detail);
+    }
+
+    private String cellBonusDescription(int square) {
+        Context context = getContext();
+        if (square == FrenchGame.CENTER) return context.getString(R.string.board_accessibility_center);
+        int word = FrenchGame.WORD_MULTIPLIER[square];
+        if (word > 1) return context.getString(R.string.board_accessibility_word, word);
+        int letter = FrenchGame.LETTER_MULTIPLIER[square];
+        return letter > 1 ? context.getString(R.string.board_accessibility_letter, letter) : null;
+    }
+
+    private final class BoardAccessibility extends ExploreByTouchHelper {
+        private final Rect bounds = new Rect();
+        private final Rect viewport = new Rect();
+
+        BoardAccessibility() { super(BoardView.this); }
+
+        @Override protected int getVirtualViewAt(float x, float y) {
+            int square = position(x, y);
+            return square >= 0 ? square : INVALID_ID;
+        }
+
+        @Override protected void getVisibleVirtualViews(List<Integer> ids) {
+            viewport.set(0, 0, Math.round(side), Math.round(side));
+            for (int square = 0; square < FrenchGame.CELLS; square++) {
+                cellBounds(square, bounds);
+                if (Rect.intersects(bounds, viewport)) ids.add(square);
+            }
+        }
+
+        @SuppressWarnings("deprecation") // ExploreByTouchHelper 1.0 needs bounds in parent coordinates.
+        @Override protected void onPopulateNodeForVirtualView(int square, AccessibilityNodeInfoCompat node) {
+            node.setContentDescription(cellDescription(square));
+            node.setScreenReaderFocusable(true);
+            cellBounds(square, bounds);
+            viewport.set(0, 0, Math.round(side), Math.round(side));
+            if (!bounds.intersect(viewport)) bounds.setEmpty();
+            node.setBoundsInParent(bounds);
+            if (canActivateCell(square)) {
+                node.setClickable(true);
+                node.addAction(new AccessibilityActionCompat(AccessibilityNodeInfoCompat.ACTION_CLICK,
+                        getContext().getString(pending[square] == null
+                                ? R.string.board_accessibility_place : R.string.board_accessibility_recall)));
+            }
+            node.addAction(AccessibilityActionCompat.ACTION_SHOW_ON_SCREEN);
+            addPanActions(node);
+        }
+
+        @Override protected void onVirtualViewKeyboardFocusChanged(int square, boolean hasFocus) {
+            if (hasFocus) {
+                focused = square;
+                revealCell(square);
+            }
             invalidate();
         }
-        return true;
+
+        @Override public boolean performAccessibilityAction(View host, int action, Bundle arguments) {
+            return pan(action) || super.performAccessibilityAction(host, action, arguments);
+        }
+
+        @Override protected boolean onPerformActionForVirtualView(int square, int action, Bundle arguments) {
+            if (action == AccessibilityNodeInfoCompat.ACTION_CLICK) return activateCell(square);
+            if (action == AccessibilityActionCompat.ACTION_SHOW_ON_SCREEN.getId()) return revealCell(square);
+            return pan(action);
+        }
+
+        private void addPanActions(AccessibilityNodeInfoCompat node) {
+            if (zoom <= 1) return;
+            float limit = side * (1 - zoom);
+            node.setScrollable(true);
+            if (offsetX < 0) node.addAction(AccessibilityActionCompat.ACTION_SCROLL_LEFT);
+            if (offsetX > limit) node.addAction(AccessibilityActionCompat.ACTION_SCROLL_RIGHT);
+            if (offsetY < 0) node.addAction(AccessibilityActionCompat.ACTION_SCROLL_UP);
+            if (offsetY > limit) node.addAction(AccessibilityActionCompat.ACTION_SCROLL_DOWN);
+        }
+
+        private boolean pan(int action) {
+            float distance = side * 0.75f;
+            float dx = 0;
+            float dy = 0;
+            if (action == AccessibilityActionCompat.ACTION_SCROLL_LEFT.getId()) dx = distance;
+            else if (action == AccessibilityActionCompat.ACTION_SCROLL_RIGHT.getId()) dx = -distance;
+            else if (action == AccessibilityActionCompat.ACTION_SCROLL_UP.getId()) dy = distance;
+            else if (action == AccessibilityActionCompat.ACTION_SCROLL_DOWN.getId()) dy = -distance;
+            else return false;
+            if (!panBy(dx, dy)) return false;
+            BoardView.this.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_SCROLLED);
+            int focusedSquare = getAccessibilityFocusedVirtualViewId();
+            if (focusedSquare != INVALID_ID) {
+                cellBounds(focusedSquare, bounds);
+                viewport.set(0, 0, Math.round(side), Math.round(side));
+                if (!Rect.intersects(bounds, viewport)) {
+                    int center = position(side * 0.5f, side * 0.5f);
+                    if (center >= 0) getAccessibilityNodeProvider(BoardView.this).performAction(
+                            center, AccessibilityNodeInfoCompat.ACTION_ACCESSIBILITY_FOCUS, null);
+                }
+            }
+            return true;
+        }
     }
 }

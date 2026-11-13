@@ -24,7 +24,9 @@ record BetaLink(String origin, String invitation, GameLanguage language) {
                 return verified(URLDecoder.decode(fields.group(1), StandardCharsets.UTF_8.name()), fields.group(2), fields.group(3));
             }
             URI uri = URI.create(value);
-            if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null || !"/beta".equals(uri.getRawPath())
+            String path = uri.getRawPath();
+            if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null
+                    || !("/beta".equals(path) || "/beta/".equals(path))
                     || uri.getRawQuery() != null) return null;
             String invitation = uri.getRawFragment();
             String language = invitation != null && invitation.startsWith("en/") ? "en" : null;
@@ -36,8 +38,9 @@ record BetaLink(String origin, String invitation, GameLanguage language) {
 
     private static BetaLink verified(String address, String invitation, String language) {
         String origin = SocialClient.origin(address);
-        if (origin == null || !origin.startsWith("https://") || invitation != null
-                && !TOKEN.matcher(invitation).matches()) return null;
-        return new BetaLink(origin, invitation, language == null && invitation == null ? null : GameLanguage.fromCode(language));
+        if (origin == null || !origin.startsWith("https://")) return null;
+        if (invitation == null) return language == null ? new BetaLink(origin, null) : null;
+        if (!TOKEN.matcher(invitation).matches()) return null;
+        return new BetaLink(origin, invitation, GameLanguage.fromCode(language));
     }
 }

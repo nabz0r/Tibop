@@ -29,12 +29,20 @@ public final class TurnNotificationWorker extends Worker {
     @NonNull @Override public Result doWork() {
         Context context = AppLocale.wrap(getApplicationContext());
         if (!TurnNotifications.enabled(context) || !TurnNotifications.available(context)) return Result.success();
-        TurnNotifications.Session session = TurnNotifications.currentSession(context);
-        if (session == null) return Result.success();
+        boolean retry = false;
+        for (GameLanguage language : GameLanguage.values()) {
+            if (isStopped()) break;
+            TurnNotifications.Session session = TurnNotifications.currentSession(context, language);
+            if (session != null) retry |= refresh(context, session);
+        }
+        return retry && getRunAttemptCount() == 0 ? Result.retry() : Result.success();
+    }
+
+    private boolean refresh(Context context, TurnNotifications.Session session) {
         long order = TurnNotifications.begin();
         try {
             HttpURLConnection connection = (HttpURLConnection) URI.create(session.origin()
-                    + SocialClient.api(AppLocale.language(context)) + "/turns").toURL().openConnection();
+                    + SocialClient.api(session.language()) + "/turns").toURL().openConnection();
             try {
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(7000);
@@ -44,26 +52,22 @@ public final class TurnNotificationWorker extends Worker {
                 connection.setRequestProperty("Authorization", "Bearer " + session.token());
                 int status = connection.getResponseCode();
                 if (status == HttpURLConnection.HTTP_UNAUTHORIZED || status == HttpURLConnection.HTTP_FORBIDDEN) {
-                    TurnNotifications.reconcile(context, session, order, List.of());
-                    return Result.success();
+                    if (!isStopped()) TurnNotifications.reconcile(context, session, order, List.of());
+                    return false;
                 }
-                if (status == 429 || status >= 500) return transientFailure();
-                if (status != HttpURLConnection.HTTP_OK) return Result.success();
+                if (status == 429 || status >= 500) return true;
+                if (status != HttpURLConnection.HTTP_OK) return false;
                 List<TurnNotifications.Turn> turns = read(connection);
                 if (!isStopped()) TurnNotifications.reconcile(context, session, order, turns);
-                return Result.success();
+                return false;
             } finally {
                 connection.disconnect();
             }
         } catch (IOException exception) {
-            return transientFailure();
+            return true;
         } catch (JSONException exception) {
-            return Result.success();
+            return false;
         }
-    }
-
-    private Result transientFailure() {
-        return getRunAttemptCount() == 0 ? Result.retry() : Result.success();
     }
 
     private static List<TurnNotifications.Turn> read(HttpURLConnection connection) throws IOException, JSONException {

@@ -32,9 +32,9 @@ if [[ ! -s "$words" ]]; then
     printf 'Dictionnaire absent. Définir LETTRINE_WORDS avec un fichier UTF-8, un mot par ligne.\n' >&2
     exit 1
 fi
-if [[ "$words" != "$root/data/fr/words.txt" && -z "${LETTRINE_WORDS_LABEL:-}" ]]; then
-    words_label="Liste importée"
-    words_license="Droits à vérifier avant redistribution"
+if [[ "$words" != "$root/data/fr/words.txt" ]]; then
+    words_label="${LETTRINE_WORDS_LABEL:-Liste importée}"
+    words_license="${LETTRINE_WORDS_LICENSE:-Usage selon autorisation du fournisseur}"
 fi
 gradle_bin="${GRADLE_BIN:-}"
 if [[ -z "$gradle_bin" ]]; then
@@ -55,6 +55,7 @@ fi
 python3 scripts/prepare_words.py "$words" "$words_label" "$words_license" "$generated"
 python3 scripts/prepare_words.py "$root/data/en/words.txt" ENABLE2K 'Public domain' "$generated" en
 cp "$root/data/en/README.md" "$generated/lexicon-notice-en.md"
+cp "$root/data/en/ENABLE2K-NOTICE.txt" "$generated/ENABLE2K-NOTICE.txt"
 ./scripts/prepare_model.sh
 if [[ "${LETTRINE_GRADLE_OFFLINE:-0}" == 1 ]]; then
     "$gradle_bin" --offline "$gradle_task"

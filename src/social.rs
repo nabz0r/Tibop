@@ -160,6 +160,7 @@ async fn english_errors(mut response: Response) -> Response {
                 "Ami introuvable." => "Friend not found.",
                 "Un duel est déjà en cours avec cet ami." => "A duel with this friend is already in progress.",
                 "Duel indisponible." => "Duel unavailable.",
+                "Un duel terminé ne peut pas être annulé." => "A finished duel cannot be cancelled.",
                 "Terminez le duel avant de proposer une revanche." => "Finish the duel before requesting a rematch.",
                 "La revanche miroir est disponible après un duel à deux chevalets." => "A mirror rematch follows a duel with different racks.",
                 "Placement invalide." | "Ce placement est invalide." => "Invalid placement.",
@@ -458,7 +459,7 @@ fn api_routes(app: Arc<Social>) -> Router {
         .route("/invites", post(invite))
         .route("/invites/accept", post(accept))
         .route("/duels", post(create_duel))
-        .route("/duels/{id}", get(get_duel))
+        .route("/duels/{id}", get(get_duel).delete(cancel_duel))
         .route("/duels/{id}/play", post(play))
         .route("/duels/{id}/rematch", post(rematch))
         .route("/duels/{id}/mirror", post(mirror))
@@ -980,10 +981,48 @@ fn duel_json(app: &Social, db: &Connection, duel: &Duel, user: &str) -> Api<Valu
         "puzzle":puzzle.for_rack(&app.engine,duel.rack(user)),
         "score":score, "opponent_score":if completed {opponent_score} else {None},
         "status":status, "winner":winner, "rematch_id":duel.rematch_id,
+        "can_cancel":!completed,
         "kind":if duel.mirror_of.is_some() {"mirror"} else {"classic"},
         "mirror_available":duel.can_mirror() && duel.mirror_id.is_none(), "mirror_id":duel.mirror_id,
         "original_score":original_score, "original_opponent_score":original_opponent_score,
     }))
+}
+
+fn duel_detail(app: &Social, db: &Connection, duel: &Duel, user: &str) -> Api<Value> {
+    let mut result = duel_json(app, db, duel, user)?;
+    if duel.completed() {
+        let puzzle = &app.puzzles[duel.puzzle];
+        let (own, opponent, other) = if duel.a == user {
+            (&duel.move_a, &duel.move_b, duel.b.as_str())
+        } else {
+            (&duel.move_b, &duel.move_a, duel.a.as_str())
+        };
+        if let (Some(own), Some(opponent)) = (
+            revealed_move(own.as_deref(), duel.rack(user).unwrap_or(puzzle.rack)),
+            revealed_move(opponent.as_deref(), duel.rack(other).unwrap_or(puzzle.rack)),
+        ) {
+            result["move"] = own;
+            result["opponent_move"] = opponent;
+        }
+    }
+    Ok(result)
+}
+
+fn revealed_move(stored: Option<&str>, rack: &str) -> Option<Value> {
+    let tiles = serde_json::from_str::<Vec<MoveTile>>(stored?).ok()?;
+    let prepared = MoveRequest { tiles }.prepare().ok()?;
+    let tiles: Vec<_> = prepared
+        .tiles
+        .into_iter()
+        .map(|tile| {
+            let rack_tile = rack.as_bytes().get(tile.rack_index)?;
+            Some(json!({
+                "row":tile.position / 15, "col":tile.position % 15, "letter":tile.letter,
+                "blank":*rack_tile == b'?',
+            }))
+        })
+        .collect::<Option<_>>()?;
+    Some(json!(tiles))
 }
 
 #[derive(Deserialize)]
@@ -1099,9 +1138,30 @@ async fn get_duel(
             return Err(missing("Duel indisponible."));
         }
         Ok(Json(json!({
-            "duel":duel_json(app,db,&duel,&user)?,
+            "duel":duel_detail(app,db,&duel,&user)?,
             "referral":referral::snapshot(db,&user)?,
         })))
+    })
+    .await
+}
+
+async fn cancel_duel(
+    State(app): State<Arc<Social>>,
+    headers: HeaderMap,
+    Path(duel_id): Path<String>,
+) -> Api<Json<Value>> {
+    let session = auth(headers)?;
+    write(app, move |_, db| {
+        let user = user_id(db, &session)?;
+        let duel = duel(db, &duel_id, &user)?;
+        if !friends(db, &duel.a, &duel.b)? {
+            return Err(missing("Duel indisponible."));
+        }
+        if duel.completed() {
+            return Err(conflict("Un duel terminé ne peut pas être annulé."));
+        }
+        db.execute("DELETE FROM social_duels WHERE id=?1", [&duel_id])?;
+        Ok(Json(json!({"cancelled":true})))
     })
     .await
 }
@@ -1330,7 +1390,7 @@ async fn play(
             referral::complete(db, &duel.a, &duel.b, now())?;
         }
         Ok(Json(json!({
-            "duel":duel_json(app,db,&duel,&user)?,
+            "duel":duel_detail(app,db,&duel,&user)?,
             "referral":referral::snapshot(db,&user)?,
         })))
     })
@@ -2103,6 +2163,17 @@ mod tests {
         .await;
         assert_eq!(first["duel"]["status"], "waiting");
         assert!(first["duel"]["opponent_score"].is_null());
+        assert!(first["duel"].get("opponent_move").is_none());
+        let unopened = request(
+            &base,
+            Method::GET,
+            &classic_path,
+            &b,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
+        assert!(unopened["duel"].get("opponent_move").is_none());
         assert_eq!(turn_feed(&base, &a).await, empty);
         assert_eq!(turn_feed(&base, &b).await, classic_b_turn);
         let finished = request(
@@ -2115,6 +2186,16 @@ mod tests {
         )
         .await;
         assert_eq!(finished["duel"]["mirror_available"], true);
+        assert_eq!(
+            finished["duel"]["opponent_move"].as_array().unwrap().len(),
+            move_a["tiles"].as_array().unwrap().len()
+        );
+        assert!(finished["duel"].get("opponent_rack").is_none());
+        assert!(
+            finished["duel"]["opponent_move"][0]
+                .get("rack_index")
+                .is_none()
+        );
         assert_eq!(turn_feed(&base, &b).await, empty);
         let (a_mirror, b_mirror) = tokio::join!(
             request(
@@ -2409,6 +2490,7 @@ mod tests {
         let waiting = request(&base, Method::GET, "me", &b, Value::Null, StatusCode::OK).await;
         assert_eq!(waiting["duels"][0]["status"], "your_turn");
         assert!(waiting["duels"][0]["opponent_score"].is_null());
+        assert_eq!(waiting["duels"][0]["can_cancel"], true);
         let completed = request(
             &base,
             Method::POST,
@@ -2422,6 +2504,30 @@ mod tests {
         assert_eq!(completed["duel"]["score"], 17);
         assert_eq!(completed["duel"]["opponent_score"], 15);
         assert_eq!(completed["duel"]["winner"], id_b);
+        assert_eq!(completed["duel"]["can_cancel"], false);
+        let single_tile = json!([{"row":7,"col":11,"letter":"S","blank":false}]);
+        assert_eq!(completed["duel"]["opponent_move"], single_tile);
+        let duel_path = format!("duels/{id}");
+        let details = request(
+            &base,
+            Method::GET,
+            &duel_path,
+            &a,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(details["duel"]["move"], single_tile);
+        assert_eq!(details["duel"]["opponent_move"], completed["duel"]["move"]);
+        request(
+            &base,
+            Method::DELETE,
+            &duel_path,
+            &a,
+            Value::Null,
+            StatusCode::CONFLICT,
+        )
+        .await;
         assert_eq!(completed["referral"]["tickets_earned"], 1);
         assert_eq!(completed["duel"]["mirror_available"], false);
         let repeated = request(
@@ -2511,6 +2617,135 @@ mod tests {
                 .unwrap(),
             0
         );
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn participant_can_cancel_an_unfinished_duel_without_a_result_or_referral() {
+        let app = Arc::new(Social::open(FilePath::new(":memory:"), engine()).unwrap());
+        let (base, server) = server(app).await;
+        let a = "a".repeat(64);
+        let b = "b".repeat(64);
+        let c = "c".repeat(64);
+        for (token, name) in [(&a, "Alice"), (&b, "Benoît"), (&c, "Clara")] {
+            request(
+                &base,
+                Method::POST,
+                "session",
+                "",
+                json!({"token":token,"nickname":name}),
+                StatusCode::OK,
+            )
+            .await;
+        }
+        let invitation = request(
+            &base,
+            Method::POST,
+            "invites",
+            &a,
+            json!({}),
+            StatusCode::OK,
+        )
+        .await;
+        request(
+            &base,
+            Method::POST,
+            "invites/accept",
+            &b,
+            json!({"token":invitation["token"]}),
+            StatusCode::OK,
+        )
+        .await;
+        let bob = request(&base, Method::GET, "me", &b, Value::Null, StatusCode::OK).await;
+        let friend = json!({"friend_id":bob["profile"]["id"]});
+        let original = request(
+            &base,
+            Method::POST,
+            "duels",
+            &a,
+            friend.clone(),
+            StatusCode::OK,
+        )
+        .await;
+        let id = original["duel"]["id"].as_str().unwrap();
+        let path = format!("duels/{id}");
+        let play_path = format!("{path}/play");
+        let placement = json!({"tiles":[{"position":116,"rack_index":6,"letter":"S"}]});
+        request(
+            &base,
+            Method::POST,
+            &play_path,
+            &a,
+            placement.clone(),
+            StatusCode::OK,
+        )
+        .await;
+        request(
+            &base,
+            Method::DELETE,
+            &path,
+            "",
+            Value::Null,
+            StatusCode::UNAUTHORIZED,
+        )
+        .await;
+        request(
+            &base,
+            Method::DELETE,
+            &path,
+            &c,
+            Value::Null,
+            StatusCode::NOT_FOUND,
+        )
+        .await;
+        assert_eq!(turn_feed(&base, &b).await["turns"][0]["id"], id);
+
+        let cancelled = request(
+            &base,
+            Method::DELETE,
+            &path,
+            &a,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(cancelled, json!({"cancelled":true}));
+        request(
+            &base,
+            Method::POST,
+            &play_path,
+            &b,
+            placement,
+            StatusCode::NOT_FOUND,
+        )
+        .await;
+        for token in [&a, &b] {
+            assert_eq!(turn_feed(&base, token).await, json!({"turns":[]}));
+            let dashboard =
+                request(&base, Method::GET, "me", token, Value::Null, StatusCode::OK).await;
+            assert_eq!(dashboard["duels"], json!([]));
+            assert_eq!(dashboard["referral"]["tickets_earned"], 0);
+            assert!(
+                dashboard["ranking"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .all(|row| row["points"] == 0)
+            );
+        }
+
+        let replacement = request(&base, Method::POST, "duels", &a, friend, StatusCode::OK).await;
+        assert_ne!(replacement["duel"]["id"], id);
+        let replacement_path = format!("duels/{}", replacement["duel"]["id"].as_str().unwrap());
+        request(
+            &base,
+            Method::DELETE,
+            &replacement_path,
+            &b,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
         server.abort();
     }
 

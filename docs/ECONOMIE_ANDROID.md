@@ -28,7 +28,7 @@ Terminer les trois manches d’un même week-end débloque **Nocturne dorée**, 
 
 ### Tickets pour un circuit solo
 
-Le circuit enchaîne trois positions tactiques Deux coups d’avance, avec un score de parcours et le rejeu NAB à chaque position. La première entrée est offerte sur l’appareil. Les suivantes utilisent un ticket qui couvre les trois positions et la reprise du parcours. Le défi du jour, le catalogue de 12 défis par langue, le solo classique, le bilan NAB, les duels et les trois manches classées du week-end sont accessibles librement.
+La 0.15 propose trois parcours de trois positions par langue. Chaque nouvelle entrée après une réussite ouvre le parcours suivant. Le score courant et le meilleur score de la langue restent visibles, et NAB peut rejouer chaque position. La première entrée est offerte sur l’appareil. Les suivantes utilisent un ticket qui couvre les trois positions et la reprise du parcours. Le défi du jour, le catalogue de 12 défis par langue, le solo classique, le bilan NAB, les duels et les trois manches classées du week-end sont accessibles librement.
 
 La réserve de trois tickets gratuits récupère un ticket toutes les deux heures. Le circuit affiche le solde et le temps avant la prochaine recharge. Les tickets bonus restent en réserve quand les tickets gratuits se rechargent. Les tentatives supplémentaires servent uniquement au circuit solo.
 

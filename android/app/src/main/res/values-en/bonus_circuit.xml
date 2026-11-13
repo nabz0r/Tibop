@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="bonus_home_title">Bonus Circuit</string>
-    <string name="bonus_home_detail">Three new puzzles and refillable tickets.</string>
-    <string name="bonus_rules">Play three Two Moves Ahead puzzles in a row. One ticket covers the whole circuit. Your first entry is free.</string>
+    <string name="bonus_home_detail">Nine puzzles across three circuits.</string>
+    <string name="bonus_rules">Play three Two Moves Ahead puzzles in a row. The puzzles change after each completed circuit. One ticket covers the whole circuit. Your first entry is free.</string>
     <string name="bonus_wallet">My tickets and coins</string>
     <string name="bonus_balance">Coins %1$d · Tickets %2$d/%3$d · Bonus %4$d</string>
     <string name="bonus_refill_full">Free tickets refill every 2 hours.</string>
@@ -21,6 +21,8 @@
     <string name="bonus_round_score">%1$d · %2$s · %3$d pts</string>
     <string name="bonus_in_progress">Circuit in progress · puzzle %1$d</string>
     <string name="bonus_complete">Circuit complete · %1$d pts</string>
+    <string name="bonus_record">Circuit best · %1$d pts</string>
+    <string name="bonus_no_second_move">There’s no legal second move with the remaining tiles. Edit your first move to try another placement.</string>
     <string name="bonus_next_round">Next puzzle</string>
     <string name="bonus_see_results">See circuit results</string>
     <string name="bonus_unavailable">These three puzzles require the built-in dictionary.</string>

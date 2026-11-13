@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="bonus_home_title">Circuit bonus</string>
-    <string name="bonus_home_detail">Trois nouveaux défis et des tickets à recharger.</string>
-    <string name="bonus_rules">Enchaîne trois défis Deux coups d’avance. Un ticket couvre tout le circuit. La première entrée est offerte.</string>
+    <string name="bonus_home_detail">Neuf défis répartis sur trois circuits.</string>
+    <string name="bonus_rules">Enchaîne trois défis Deux coups d’avance. Le parcours change après chaque circuit terminé. Un ticket couvre tout le circuit. La première entrée est offerte.</string>
     <string name="bonus_wallet">Mes tickets et pièces</string>
     <string name="bonus_balance">Pièces %1$d · Tickets %2$d/%3$d · Bonus %4$d</string>
     <string name="bonus_refill_full">Les tickets gratuits se rechargent toutes les 2 h.</string>
@@ -21,6 +21,8 @@
     <string name="bonus_round_score">%1$d · %2$s · %3$d pts</string>
     <string name="bonus_in_progress">Circuit en cours · défi %1$d</string>
     <string name="bonus_complete">Circuit terminé · %1$d pts</string>
+    <string name="bonus_record">Record du circuit · %1$d pts</string>
+    <string name="bonus_no_second_move">Aucun deuxième coup possible avec les lettres restantes. Reprends le premier coup pour changer ta pose.</string>
     <string name="bonus_next_round">Défi suivant</string>
     <string name="bonus_see_results">Voir le résultat du circuit</string>
     <string name="bonus_unavailable">Le lexique intégré ne permet pas de jouer ces trois positions.</string>

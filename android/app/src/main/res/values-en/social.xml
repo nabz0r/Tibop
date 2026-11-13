@@ -1,5 +1,11 @@
 <resources>
     <string name="social_not_configured">Enter your group’s server address in Settings to use friends and duels.</string>
+    <string name="social_join_beta">Play online</string>
+    <string name="social_join_details">Paste the beta link from a friend or organizer to access duels and the tournament.</string>
+    <string name="social_join_pending_invite">Your invitation is ready. Connect to your friend’s server to accept it.</string>
+    <string name="social_paste_beta_link">Paste a beta link</string>
+    <string name="social_beta_link_hint">Beta link ending in /beta</string>
+    <string name="social_enter_server">Enter a server address</string>
     <string name="social_network_error">The server is unavailable. Check your connection and try again.</string>
     <string name="social_endpoint_changed">The server address has changed. Try again with the new address.</string>
     <string name="social_loading">Refreshing…</string>
@@ -25,6 +31,11 @@
     <string name="social_duel_draw">Draw</string>
     <string name="social_duel_result">%1$s · %2$d–%3$d</string>
     <string name="social_duel_your_result">Your score · %1$d</string>
+    <string name="social_duel_details">See result</string>
+    <string name="social_duel_your_move">Your move</string>
+    <string name="social_duel_opponent_move">Your friend’s move</string>
+    <string name="social_duel_cancel">Cancel duel</string>
+    <string name="social_duel_cancel_confirm">This duel will disappear for both players. Moves already played won’t count toward rankings or referral rewards.</string>
     <string name="social_play">Play my move</string>
     <string name="social_submit">Send my move</string>
     <string name="social_sending">Sending…</string>

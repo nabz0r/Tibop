@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="board_accessibility_cell">%1$s. %2$s</string>
+    <string name="board_accessibility_empty">Empty</string>
+    <string name="board_accessibility_tile">Letter %1$c, %2$s</string>
+    <string name="board_accessibility_blank">Blank representing %1$c, %2$s</string>
+    <string name="board_accessibility_staged">%1$s, in draft</string>
+    <string name="board_accessibility_center">Center star, double word score</string>
+    <string name="board_accessibility_word">Word score multiplied by %1$d</string>
+    <string name="board_accessibility_letter">Letter score multiplied by %1$d</string>
+    <string name="board_accessibility_guided">Highlighted by the hint</string>
+    <string name="board_accessibility_place">Place the selected tile</string>
+    <string name="board_accessibility_recall">Recall the tile</string>
+</resources>

@@ -2,6 +2,8 @@ package fr.lettrine.game;
 
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
@@ -24,11 +26,11 @@ public class BonusEconomyTest {
         var economy = new BonusEconomy(new MemoryStore());
         assertEquals(new BonusEconomy.Wallet(0, 3, 0, true, 0), economy.wallet(NOW));
         for (int i = 0; i < 4; i++) {
-            var run = economy.start(FRENCH, CIRCUIT, NOW);
+            var run = economy.start(FRENCH, List.of(CIRCUIT), NOW);
             assertEquals(Math.min(3, 4 - i - 1), economy.wallet(NOW).freeTickets());
             complete(economy, FRENCH, run);
         }
-        assertNull(economy.start(FRENCH, CIRCUIT, NOW));
+        assertNull(economy.start(FRENCH, List.of(CIRCUIT), NOW));
         assertEquals(NOW + BonusEconomy.REFILL_MILLIS, economy.wallet(NOW).nextRefillAtMillis());
         assertEquals(0, economy.wallet(NOW + BonusEconomy.REFILL_MILLIS - 1).freeTickets());
         assertEquals(1, economy.wallet(NOW + BonusEconomy.REFILL_MILLIS).freeTickets());
@@ -40,16 +42,16 @@ public class BonusEconomyTest {
     @Test public void languageRunsAndDraftsSurviveRestartWithoutExtraTicketOrStaleWrites() {
         var store = new MemoryStore();
         var economy = new BonusEconomy(store);
-        var french = economy.start(FRENCH, CIRCUIT, NOW);
-        var english = economy.start(ENGLISH, CIRCUIT, NOW);
+        var french = economy.start(FRENCH, List.of(CIRCUIT), NOW);
+        var english = economy.start(ENGLISH, List.of(CIRCUIT), NOW);
         assertNotEquals(french.attemptId(), english.attemptId());
         assertEquals(2, economy.wallet(NOW).freeTickets());
         assertTrue(economy.saveDraft(FRENCH, CIRCUIT, french.attemptId(), 0, "draft"));
         assertNull(economy.completeRound(FRENCH, CIRCUIT, french.attemptId(), 1, 80));
 
         var restored = new BonusEconomy(store);
-        assertEquals(french, restored.start(FRENCH, "new-circuit", NOW));
-        assertEquals(english, restored.start(ENGLISH, CIRCUIT, NOW));
+        assertEquals(french, restored.start(FRENCH, List.of("new-circuit"), NOW));
+        assertEquals(english, restored.start(ENGLISH, List.of(CIRCUIT), NOW));
         assertEquals("draft", restored.draft(FRENCH, CIRCUIT, french.attemptId(), 0));
         assertEquals("", restored.draft(ENGLISH, CIRCUIT, english.attemptId(), 0));
         assertEquals(2, restored.wallet(NOW).freeTickets());
@@ -62,7 +64,7 @@ public class BonusEconomyTest {
         complete(restored, FRENCH, round);
         assertTrue(restored.active(FRENCH).complete());
         assertEquals(37, restored.active(FRENCH).totalScore());
-        var replay = restored.start(FRENCH, CIRCUIT, NOW);
+        var replay = restored.start(FRENCH, List.of(CIRCUIT), NOW);
         assertNotEquals(french.attemptId(), replay.attemptId());
         assertNull(restored.completeRound(FRENCH, CIRCUIT, french.attemptId(), 0, 100));
         assertFalse(restored.saveDraft(FRENCH, CIRCUIT, french.attemptId(), 0, "wrong attempt"));
@@ -95,6 +97,83 @@ public class BonusEconomyTest {
         assertEquals(3, restored.wallet(NOW).freeTickets());
     }
 
+    @Test public void rotatesAfterCompletionAndKeepsEachLanguageAndAnExistingDraftIndependent() {
+        var store = new MemoryStore();
+        var economy = new BonusEconomy(store);
+        String first = "two-moves-bonus-v1", second = "two-moves-bonus-2", third = "two-moves-bonus-3";
+        var rotation = List.of(first, second, third);
+        var oldFrench = economy.start(FRENCH, List.of(first), NOW);
+        assertTrue(economy.saveDraft(FRENCH, first, oldFrench.attemptId(), 0, "draft from 0.14.1"));
+        var restored = new BonusEconomy(store);
+        assertEquals(oldFrench, restored.start(FRENCH, rotation, NOW));
+        assertEquals("draft from 0.14.1", restored.draft(FRENCH, first, oldFrench.attemptId(), 0));
+        assertEquals(3, restored.wallet(NOW).freeTickets());
+        complete(restored, FRENCH, oldFrench);
+
+        for (String expected : List.of(second, third, first)) {
+            var freshProcess = new BonusEconomy(store);
+            var run = freshProcess.start(FRENCH, rotation, NOW);
+            assertEquals(expected, run.id());
+            complete(freshProcess, FRENCH, run);
+        }
+        assertEquals(Integer.valueOf(24), restored.bestScore(FRENCH));
+        assertNull(restored.bestScore(ENGLISH));
+        assertEquals(first, restored.start(ENGLISH, rotation, NOW + BonusEconomy.REFILL_MILLIS).id());
+    }
+
+    @Test public void upgradesLegacyCompletedAndInProgressCircuitsAndRetainsPerLanguageRecords() throws Exception {
+        var store = new MemoryStore();
+        var bytes = new ByteArrayOutputStream();
+        try (var output = new DataOutputStream(bytes)) {
+            output.writeInt(1);
+            output.writeInt(50);
+            output.writeInt(2);
+            output.writeInt(3);
+            output.writeBoolean(false);
+            output.writeLong(NOW + BonusEconomy.REFILL_MILLIS);
+            output.writeLong(TODAY.toEpochDay());
+            output.writeInt(1);
+            output.writeUTF("puzzle\0fr\0fork");
+            output.writeInt(0);
+            writeLegacyRun(output, "fr-finished", List.of(10, 20, 30), "");
+            writeLegacyRun(output, "en-active", List.of(40), "english-draft");
+        }
+        store.data = bytes.toByteArray();
+        var economy = new BonusEconomy(store);
+        assertEquals(Integer.valueOf(60), economy.bestScore(FRENCH));
+        assertNull(economy.bestScore(ENGLISH));
+        assertEquals("english-draft", economy.draft(ENGLISH, CIRCUIT, "en-active", 1));
+        assertFalse(economy.puzzle(FRENCH, "fork"));
+        assertFalse(economy.video(TODAY));
+        assertEquals(new BonusEconomy.Wallet(50, 2, 3, false, NOW + BonusEconomy.REFILL_MILLIS),
+                economy.wallet(NOW));
+
+        var nextFrench = economy.start(FRENCH, List.of(CIRCUIT), NOW);
+        var restored = new BonusEconomy(store);
+        assertEquals("english-draft", restored.draft(ENGLISH, CIRCUIT, "en-active", 1));
+        complete(restored, FRENCH, nextFrench);
+        assertEquals(Integer.valueOf(60), restored.bestScore(FRENCH));
+        complete(restored, ENGLISH, restored.active(ENGLISH));
+        assertEquals(Integer.valueOf(57), restored.bestScore(ENGLISH));
+
+        var higher = restored.start(FRENCH, List.of(CIRCUIT), NOW);
+        for (int round = 0; round < BonusEconomy.ROUND_COUNT; round++) {
+            restored.completeRound(FRENCH, CIRCUIT, higher.attemptId(), round, 25);
+        }
+        assertEquals(Integer.valueOf(75), new BonusEconomy(store).bestScore(FRENCH));
+        assertEquals(Integer.valueOf(57), new BonusEconomy(store).bestScore(ENGLISH));
+    }
+
+    private static void writeLegacyRun(DataOutputStream output, String attempt, List<Integer> scores, String draft)
+            throws IOException {
+        output.writeBoolean(true);
+        output.writeUTF(CIRCUIT);
+        output.writeUTF(attempt);
+        output.writeInt(scores.size());
+        for (int score : scores) output.writeInt(score);
+        output.writeUTF(draft);
+    }
+
     @Test public void videoAndReferralSnapshotsCanOnlyIncreaseTheWalletOnce() {
         var store = new MemoryStore();
         var economy = new BonusEconomy(store);
@@ -118,14 +197,14 @@ public class BonusEconomyTest {
         var economy = new BonusEconomy(new MemoryStore());
         assertTrue(economy.video(TODAY));
         for (int i = 0; i < 4; i++) {
-            complete(economy, ENGLISH, economy.start(ENGLISH, CIRCUIT, NOW));
+            complete(economy, ENGLISH, economy.start(ENGLISH, List.of(CIRCUIT), NOW));
             assertEquals(1, economy.wallet(NOW).bonusTickets());
         }
-        var extra = economy.start(ENGLISH, CIRCUIT, NOW);
+        var extra = economy.start(ENGLISH, List.of(CIRCUIT), NOW);
         assertEquals(0, economy.wallet(NOW).bonusTickets());
-        assertEquals(extra, economy.start(ENGLISH, CIRCUIT, NOW));
+        assertEquals(extra, economy.start(ENGLISH, List.of(CIRCUIT), NOW));
         complete(economy, ENGLISH, extra);
-        assertNull(economy.start(ENGLISH, CIRCUIT, NOW));
+        assertNull(economy.start(ENGLISH, List.of(CIRCUIT), NOW));
         assertEquals(1, economy.wallet(NOW + BonusEconomy.REFILL_MILLIS).freeTickets());
     }
 
@@ -133,7 +212,7 @@ public class BonusEconomyTest {
         var store = new MemoryStore();
         var economy = new BonusEconomy(store);
         store.failWrites = true;
-        assertNull(economy.start(FRENCH, CIRCUIT, NOW));
+        assertNull(economy.start(FRENCH, List.of(CIRCUIT), NOW));
         assertFalse(economy.video(TODAY));
         assertFalse(economy.referrals(FRENCH, "v1", "player", 2));
         assertTrue(economy.wallet(NOW).freeEntry());
@@ -149,8 +228,8 @@ public class BonusEconomyTest {
         var pool = Executors.newFixedThreadPool(4);
         try {
             var calls = List.of(
-                    pool.submit(() -> new BonusEconomy(store).start(FRENCH, CIRCUIT, NOW)),
-                    pool.submit(() -> new BonusEconomy(store).start(FRENCH, CIRCUIT, NOW)));
+                    pool.submit(() -> new BonusEconomy(store).start(FRENCH, List.of(CIRCUIT), NOW)),
+                    pool.submit(() -> new BonusEconomy(store).start(FRENCH, List.of(CIRCUIT), NOW)));
             assertEquals(calls.get(0).get(), calls.get(1).get());
             var claims = List.of(
                     pool.submit(() -> new BonusEconomy(store).video(TODAY)),

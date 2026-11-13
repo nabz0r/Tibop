@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="board_accessibility_cell">%1$s. %2$s</string>
+    <string name="board_accessibility_empty">Vide</string>
+    <string name="board_accessibility_tile">Lettre %1$c, %2$s</string>
+    <string name="board_accessibility_blank">Joker %1$c, %2$s</string>
+    <string name="board_accessibility_staged">%1$s, en brouillon</string>
+    <string name="board_accessibility_center">Étoile centrale, mot compte double</string>
+    <string name="board_accessibility_word">Mot compte %1$d</string>
+    <string name="board_accessibility_letter">Lettre compte %1$d</string>
+    <string name="board_accessibility_guided">Case indiquée par l’indice</string>
+    <string name="board_accessibility_place">Poser la lettre sélectionnée</string>
+    <string name="board_accessibility_recall">Reprendre la tuile</string>
+</resources>

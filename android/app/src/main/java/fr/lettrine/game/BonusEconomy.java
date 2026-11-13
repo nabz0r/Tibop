@@ -28,10 +28,13 @@ final class BonusEconomy {
     static final int ROUND_COUNT = 3;
     static final long REFILL_MILLIS = TimeUnit.HOURS.toMillis(2);
 
-    private static final int FILE_VERSION = 1;
+    private static final int LEGACY_FILE_VERSION = 1;
+    private static final int FILE_VERSION = 2;
     private static final int MAX_DRAFT_LENGTH = 16_384;
     private static final int MAX_ENTRIES = 100_000;
-    private static final Object LOCK = new Object();
+    private static final int MAX_ROUND_SCORE = 9_999;
+    private static final int NO_BEST_SCORE = -1;
+    static final Object LOCK = new Object();
     private static final Wallet UNAVAILABLE = new Wallet(0, 0, 0, false, 0);
 
     record Wallet(int coins, int freeTickets, int bonusTickets, boolean freeEntry, long nextRefillAtMillis) {
@@ -65,6 +68,7 @@ final class BonusEconomy {
         long refillAt;
         long videoDay = Long.MIN_VALUE;
         final Map<GameLanguage, Run> runs = new EnumMap<>(GameLanguage.class);
+        final Map<GameLanguage, Integer> bestScores = new EnumMap<>(GameLanguage.class);
         final Map<String, Integer> referrals = new HashMap<>();
         final Set<String> awards = new HashSet<>();
 
@@ -91,6 +95,10 @@ final class BonusEconomy {
 
     BonusEconomy(Store store) { this.store = store; }
 
+    static void validateBackup(byte[] bytes) throws IOException {
+        if (bytes == null || decode(bytes) == null) throw new IOException("Invalid economy data");
+    }
+
     Wallet wallet(long nowMillis) {
         synchronized (LOCK) {
             State state = load();
@@ -108,13 +116,23 @@ final class BonusEconomy {
         }
     }
 
-    Circuit start(GameLanguage language, String circuitId, long nowMillis) {
-        if (!validKey(circuitId) || nowMillis < 0 || nowMillis > Long.MAX_VALUE - REFILL_MILLIS) return null;
+    Integer bestScore(GameLanguage language) {
+        synchronized (LOCK) {
+            State state = load();
+            return state == null ? null : state.bestScores.get(language);
+        }
+    }
+
+    Circuit start(GameLanguage language, List<String> circuitIds, long nowMillis) {
+        if (circuitIds.isEmpty() || !circuitIds.stream().allMatch(BonusEconomy::validKey)
+                || nowMillis < 0 || nowMillis > Long.MAX_VALUE - REFILL_MILLIS) return null;
         synchronized (LOCK) {
             State state = load();
             if (state == null) return null;
             Run existing = state.runs.get(language);
             if (existing != null && !existing.circuit.complete()) return existing.circuit;
+            int previous = existing == null ? -1 : circuitIds.indexOf(existing.circuit.id());
+            String circuitId = circuitIds.get((previous + 1) % circuitIds.size());
             state.refill(nowMillis);
             if (state.freeEntry) state.freeEntry = false;
             else if (state.freeTickets > 0) {
@@ -129,7 +147,7 @@ final class BonusEconomy {
     }
 
     Circuit completeRound(GameLanguage language, String circuitId, String attemptId, int round, int score) {
-        if (round < 0 || round >= ROUND_COUNT || score < 0 || score > 9_999) return null;
+        if (round < 0 || round >= ROUND_COUNT || score < 0 || score > MAX_ROUND_SCORE) return null;
         synchronized (LOCK) {
             State state = load();
             Run run = matchingRun(state, language, circuitId, attemptId);
@@ -139,6 +157,7 @@ final class BonusEconomy {
             scores.add(score);
             Circuit circuit = new Circuit(circuitId, attemptId, scores);
             state.runs.put(language, new Run(circuit, ""));
+            if (circuit.complete()) state.bestScores.merge(language, circuit.totalScore(), Math::max);
             return save(state) ? circuit : null;
         }
     }
@@ -264,9 +283,17 @@ final class BonusEconomy {
     private State load() {
         try {
             byte[] bytes = store.read();
-            if (bytes == null) return new State();
+            return bytes == null ? new State() : decode(bytes);
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    private static State decode(byte[] bytes) {
+        try {
             try (DataInputStream input = new DataInputStream(new ByteArrayInputStream(bytes))) {
-                if (input.readInt() != FILE_VERSION) return null;
+                int version = input.readInt();
+                if (version != FILE_VERSION && version != LEGACY_FILE_VERSION) return null;
                 State state = new State();
                 state.coins = input.readInt();
                 state.freeTickets = input.readInt();
@@ -293,12 +320,23 @@ final class BonusEconomy {
                     List<Integer> scores = new ArrayList<>(completedRounds);
                     for (int i = 0; i < completedRounds; i++) {
                         int score = input.readInt();
-                        if (score < 0 || score > 9_999) return null;
+                        if (score < 0 || score > MAX_ROUND_SCORE) return null;
                         scores.add(score);
                     }
                     String draft = input.readUTF();
                     if (!validKey(id) || !validKey(attempt) || draft.length() > MAX_DRAFT_LENGTH) return null;
-                    state.runs.put(language, new Run(new Circuit(id, attempt, scores), draft));
+                    Circuit circuit = new Circuit(id, attempt, scores);
+                    state.runs.put(language, new Run(circuit, draft));
+                    if (version == LEGACY_FILE_VERSION && circuit.complete()) {
+                        state.bestScores.put(language, circuit.totalScore());
+                    }
+                }
+                if (version == FILE_VERSION) {
+                    for (GameLanguage language : GameLanguage.values()) {
+                        int best = input.readInt();
+                        if (best < NO_BEST_SCORE || best > ROUND_COUNT * MAX_ROUND_SCORE) return null;
+                        if (best != NO_BEST_SCORE) state.bestScores.put(language, best);
+                    }
                 }
                 return input.read() == -1 ? state : null;
             }
@@ -340,6 +378,9 @@ final class BonusEconomy {
                     output.writeInt(run.circuit.round());
                     for (int score : run.circuit.scores()) output.writeInt(score);
                     output.writeUTF(run.draft);
+                }
+                for (GameLanguage language : GameLanguage.values()) {
+                    output.writeInt(state.bestScores.getOrDefault(language, NO_BEST_SCORE));
                 }
             }
             store.write(bytes.toByteArray());

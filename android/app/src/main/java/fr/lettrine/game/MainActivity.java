@@ -66,10 +66,14 @@ public final class MainActivity extends Activity {
     private static final int APP_SETTINGS = 44;
     private static final int PROFILE_PHOTO = 45;
     private static final int TURN_PERMISSION = 46;
+    private static final int BACKUP_EXPORT = 47;
+    private static final int BACKUP_IMPORT = 48;
+    private static final int PERSONAL_LEXICON_IMPORT = 49;
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
 
     private enum Screen { HOME, GAMES, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW, PRACTICE,
-        SOCIAL, SOCIAL_DUEL, PROFILE, COLLECTION, TOURNAMENT, TOURNAMENT_ROUND, HELP, TWO_MOVES, BONUS_CIRCUIT }
+        SOCIAL, SOCIAL_DUEL, PROFILE, COLLECTION, TOURNAMENT, TOURNAMENT_ROUND, HELP, TWO_MOVES, BONUS_CIRCUIT, BACKUP,
+        PERSONAL_LEXICON }
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -92,6 +96,12 @@ public final class MainActivity extends Activity {
     private String pendingSocialInvite;
     private Object pendingTurnNavigation;
     private Lexicon lexicon;
+    private Lexicon bundledLexicon;
+    private GameStore bundledStore;
+    private PersonalLexicon personalLexicon;
+    private PersonalLexicon.Entry personalEntry;
+    private boolean personalBusy;
+    private boolean personalSession;
     private GameLanguage gameLanguage;
     private FrenchGame game;
     private MatchCodec.State guestState;
@@ -123,6 +133,8 @@ public final class MainActivity extends Activity {
     private GameAudio audio;
     private RewardedPractice rewarded;
     private String export;
+    private boolean backupInProgress;
+    private boolean backupRecoveryFailed;
     private String notice;
     private JSONObject detail;
     private int replayIndex;
@@ -142,12 +154,19 @@ public final class MainActivity extends Activity {
     };
 
     @Override protected void attachBaseContext(Context base) {
+        try {
+            ProgressBackup.recover(base);
+        } catch (java.io.IOException | JSONException exception) {
+            android.util.Log.e("WordRivetBackup", "Restauration interrompue", exception);
+            backupRecoveryFailed = true;
+        }
         super.attachBaseContext(AppLocale.wrap(base));
     }
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         gameLanguage = AppLocale.language(this);
+        personalLexicon = new PersonalLexicon(this, gameLanguage);
         preferences = getSharedPreferences("preferences", MODE_PRIVATE);
         audio = new GameAudio(this, preferences);
         audio.prepareEffects();
@@ -167,8 +186,12 @@ public final class MainActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                 | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         if (Build.VERSION.SDK_INT >= 29) getWindow().setNavigationBarContrastEnforced(false);
+        if (backupRecoveryFailed) {
+            showBackupRecovery();
+            return;
+        }
         try {
-            store = new GameStore(this, gameLanguage);
+            store = bundledStore = new GameStore(this, gameLanguage);
             List<JSONObject> saved = store.savedGames();
             if (!saved.isEmpty()) restoreMatch(saved.get(0));
         } catch (Exception exception) {
@@ -192,6 +215,8 @@ public final class MainActivity extends Activity {
                 String sourceNotice = source;
                 main.post(() -> {
                     if (isDestroyed()) return;
+                    bundledLexicon = loaded;
+                    if (personalSession) return;
                     lexicon = loaded;
                     notice = sourceNotice;
                     if (game != null && game.end != null) archiveIfFinished();
@@ -224,10 +249,22 @@ public final class MainActivity extends Activity {
     }
 
     private void receiveNavigation(Intent intent) {
+        if (backupInProgress || backupRecoveryFailed) return;
         pendingTurnNavigation = null;
-        String notified = TurnNotifications.takeDuel(this, intent, socialBaseUrl());
-        if (notified != null) {
+        TurnNotifications.Target target = TurnNotifications.peekDuel(this, intent, socialBaseUrl());
+        if (personalSession && (target != null || intent != null && Intent.ACTION_VIEW.equals(intent.getAction()))) {
+            if (!persist()) return;
+            leavePersonalSession();
+            showHome();
+        }
+        if (target != null) {
+            if (target.language() != gameLanguage) {
+                switchLanguage(target.language(), intent);
+                return;
+            }
             if (screen == Screen.GAME && !persist()) return;
+            TurnNotifications.consumeDuel(intent);
+            String notified = target.id();
             Object navigation = new Object();
             pendingTurnNavigation = navigation;
             socialClient.notifiedDuel(notified, (result, error) -> {
@@ -266,17 +303,13 @@ public final class MainActivity extends Activity {
                     if (screen == Screen.GAME && !persist()) return;
                     preferences.edit().putString("social_endpoint", link.origin())
                             .putString("social_beta_origin", link.origin()).apply();
-                    if (link.language() != null && link.language() != gameLanguage) {
-                        Intent next = new Intent(this, MainActivity.class).setAction(Intent.ACTION_VIEW)
-                                .setData(Uri.parse("lettrine://amis/v1/" + link.language().text("", "en/")
-                                        + link.invitation()));
-                        switchLanguage(link.language(), next);
-                        return;
-                    }
-                    setIntent(new Intent(this, MainActivity.class));
-                    pendingSocialInvite = link.invitation();
                     refreshTurnNotifications();
-                    showSocial();
+                    if (link.invitation() != null) {
+                        openFriendInvitation(new FriendInvitation(link.invitation(), link.language()));
+                    } else {
+                        setIntent(new Intent(this, MainActivity.class));
+                        showSocial();
+                    }
                 }).show();
     }
 
@@ -284,17 +317,9 @@ public final class MainActivity extends Activity {
         if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
         Uri uri = intent.getData();
         if (uri != null && "lettrine".equals(uri.getScheme()) && "amis".equals(uri.getAuthority())) {
-            String token = SocialPanel.invitationToken(intent.getDataString());
-            if (token != null) {
-                GameLanguage language = GameLanguage.fromCode(uri.getPath().startsWith("/v1/en/") ? "en" : "fr");
-                if (language != gameLanguage) {
-                    switchLanguage(language, intent);
-                    return;
-                }
-                setIntent(new Intent(this, MainActivity.class));
-                pendingSocialInvite = token;
-                showSocial();
-            } else toast(getString(R.string.social_navigation_invite_invalid));
+            FriendInvitation invitation = FriendInvitation.parse(intent.getDataString());
+            if (invitation == null) toast(getString(R.string.social_navigation_invite_invalid));
+            else openFriendInvitation(invitation);
             return;
         }
         ChallengeLink invitation = ChallengeLink.parse(intent.getDataString());
@@ -306,6 +331,7 @@ public final class MainActivity extends Activity {
             switchLanguage(invitation.language(), intent);
             return;
         }
+        if (screen == Screen.GAME && !persist()) return;
         setIntent(new Intent(this, MainActivity.class));
         if (lexicon == null && lexiconError == null) {
             showHome();
@@ -313,6 +339,19 @@ public final class MainActivity extends Activity {
         } else if (ready()) {
             openDailyChallenge(invitation);
         }
+    }
+
+    private void openFriendInvitation(FriendInvitation invitation) {
+        if (invitation.language() != null && invitation.language() != gameLanguage) {
+            Intent destination = new Intent(this, MainActivity.class).setAction(Intent.ACTION_VIEW)
+                    .setData(Uri.parse(invitation.appUri(gameLanguage)));
+            switchLanguage(invitation.language(), destination);
+            return;
+        }
+        if (screen == Screen.GAME && !persist()) return;
+        setIntent(new Intent(this, MainActivity.class));
+        pendingSocialInvite = invitation.token();
+        showSocial();
     }
 
     @Override public void onConfigurationChanged(Configuration configuration) {
@@ -331,6 +370,7 @@ public final class MainActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        if (backupRecoveryFailed) return;
         audio.foreground(true);
         refreshDailyHome();
         refreshTurnNotifications();
@@ -383,7 +423,14 @@ public final class MainActivity extends Activity {
             case TOURNAMENT -> showSocial();
             case TOURNAMENT_ROUND -> showTournament();
             case COLLECTION -> showProfile();
+            case PERSONAL_LEXICON -> { if (!personalBusy) showSettings(); }
+            case GAMES -> { if (personalSession) leavePersonalGames(); else showHome(); }
+            case HISTORY -> { if (personalSession) showGames(); else showHome(); }
             case SETTINGS -> showProfile();
+            case BACKUP -> {
+                if (backupRecoveryFailed) finish();
+                else if (!backupInProgress) showSettings();
+            }
             case GAME -> leaveGame();
             case SOLO, LOCAL -> leaveGameSetup();
             case BLUETOOTH -> {
@@ -674,7 +721,15 @@ public final class MainActivity extends Activity {
                 challenge, lexicon, invitation, () -> {
                     if (economy.daily(gameLanguage, date)) toast(getString(R.string.daily_coins_earned));
                 });
-        content.addView(new PracticePanel(ui, challenge.position(), lexicon, false, dailyResult).view());
+        SharedPreferences drafts = getSharedPreferences(gameLanguage.storageName("daily_draft"), MODE_PRIVATE);
+        String key = date.toString();
+        boolean ownDaily = invitation == null;
+        content.addView(new PracticePanel(ui, challenge.position(), lexicon, dailyResult,
+                ownDaily ? drafts.getString(key, "") : "", ownDaily ? tiles -> {
+                    SharedPreferences.Editor editor = drafts.edit().clear();
+                    if (!tiles.isEmpty()) editor.putString(key, MatchCodec.tiles(tiles, true).toString());
+                    editor.apply();
+                } : null).view());
     }
 
     private void practiceReviewedTurn(MatchReview.Turn turn) {
@@ -709,8 +764,9 @@ public final class MainActivity extends Activity {
 
     private void showGames() {
         page(Screen.GAMES, false);
-        top(getString(R.string.app_name), this::showHome, null);
-        heading(getString(R.string.games_title), "");
+        top(getString(R.string.app_name), personalSession ? this::leavePersonalGames : this::showHome,
+                personalSession ? ui.textButton(getString(R.string.app_history), this::showHistory) : null);
+        heading(getString(R.string.games_title), personalSession ? getString(R.string.personal_lexicon_game_context) : "");
         List<JSONObject> games;
         try {
             games = store == null ? List.of() : store.savedGames();
@@ -830,12 +886,14 @@ public final class MainActivity extends Activity {
         }
         page(Screen.SOLO, false);
         top(getString(R.string.app_solo), this::leaveGameSetup, null);
-        heading(getString(R.string.app_choose_bot), getString(R.string.app_level_elo_note, currentRating()));
+        heading(getString(R.string.app_choose_bot), personalSession ? getString(R.string.personal_lexicon_game_context)
+                : getString(R.string.app_level_elo_note, currentRating()));
         for (int level = 1; level <= Bot.ADAPTIVE; level++) {
             int id = level;
             String description = level == 4 && lexicon.trained
                     ? getString(R.string.app_bot_trained) : getResources().getStringArray(R.array.bot_difficulties_detail)[level];
-            String caption = level == Bot.ADAPTIVE ? description : getString(R.string.app_level_elo, Bot.RATINGS[level], description);
+            String caption = personalSession || level == Bot.ADAPTIVE ? description
+                    : getString(R.string.app_level_elo, Bot.RATINGS[level], description);
             LinearLayout card = ui.option(level == selection ? "✓" : "·", botName(level), caption,
                     () -> showSolo(id));
             if (level == selection) card.setBackground(ui.touch(ui.palette.ordinary(), 16, ui.palette.accent()));
@@ -1001,7 +1059,7 @@ public final class MainActivity extends Activity {
         MatchCodec.State finished = state();
         if (finished == null || finished.end() == null || store == null || lexicon == null) return;
         int opponent = 0;
-        if (mode.equals("solo") && !assisted) {
+        if (!personalSession && mode.equals("solo") && !assisted) {
             int level = finished.levels()[1];
             opponent = level == Bot.ADAPTIVE
                     ? (botLevelCount == 0 ? Bot.RATINGS[2] : Math.round(botLevelSum / (float) botLevelCount))
@@ -1012,7 +1070,7 @@ public final class MainActivity extends Activity {
             MatchCodec.put(archived, "lexicon_sha256", lexicon.hash);
             if (assisted) MatchCodec.put(archived, "assisted", true);
             store.archive(archived, opponent, Integer.compare(finished.scores()[0], finished.scores()[1]));
-            skinStore.refresh(store, dailyProgress);
+            if (!personalSession) skinStore.refresh(store, dailyProgress);
             if (!mode.equals("bluetooth")) store.removeGame(finished.id());
         } catch (Exception exception) {
             toast(getString(R.string.app_history_save_error));
@@ -1103,6 +1161,9 @@ public final class MainActivity extends Activity {
         });
         final BoardView board = new BoardView(ui, new BoardView.Interaction() {
             @Override public void tap(int position) { boardTap(position); }
+            @Override public boolean canTap(int position) {
+                return myTurn(state()) && !analysing && (selected >= 0 || stagedAt(position) >= 0);
+            }
             @Override public void drop(int position, int rackIndex) { place(position, rackIndex); }
             @Override public boolean dragTile(int position) {
                 return myTurn(state()) && !analysing && stagedAt(position) >= 0;
@@ -1112,12 +1173,17 @@ public final class MainActivity extends Activity {
     }
 
     private void showGame() {
-        if (state() == null) { showHome(); return; }
+        if (state() == null) {
+            if (personalSession) showGames();
+            else showHome();
+            return;
+        }
         page(Screen.GAME, false);
         top(mode.equals("local") ? getString(R.string.app_local) : mode.equals("bluetooth") ? "Bluetooth" : getString(R.string.app_solo),
                 this::leaveGame, mode.equals("bluetooth") ? null : ui.textButton(getString(R.string.games_title), () -> {
                     if (persist()) showGames();
                 }));
+        if (personalSession) content.addView(ui.body(getString(R.string.personal_lexicon_game_context)));
         arena = new Arena();
         content.addView(arena.scores);
         ui.gap(content, 8);
@@ -1752,9 +1818,10 @@ public final class MainActivity extends Activity {
         Switch musicSwitch = soundSwitch(R.string.ambient_sound, "music");
         settings.addView(musicSwitch);
         String[] tracks = getResources().getStringArray(R.array.music_tracks);
-        LinearLayout track = ui.option("♫", tracks[preferences.getInt("music_track", 0)], "", () ->
+        int trackIndex = Math.max(0, Math.min(tracks.length - 1, preferences.getInt("music_track", 0)));
+        LinearLayout track = ui.option("♫", tracks[trackIndex], "", () ->
                 dialog(getString(R.string.music_pick), null)
-                        .setSingleChoiceItems(tracks, preferences.getInt("music_track", 0), (choice, index) -> {
+                        .setSingleChoiceItems(tracks, trackIndex, (choice, index) -> {
                             preferences.edit().putInt("music_track", index).apply();
                             audio.refresh();
                             choice.dismiss();
@@ -1791,6 +1858,15 @@ public final class MainActivity extends Activity {
         content.addView(ui.option("◌", getString(R.string.turn_notifications_title),
                 getString(TurnNotifications.enabled(this) && TurnNotifications.available(this)
                         ? R.string.turn_notifications_on : R.string.turn_notifications_off), this::editTurnNotifications));
+        ui.gap(content, 8);
+        content.addView(ui.option("↕", getString(R.string.backup_title), getString(R.string.backup_summary), this::showBackup));
+        ui.gap(content, 8);
+        content.addView(ui.option("Aa", getString(R.string.personal_lexicon_title),
+                getString(R.string.personal_lexicon_entry), this::openPersonalLexicon));
+        ui.gap(content, 8);
+        content.addView(ui.option("○", getString(R.string.privacy_title), "", () ->
+                dialog(getString(R.string.privacy_title), getString(R.string.privacy_details))
+                        .setPositiveButton(R.string.move_explanation_close, null).show()));
         ui.gap(content, 18);
         content.addView(ui.micro(getString(R.string.app_appearance), ui.palette.accent()));
         ui.gap(content, 8);
@@ -1810,6 +1886,202 @@ public final class MainActivity extends Activity {
             content.addView(ui.option("Aa", label, getString(R.string.app_dictionary_license), () -> dialog(label,
                     (notice == null || notice.trim().isEmpty() ? getString(R.string.app_dictionary_bundled) : notice)
                             + "\n\n" + getString(R.string.app_dictionary_hash, lexicon.hash)).setPositiveButton(getString(R.string.move_explanation_close), null).show()));
+        }
+    }
+
+    private void openPersonalLexicon() {
+        updatePersonalLexicon(() -> personalLexicon.current(), false);
+    }
+
+    private void showPersonalLexicon() {
+        page(Screen.PERSONAL_LEXICON, false);
+        top(getString(R.string.app_name), () -> { if (!personalBusy) showSettings(); }, null);
+        heading(getString(R.string.personal_lexicon_title), getString(R.string.personal_lexicon_intro));
+        if (personalBusy) {
+            content.addView(ui.body(getString(R.string.personal_lexicon_loading)));
+            return;
+        }
+        if (personalEntry != null) {
+            content.addView(ui.body(getResources().getQuantityString(R.plurals.personal_lexicon_loaded,
+                    personalEntry.count(), personalEntry.count())));
+            content.addView(ui.textButton(getString(R.string.personal_lexicon_details), this::showPersonalLexiconDetails));
+            ui.gap(content, 8);
+            content.addView(ui.button(getString(R.string.personal_lexicon_play), true, this::startPersonalSession));
+            ui.gap(content, 8);
+        }
+        content.addView(ui.button(getString(personalEntry == null ? R.string.personal_lexicon_import
+                : R.string.personal_lexicon_replace), personalEntry == null, () -> {
+            try {
+                startActivityForResult(PersonalLexicon.picker(), PERSONAL_LEXICON_IMPORT);
+            } catch (android.content.ActivityNotFoundException unavailable) {
+                toast(getString(R.string.backup_picker_error));
+            }
+        }));
+        if (personalEntry != null) {
+            ui.gap(content, 8);
+            content.addView(ui.textButton(getString(R.string.personal_lexicon_remove), () ->
+                    dialog(getString(R.string.personal_lexicon_remove), getString(R.string.personal_lexicon_remove_confirm))
+                            .setNegativeButton(R.string.social_cancel, null)
+                            .setPositiveButton(R.string.personal_lexicon_remove, (ignored, action) ->
+                                    updatePersonalLexicon(() -> { personalLexicon.remove(); return null; }, false)).show()));
+        }
+    }
+
+    private void showPersonalLexiconDetails() {
+        PersonalLexicon.Entry entry = personalEntry;
+        if (entry == null) return;
+        dialog(getString(R.string.personal_lexicon_details), getString(R.string.app_dictionary_hash, entry.hash()))
+                .setNegativeButton(R.string.move_explanation_close, null)
+                .setPositiveButton(R.string.personal_lexicon_copy, (ignored, action) -> {
+                    android.content.ClipboardManager clipboard = getSystemService(android.content.ClipboardManager.class);
+                    if (clipboard != null) clipboard.setPrimaryClip(android.content.ClipData.newPlainText("SHA-256", entry.hash()));
+                }).show();
+    }
+
+    private void updatePersonalLexicon(java.util.concurrent.Callable<PersonalLexicon.Entry> operation, boolean open) {
+        if (personalBusy) return;
+        personalBusy = true;
+        showPersonalLexicon();
+        worker.submit(() -> {
+            try {
+                PersonalLexicon.Entry entry = operation.call();
+                Lexicon loaded = open ? personalLexicon.load(entry) : null;
+                GameStore matches = open ? new GameStore(personalLexicon.matchDirectory(entry)) : null;
+                main.post(() -> {
+                    if (isDestroyed()) return;
+                    personalBusy = false;
+                    personalEntry = entry;
+                    if (screen != Screen.PERSONAL_LEXICON) return;
+                    if (open) {
+                        resetMatch();
+                        personalSession = true;
+                        store = matches;
+                        lexicon = loaded;
+                        showGames();
+                    } else showPersonalLexicon();
+                });
+            } catch (Exception failure) {
+                main.post(() -> {
+                    if (isDestroyed()) return;
+                    personalBusy = false;
+                    toast(getString(R.string.personal_lexicon_error));
+                    if (screen == Screen.PERSONAL_LEXICON) showPersonalLexicon();
+                });
+            }
+        });
+    }
+
+    private void startPersonalSession() {
+        if (personalEntry == null || !persist()) return;
+        if (link != null) {
+            toast(getString(R.string.personal_lexicon_bluetooth));
+            return;
+        }
+        updatePersonalLexicon(() -> personalLexicon.current(), true);
+    }
+
+    private void leavePersonalSession() {
+        resetMatch();
+        personalSession = false;
+        store = bundledStore;
+        lexicon = bundledLexicon;
+        if (store != null) {
+            try {
+                List<JSONObject> saved = store.savedGames();
+                if (!saved.isEmpty()) restoreMatch(saved.get(0));
+            } catch (java.io.IOException | JSONException invalid) {
+                toast(getString(R.string.games_read_error));
+            }
+        }
+    }
+
+    private void leavePersonalGames() {
+        if (!persist()) return;
+        leavePersonalSession();
+        showPersonalLexicon();
+    }
+
+    private void showBackup() {
+        page(Screen.BACKUP, false);
+        top(getString(R.string.app_name), () -> { if (!backupInProgress) showSettings(); }, null);
+        heading(getString(R.string.backup_title), getString(R.string.backup_details));
+        TextView save = ui.button(getString(R.string.backup_export), true, () -> openBackupDocument(true));
+        ui.enabled(save, !backupInProgress);
+        content.addView(save);
+        ui.gap(content, 8);
+        TextView load = ui.button(getString(R.string.backup_import), false, () -> openBackupDocument(false));
+        ui.enabled(load, !backupInProgress);
+        content.addView(load);
+        if (backupInProgress) content.addView(ui.body(getString(R.string.backup_working)));
+    }
+
+    private void showBackupRecovery() {
+        page(Screen.BACKUP, false);
+        top(getString(R.string.app_name), this::finish, null);
+        heading(getString(R.string.backup_title), getString(R.string.backup_recovery_error));
+        content.addView(ui.button(getString(R.string.backup_recovery_retry), true, this::recreate));
+    }
+
+    private void openBackupDocument(boolean create) {
+        if (backupInProgress || !persist()) return;
+        Intent intent = new Intent(create ? Intent.ACTION_CREATE_DOCUMENT : Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(create ? "application/zip" : "*/*");
+        if (create) intent.putExtra(Intent.EXTRA_TITLE, "WordRivet-" + LocalDate.now() + ".zip");
+        try {
+            startActivityForResult(intent, create ? BACKUP_EXPORT : BACKUP_IMPORT);
+        } catch (android.content.ActivityNotFoundException unavailable) {
+            toast(getString(R.string.backup_picker_error));
+        }
+    }
+
+    private void transferBackup(Uri uri, boolean create) {
+        if (backupInProgress || !persist()) return;
+        if (!create) resetMatch();
+        backupInProgress = true;
+        showBackup();
+        Context storageContext = getApplicationContext();
+        worker.submit(() -> {
+            try {
+                if (create) {
+                    ProgressBackup.Snapshot snapshot = ProgressBackup.capture(storageContext);
+                    try (OutputStream output = getContentResolver().openOutputStream(uri, "wt")) {
+                        if (output == null) throw new java.io.IOException();
+                        ProgressBackup.write(snapshot, output);
+                    }
+                    main.post(() -> finishBackup(R.string.backup_saved));
+                } else {
+                    try (InputStream input = getContentResolver().openInputStream(uri)) {
+                        if (input == null) throw new java.io.IOException();
+                        ProgressBackup.Snapshot snapshot = ProgressBackup.read(input);
+                        ProgressBackup.restore(storageContext, snapshot);
+                    }
+                    main.post(() -> finishBackup(R.string.backup_restored));
+                }
+            } catch (java.io.IOException | JSONException | RuntimeException failure) {
+                android.util.Log.w("WordRivetBackup", "Échec du transfert", failure);
+                main.post(() -> {
+                    if (isDestroyed()) return;
+                    if (!create && ProgressBackup.recoveryPending(storageContext)) {
+                        backupInProgress = false;
+                        backupRecoveryFailed = true;
+                        showBackupRecovery();
+                    } else finishBackup(create ? R.string.backup_write_error : R.string.backup_read_error);
+                });
+            }
+        });
+    }
+
+    private void finishBackup(int result) {
+        if (isDestroyed()) return;
+        backupInProgress = false;
+        toast(getString(result));
+        if (result == R.string.backup_restored) {
+            resetMatch();
+            setIntent(new Intent(this, MainActivity.class));
+            recreate();
+        } else {
+            showBackup();
         }
     }
 
@@ -2005,7 +2277,8 @@ public final class MainActivity extends Activity {
         String invite = pendingSocialInvite;
         if (socialClient.configured()) pendingSocialInvite = null;
         content.addView(new SocialPanel(ui, socialClient, this::showSocialDuel, invite, this::connectGoogle,
-                this::showTournament, this::editTurnNotifications, this::confirmBeta, this::betaInviteBase).view());
+                this::showTournament, this::editTurnNotifications, this::confirmBeta, this::betaInviteBase,
+                this::editSocialEndpoint, this::openFriendInvitation).view());
     }
 
     private void showTournament() {
@@ -2031,7 +2304,7 @@ public final class MainActivity extends Activity {
 
     private void showSocialDuel(JSONObject duel) {
         if (!ready()) return;
-        TurnNotifications.dismiss(this, duel.optString("id"));
+        TurnNotifications.dismiss(this, gameLanguage, duel.optString("id"));
         page(Screen.SOCIAL_DUEL, false);
         top(getString(R.string.app_name), this::showSocial, null);
         heading(getString(SocialDuelPanel.isMirror(duel) ? R.string.social_mirror_title
@@ -2091,17 +2364,17 @@ public final class MainActivity extends Activity {
     }
 
     private void showHistory() {
-        page(Screen.HISTORY, true);
-        top(getString(R.string.app_name), null, null);
-        heading(getString(R.string.app_history), "");
+        page(Screen.HISTORY, !personalSession);
+        top(getString(R.string.app_name), personalSession ? this::showGames : null, null);
+        heading(getString(R.string.app_history), personalSession ? getString(R.string.personal_lexicon_game_context) : "");
         List<JSONObject> games = store == null ? List.of() : store.history();
         LinearLayout summary = ui.card();
         int wins = 0, solo = 0, best = Integer.MIN_VALUE, bingos = 0;
         long points = 0;
         for (JSONObject row : games) {
             JSONArray scores = row.optJSONArray("scores");
-            if (scores != null) for (int i = 0; i < scores.length(); i++) best = Math.max(best, scores.optInt(i));
             if (!row.optString("mode").equals("solo")) continue;
+            if (scores != null && scores.length() > 0) best = Math.max(best, scores.optInt(0));
             solo++;
             if (row.optInt("winner", -1) == 0) wins++;
             points += scores == null ? 0 : scores.optInt(0);
@@ -2115,15 +2388,20 @@ public final class MainActivity extends Activity {
         }
         summary.addView(ui.title(getResources().getQuantityString(R.plurals.app_history_game_count, games.size(), games.size()), 25));
         ui.gap(summary, 8);
-        summary.addView(ui.body(getString(R.string.app_history_elo, currentRating()) + (best == Integer.MIN_VALUE ? "" : "  ·  " + getString(R.string.app_history_best, points(best)))));
+        String rating = personalSession ? "" : getString(R.string.app_history_elo, currentRating());
+        if (best != Integer.MIN_VALUE) rating += (rating.isEmpty() ? "" : "  ·  ")
+                + getString(R.string.app_history_best, points(best));
+        if (!rating.isEmpty()) summary.addView(ui.body(rating));
         if (solo > 0) {
             ui.gap(summary, 4);
             summary.addView(ui.body(getString(R.string.app_history_solo, wins, solo, points((int) Math.round(points / (double) solo)), bingos)));
         }
         content.addView(summary);
         ui.gap(content, 12);
-        content.addView(EloChart.card(ui, games));
-        ui.gap(content, 12);
+        if (!personalSession) {
+            content.addView(EloChart.card(ui, games));
+            ui.gap(content, 12);
+        }
         if (games.isEmpty()) {
             content.addView(ui.body(getString(R.string.app_history_empty)));
             return;
@@ -2302,8 +2580,27 @@ public final class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == PERSONAL_LEXICON_IMPORT) {
+            if (result == RESULT_OK && data != null && data.getData() != null) {
+                Uri source = data.getData();
+                updatePersonalLexicon(() -> personalLexicon.importFrom(source), false);
+            }
+            return;
+        }
+        if (request == BACKUP_IMPORT || request == BACKUP_EXPORT) {
+            if (result != RESULT_OK || data == null || data.getData() == null) return;
+            Uri file = data.getData();
+            if (request == BACKUP_EXPORT) transferBackup(file, true);
+            else dialog(getString(R.string.backup_import), getString(R.string.backup_replace))
+                    .setNegativeButton(R.string.social_cancel, null)
+                    .setPositiveButton(R.string.backup_import, (ignored, action) -> transferBackup(file, false)).show();
+            return;
+        }
         if (request == PROFILE_PHOTO) {
-            if (result == RESULT_OK && data != null && profilePanel != null) profilePanel.photoSelected(data.getData());
+            if (result == RESULT_OK && data != null && data.getData() != null) {
+                if (profilePanel == null) showProfile();
+                profilePanel.photoSelected(data.getData());
+            }
             return;
         }
         if ((request == ENABLE_BLUETOOTH || request == APP_SETTINGS) && screen == Screen.BLUETOOTH) showBluetooth();

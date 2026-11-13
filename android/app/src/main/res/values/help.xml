@@ -20,6 +20,8 @@
     <string name="help_scoring_copy">Additionnez la valeur des lettres des mots créés. L2 et L3 multiplient une lettre. M2 et M3 multiplient le mot. Ces bonus s’appliquent quand vous recouvrez la case pour la première fois. Un joker vaut zéro. Poser les sept lettres du chevalet rapporte 50 points de plus.</string>
     <string name="help_local_bot">NAB joue sur votre téléphone</string>
     <string name="help_local_bot_copy">NAB est votre adversaire en solo. Son moteur cherche des placements légaux dans le lexique embarqué. Le niveau adaptatif tient compte de votre Elo local et de l’écart de score pendant la partie.</string>
+    <string name="help_competition">S’entraîner avec un lexique de compétition</string>
+    <string name="help_competition_copy">Vous pouvez importer une liste autorisée dans Profil → Réglages → Lexique personnel. L’entraînement Android valide les mots à la pose et se joue sans pendule. Dans le règlement FISF, la pendule limite le temps de jeu et l’adversaire peut contester les mots après la pose.</string>
     <string name="help_local_model">L’IA locale explique les coups</string>
     <string name="help_local_model_copy">Le moteur vérifie le mot et son score. Le modèle embarqué SmolLM2 s’appuie sur ces faits pour expliquer une case bonus, un mot croisé ou un autre détail du coup. NAB et les explications fonctionnent en mode avion.</string>
 </resources>

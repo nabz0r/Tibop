@@ -12,7 +12,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 final class BonusCircuitScreen {
-    private static final String CIRCUIT_ID = "two-moves-bonus-v1";
     private static final long MINUTE_MILLIS = 60_000;
 
     private final ViewKit ui;
@@ -22,7 +21,7 @@ final class BonusCircuitScreen {
     private final Consumer<LocalDate> requestVideo;
     private final Runnable openFriends;
     private final LinearLayout panel;
-    private final List<TwoMoveChallenge.Puzzle> puzzles;
+    private final List<TwoMoveChallenge.BonusSet> circuits;
     private TwoMoveChallengeScreen play;
     private TextView balance;
     private TextView refill;
@@ -40,7 +39,7 @@ final class BonusCircuitScreen {
         this.requestVideo = requestVideo;
         this.openFriends = openFriends;
         panel = ui.column();
-        puzzles = TwoMoveChallenge.bonusCatalog(lexicon);
+        circuits = TwoMoveChallenge.bonusCircuits(lexicon);
         panel.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
             @Override public void onViewAttachedToWindow(View view) { refresh(); }
             @Override public void onViewDetachedFromWindow(View view) { panel.removeCallbacks(refreshBalance); }
@@ -98,7 +97,8 @@ final class BonusCircuitScreen {
         intro.addView(rules);
         panel.addView(intro);
         ui.gap(panel, 10);
-        if (puzzles.size() != BonusEconomy.ROUND_COUNT) {
+        BonusEconomy.Circuit run = economy.active(ui.language);
+        if (circuits.isEmpty() || run != null && !run.complete() && puzzlesFor(run).isEmpty()) {
             panel.addView(ui.body(label(R.string.bonus_unavailable)));
             scrollToStart();
             return;
@@ -115,8 +115,7 @@ final class BonusCircuitScreen {
         panel.addView(ticketCard);
         ui.gap(panel, 12);
 
-        BonusEconomy.Circuit run = economy.active(ui.language);
-        if (run != null && CIRCUIT_ID.equals(run.id())) showProgress(run);
+        if (run != null) showProgress(run, puzzlesFor(run));
         start = ui.button("", true, this::startOrResume);
         panel.addView(start);
         ui.gap(panel, 8);
@@ -138,11 +137,16 @@ final class BonusCircuitScreen {
         scrollToStart();
     }
 
-    private void showProgress(BonusEconomy.Circuit run) {
+    private void showProgress(BonusEconomy.Circuit run, List<TwoMoveChallenge.Puzzle> puzzles) {
         LinearLayout progress = ui.card();
         progress.addView(ui.title(label(run.complete() ? R.string.bonus_complete : R.string.bonus_in_progress,
                 run.complete() ? run.totalScore() : run.round() + 1), 21));
-        for (int i = 0; i < run.round(); i++) {
+        Integer best = economy.bestScore(ui.language);
+        if (best != null) {
+            ui.gap(progress, 5);
+            progress.addView(ui.body(label(R.string.bonus_record, best)));
+        }
+        for (int i = 0; i < run.round() && i < puzzles.size(); i++) {
             ui.gap(progress, 5);
             progress.addView(ui.body(label(R.string.bonus_round_score, i + 1, puzzles.get(i).title(),
                     run.scores().get(i))));
@@ -152,8 +156,9 @@ final class BonusCircuitScreen {
     }
 
     private void startOrResume() {
-        BonusEconomy.Circuit run = economy.start(ui.language, CIRCUIT_ID, System.currentTimeMillis());
-        if (run == null || !CIRCUIT_ID.equals(run.id())) {
+        List<String> ids = circuits.stream().map(TwoMoveChallenge.BonusSet::id).toList();
+        BonusEconomy.Circuit run = economy.start(ui.language, ids, System.currentTimeMillis());
+        if (run == null || puzzlesFor(run).isEmpty()) {
             Toast.makeText(ui.context, R.string.bonus_start_error, Toast.LENGTH_SHORT).show();
             refresh();
             return;
@@ -161,21 +166,34 @@ final class BonusCircuitScreen {
         showRound(run);
     }
 
+    private List<TwoMoveChallenge.Puzzle> puzzlesFor(BonusEconomy.Circuit run) {
+        for (var circuit : circuits) {
+            if (circuit.id().equals(run.id())) return circuit.puzzles();
+        }
+        return List.of();
+    }
+
     private void showRound(BonusEconomy.Circuit run) {
         if (run == null || run.complete()) {
             showLobby();
             return;
         }
+        List<TwoMoveChallenge.Puzzle> puzzles = puzzlesFor(run);
+        if (puzzles.isEmpty()) {
+            showLobby();
+            return;
+        }
         int round = run.round();
         String attempt = run.attemptId();
-        String draft = economy.draft(ui.language, CIRCUIT_ID, attempt, round);
+        String id = run.id();
+        String draft = economy.draft(ui.language, id, attempt, round);
         panel.removeCallbacks(refreshBalance);
         panel.removeAllViews();
         panel.addView(ui.micro(label(R.string.bonus_round, round + 1), ui.palette.accent()));
         ui.gap(panel, 6);
         var circuit = new TwoMoveChallengeScreen.CircuitPlay(draft,
-                score -> economy.completeRound(ui.language, CIRCUIT_ID, attempt, round, score) != null,
-                saved -> economy.saveDraft(ui.language, CIRCUIT_ID, attempt, round, saved),
+                score -> economy.completeRound(ui.language, id, attempt, round, score) != null,
+                saved -> economy.saveDraft(ui.language, id, attempt, round, saved),
                 () -> showRound(economy.active(ui.language)), round == BonusEconomy.ROUND_COUNT - 1);
         play = new TwoMoveChallengeScreen(ui, lexicon, puzzles.get(round), circuit);
         panel.addView(play.view());

@@ -22,4 +22,6 @@
     <string name="help_local_bot_copy">NAB is your solo opponent. Its engine looks for legal moves in the built-in dictionary. Adaptive difficulty uses your local Elo and the score difference during the game.</string>
     <string name="help_local_model">Offline AI explains moves</string>
     <string name="help_local_model_copy">The engine checks the move and its score. The built-in SmolLM2 model uses those facts to explain a bonus square, a crossing word, or another detail. NAB and the explanations work in airplane mode.</string>
+    <string name="help_competition">Practise with a tournament dictionary</string>
+    <string name="help_competition_copy">To import a word list you have permission to use, go to Profile → Settings → Personal dictionary. Android practice validates words as you play and has no clock. FISF tournament rules use a clock and allow the opponent to challenge words after a move is played.</string>
 </resources>

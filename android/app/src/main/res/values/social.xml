@@ -1,5 +1,11 @@
 <resources>
     <string name="social_not_configured">Renseignez l’adresse du serveur WordRivet dans les réglages pour accéder aux amis et aux duels.</string>
+    <string name="social_join_beta">Jouer en ligne</string>
+    <string name="social_join_details">Collez le lien de bêta envoyé par un ami ou par l’organisateur pour accéder aux duels et au tournoi.</string>
+    <string name="social_join_pending_invite">Votre invitation est prête. Connectez-vous au serveur utilisé par votre ami pour l’accepter.</string>
+    <string name="social_paste_beta_link">Coller un lien de bêta</string>
+    <string name="social_beta_link_hint">Lien de bêta se terminant par /beta</string>
+    <string name="social_enter_server">Saisir une adresse de serveur</string>
     <string name="social_network_error">Le serveur WordRivet est indisponible. Vérifiez votre connexion puis réessayez.</string>
     <string name="social_endpoint_changed">Le serveur WordRivet a changé. Réessayez avec la nouvelle adresse.</string>
     <string name="social_loading">Actualisation…</string>
@@ -25,6 +31,11 @@
     <string name="social_duel_draw">Égalité</string>
     <string name="social_duel_result">%1$s · %2$d à %3$d</string>
     <string name="social_duel_your_result">Votre score · %1$d</string>
+    <string name="social_duel_details">Voir le résultat</string>
+    <string name="social_duel_your_move">Votre coup</string>
+    <string name="social_duel_opponent_move">Coup de votre ami</string>
+    <string name="social_duel_cancel">Annuler le duel</string>
+    <string name="social_duel_cancel_confirm">Le duel en cours disparaîtra pour vous deux. Les coups déjà joués ne compteront ni au classement ni pour le parrainage.</string>
     <string name="social_play">Jouer mon coup</string>
     <string name="social_submit">Envoyer mon coup</string>
     <string name="social_sending">Envoi en cours…</string>

@@ -1,7 +1,7 @@
 <resources>
     <string name="social_beta_title">Rejoindre la bêta en ligne</string>
-    <string name="social_beta_confirm">Utiliser %1$s pour les amis, les duels et le tournoi ? Les joueurs d’un même groupe doivent utiliser cette adresse.</string>
-    <string name="social_beta_connect">Utiliser ce serveur</string>
+    <string name="social_beta_confirm">Utiliser %1$s pour les amis, les duels et le tournoi ? WordRivet enverra votre pseudo à ce serveur pour créer ou retrouver votre profil en ligne.</string>
+    <string name="social_beta_connect">Se connecter</string>
     <string name="social_beta_invalid">Ce lien de bêta est invalide.</string>
     <string name="turn_notifications_title">Notifications de tour</string>
     <string name="turn_notifications_on">Activées</string>

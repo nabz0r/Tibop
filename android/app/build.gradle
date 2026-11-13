@@ -26,8 +26,8 @@ android {
         applicationId 'fr.lettrine.game'
         minSdk 26
         targetSdk 36
-        versionCode 15
-        versionName '0.14.0'
+        versionCode 18
+        versionName '0.15.1'
         buildConfigField 'String', 'SOCIAL_BASE_URL', '"' + socialUrl + '"'
         manifestPlaceholders.admobAppId = ads ? adApp : 'disabled'
         if (ads) {
@@ -77,6 +77,7 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     implementation 'androidx.credentials:credentials:1.6.0'
     implementation 'androidx.credentials:credentials-play-services-auth:1.6.0'
+    implementation 'androidx.customview:customview:1.0.0'
     implementation 'androidx.work:work-runtime:2.11.2'
     implementation 'com.google.android.libraries.identity.googleid:googleid:1.2.0'
     if (ads) {

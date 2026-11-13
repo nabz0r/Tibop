@@ -35,11 +35,11 @@ Pour jouer, glisser une lettre sur le plateau ou sélectionner une lettre puis s
 
 ## WordRivet pour Android
 
-[Télécharger l’APK](android/artifacts/lettrine.apk) · [App Bundle pour la bêta Google Play](android/artifacts/lettrine.aab) · [Guide Android et compilation](android/README.md)
+[Télécharger l’APK 0.15.1](android/artifacts/lettrine.apk) · [App Bundle pour la bêta Google Play](android/artifacts/lettrine.aab) · [Guide Android et compilation](android/README.md)
 
-**Deux coups d’avance** propose douze défis hors ligne par langue. Placez deux mots avec le même chevalet, puis rejouez une séquence guidée par NAB sur le plateau. Le bouton **EN / FR** sur l’accueil change l’interface, le lexique et les défis. Chaque langue conserve ses parties, son Elo et ses records.
+**Deux coups d’avance** propose douze défis hors ligne par langue. Placez deux mots avec le même chevalet, puis rejouez une séquence guidée par NAB sur le plateau. Le bouton **EN / FR** sur l’accueil change l’interface, le lexique et les défis. Chaque langue conserve ses parties, son Elo et ses records. **Profil → Réglages → Sauvegarder et transférer** permet de restaurer les deux langues sur une autre installation.
 
-**Circuit bonus** enchaîne trois nouvelles positions par langue. La première entrée est offerte. Les tickets se rechargent toutes les deux heures, et les pièces gagnées en jouant peuvent débloquer des thèmes ou un ticket supplémentaire.
+**Circuit bonus** alterne entre trois parcours de trois positions par langue. Le meilleur score reste enregistré dans chaque langue. La première entrée est offerte. Les tickets se rechargent toutes les deux heures, et les pièces gagnées en jouant peuvent débloquer des thèmes ou un ticket supplémentaire.
 
 WordRivet propose un défi par jour hors ligne et une série de jours joués. **Bats mon score** crée une carte et un lien pour inviter un ami à jouer le même défi. L’application permet de jouer en solo, à deux, trois ou quatre sur un appareil ou en duel Bluetooth. Le bilan de NAB permet de retenter un coup manqué avec son chevalet d’origine. SmolLM2 aide à expliquer les coups et les comparaisons hors ligne. L’historique affiche la progression de l’Elo et exporte les parties en JSON.
 
@@ -76,6 +76,7 @@ Le moteur français embarque Grammalecte 7.7. Le comparateur fournit un audit de
 - [Architecture et API](docs/ARCHITECTURE.md)
 - [Règles, lexique français et comparaison ODS](data/fr/README.md)
 - [Campagne et résultats](docs/RESULTATS.md) · [Archive des 100 000 duels](data/campaign/README.md)
+- [Simulation classique NAB contre Macondo](docs/SIMULATION_FISF.md)
 - [Entraînement, Elo et recherche](docs/ENTRAINEMENT.md)
 - [Profils de langues](docs/LANGUES.md)
 - [Archives humaines et provenance](data/expert/README.md)

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="personal_lexicon_title">Lexique personnel</string>
+    <string name="personal_lexicon_entry">Importer un lexique pour les parties d’entraînement hors ligne</string>
+    <string name="personal_lexicon_intro">Choisissez un fichier TXT UTF-8 que vous êtes autorisé à utiliser, avec un mot de 2 à 15 lettres par ligne (12 Mio maximum). En français, les accents et ligatures sont normalisés. La liste reste sur cet appareil. Importez-la de nouveau sur un autre appareil si nécessaire.</string>
+    <string name="personal_lexicon_import">Importer un fichier TXT</string>
+    <string name="personal_lexicon_replace">Remplacer le lexique</string>
+    <string name="personal_lexicon_remove">Retirer le lexique</string>
+    <plurals name="personal_lexicon_loaded">
+        <item quantity="one">%1$d forme importée</item>
+        <item quantity="other">%1$d formes importées</item>
+    </plurals>
+    <string name="personal_lexicon_details">Empreinte du lexique</string>
+    <string name="personal_lexicon_copy">Copier l’empreinte</string>
+    <string name="personal_lexicon_loading">Chargement du lexique personnel…</string>
+    <string name="personal_lexicon_error">Lexique illisible ou trop volumineux. Vérifiez le fichier TXT UTF-8 et les mots de 2 à 15 lettres, à raison d’un mot par ligne.</string>
+    <string name="personal_lexicon_play">Jouer avec ce lexique</string>
+    <string name="personal_lexicon_game_context">Entraînement hors ligne avec le lexique personnel</string>
+    <string name="personal_lexicon_bluetooth">Terminez ou quittez la partie Bluetooth avant d’ouvrir le lexique personnel.</string>
+    <string name="personal_lexicon_remove_confirm">Retirer la liste de cet appareil ? Réimportez la même liste pour retrouver ses parties d’entraînement.</string>
+</resources>

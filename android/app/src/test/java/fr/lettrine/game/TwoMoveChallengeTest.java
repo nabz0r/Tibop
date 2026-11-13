@@ -50,15 +50,40 @@ public class TwoMoveChallengeTest {
         assertEquals(List.of("TO", "IT", "NO"), crosses.solution().get(0).preview().words());
     }
 
-    @Test public void bonusCircuitHasThreeNewPlayablePuzzlesInEachLanguage() {
+    @Test public void bonusRotationHasNineDistinctPlayablePuzzlesInEachLanguage() {
         for (Lexicon dictionary : List.of(french, english)) {
-            var bonus = TwoMoveChallenge.bonusCatalog(dictionary);
+            var circuits = TwoMoveChallenge.bonusCircuits(dictionary);
+            assertEquals(List.of("two-moves-bonus-v1", "two-moves-bonus-2", "two-moves-bonus-3"),
+                    circuits.stream().map(TwoMoveChallenge.BonusSet::id).toList());
+            assertTrue(circuits.stream().allMatch(set -> set.puzzles().size() == BonusEconomy.ROUND_COUNT));
+            var bonus = circuits.stream().flatMap(set -> set.puzzles().stream()).toList();
             Set<String> baseIds = new HashSet<>();
             for (var puzzle : TwoMoveChallenge.catalog(dictionary)) baseIds.add(puzzle.id());
-            assertEquals(3, bonus.size());
             for (var puzzle : bonus) assertFalse(baseIds.contains(puzzle.id()));
             verifyCatalog(bonus, dictionary, dictionary.language == GameLanguage.ENGLISH
-                    ? "Both moves have already been played." : "Les deux coups sont déjà joués.", 3);
+                    ? "Both moves have already been played." : "Les deux coups sont déjà joués.", 9);
+        }
+    }
+
+    @Test public void detectsAValidFirstMoveThatLeavesNoLegalSecondMoveInTheCircuit() {
+        var puzzle = TwoMoveChallenge.bonusCircuits(french).get(0).puzzles().get(2);
+        var deadEnd = TwoMoveChallenge.play(puzzle.initial(), List.of(
+                new FrenchGame.Tile(cell('F', 7), 0, 'E', false),
+                new FrenchGame.Tile(cell('G', 7), 4, 'G', false),
+                new FrenchGame.Tile(cell('H', 7), 5, 'A', false),
+                new FrenchGame.Tile(cell('I', 7), 6, 'L', false),
+                new FrenchGame.Tile(cell('J', 7), 3, 'E', false),
+                new FrenchGame.Tile(cell('K', 7), 1, 'R', false)), french);
+        assertTrue(deadEnd.preview().valid());
+        assertEquals("EGALER", deadEnd.preview().word());
+        assertEquals(List.of('I'), deadEnd.after().rack());
+        assertFalse(TwoMoveChallenge.hasSecondMove(deadEnd.after(), french));
+        for (Lexicon dictionary : List.of(french, english)) {
+            for (var set : TwoMoveChallenge.bonusCircuits(dictionary)) {
+                for (var authored : set.puzzles()) {
+                    assertTrue(TwoMoveChallenge.hasSecondMove(authored.solution().get(0).after(), dictionary));
+                }
+            }
         }
     }
 

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">Sauvegarder et transférer</string>
+    <string name="backup_summary">Exporter ou restaurer la progression FR et EN</string>
+    <string name="backup_details">Le fichier conserve les parties, l’historique, l’Elo, les défis, les pièces, les tickets, les thèmes et le profil local dans les deux langues. Il peut contenir votre photo et votre profil. Gardez-le dans un endroit privé. Les connexions aux comptes Amis restent sur leur appareil.</string>
+    <string name="backup_export">Créer une sauvegarde</string>
+    <string name="backup_import">Restaurer une sauvegarde</string>
+    <string name="backup_replace">Cette sauvegarde remplace la progression locale actuelle dans les deux langues. Pour conserver la progression actuelle, exportez-la avant de restaurer.</string>
+    <string name="backup_working">Transfert en cours…</string>
+    <string name="backup_saved">Sauvegarde créée.</string>
+    <string name="backup_restored">Progression restaurée.</string>
+    <string name="backup_picker_error">Le sélecteur de fichiers Android est indisponible.</string>
+    <string name="backup_write_error">Impossible de créer la sauvegarde. Vérifiez l’espace disponible et le dossier choisi.</string>
+    <string name="backup_read_error">Impossible de restaurer ce fichier. Sélectionnez une sauvegarde WordRivet valide et vérifiez l’espace disponible.</string>
+    <string name="privacy_title">Confidentialité</string>
+    <string name="privacy_details">Vos parties, l’Elo, la photo, le pays, l’âge et le sexe du profil restent sur l’appareil. Vous choisissez le fichier de transfert et les destinataires des cartes partagées. NAB explique les coups sur l’appareil.\n\nDans Amis, le serveur de votre groupe conserve votre pseudo, votre compte, vos invitations et vos résultats en ligne. Vous pouvez supprimer ce compte depuis Amis. La connexion Google est facultative et dépend de la configuration de votre serveur.\n\nLes vidéos récompensées sont facultatives. Lorsqu’elles sont activées, le SDK Google gère la demande publicitaire et les choix de confidentialité. Les préférences publicitaires sont proposées dans les réglages lorsque le SDK les rend disponibles.</string>
+    <string name="backup_recovery_error">Une restauration a été interrompue. Libérez de l’espace si nécessaire, puis réessayez de récupérer la progression précédente.</string>
+    <string name="backup_recovery_retry">Réessayer la récupération</string>
+</resources>

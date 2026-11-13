@@ -15,6 +15,25 @@ Un tour est compté à chaque action d’un des deux sièges. Sur les 480 partie
 
 L’écart est le plus marqué au début de la progression. Pour une première partie, le niveau Promeneur offre un point de départ plus accessible que le niveau Habitué ou l’Adaptatif à 1100. Sur ce même Elo, l’Adaptatif a choisi le niveau Promeneur pour 37 % de ses tours face à Promeneur, et seulement 5 % face à Stratège. Un test avec des joueurs débutants reste nécessaire pour régler le niveau initial et juger du temps de partie sur téléphone.
 
+## Réplication sur 1 440 parties complètes
+
+Le 14 novembre 2026, chaque confrontation a été rejouée sur 120 tirages inédits, dans les deux ordres de départ. Le moteur Android utilise Grammalecte 7.7 et active les poids entraînés de Maître. Les 1 440 parties sont allées à leur terme et tous les coups joués ont été validés avec le score annoncé.
+
+| Duel | Victoires · nuls · défaites du premier niveau | Points de match du premier niveau |
+| --- | --- | ---: |
+| Promeneur / Habitué | 17 · 1 · 222 | 7,29 % |
+| Habitué / Stratège | 42 · 2 · 196 | 17,92 % |
+| Stratège / Maître | 73 · 1 · 166 | 30,63 % |
+| Maître / Maître | 119 · 2 · 119 | 50,00 % |
+| Promeneur / Adaptatif | 11 · 1 · 228 | 4,79 % |
+| Stratège / Adaptatif | 186 · 2 · 52 | 77,92 % |
+
+Maître obtient 69,38 % des points contre Stratège, soit un écart Elo indicatif de +142 sur cette confrontation (400 × log₁₀ du rapport des points). Les cotes Android et studio reposent sur des moteurs et des adversaires différents.
+
+```sh
+./tools/android_gameplay/run.sh 120 2026111401 4
+```
+
 ## Tutoriel et défi du jour
 
 Le premier exercice valide bien la pose du S à la suite de CHAT (CHATS, 11 points). Le coup présenté par NAB forme CHATONS (13 points).

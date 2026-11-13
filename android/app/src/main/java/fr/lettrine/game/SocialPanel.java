@@ -2,6 +2,8 @@ package fr.lettrine.game;
 
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.view.View;
 import android.view.ViewParent;
@@ -15,13 +17,8 @@ import org.json.JSONObject;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 
 final class SocialPanel {
-    private static final String WEB_INVITE = "https://nabz0r.github.io/scrabnble/amis/#";
-    private static final String APP_INVITE = "lettrine://amis/v1/";
-    private static final Pattern TOKEN = Pattern.compile("[0-9a-f]{32}");
-
     private enum Tab {
         DUELS(R.string.social_duels), FRIENDS(R.string.social_friends), RANKING(R.string.social_ranking);
 
@@ -37,6 +34,8 @@ final class SocialPanel {
     private final Runnable openNotifications;
     private final Consumer<BetaLink> openBeta;
     private final Supplier<String> betaInviteBase;
+    private final Runnable editEndpoint;
+    private final Consumer<FriendInvitation> openFriendInvitation;
     private final LinearLayout root;
     private final TextView notice;
     private final LinearLayout body;
@@ -48,7 +47,8 @@ final class SocialPanel {
 
     SocialPanel(ViewKit ui, SocialClient client, Consumer<JSONObject> openDuel, String invitation,
                 Consumer<String> connectGoogle, Runnable openTournament, Runnable openNotifications,
-                Consumer<BetaLink> openBeta, Supplier<String> betaInviteBase) {
+                Consumer<BetaLink> openBeta, Supplier<String> betaInviteBase, Runnable editEndpoint,
+                Consumer<FriendInvitation> openFriendInvitation) {
         this.ui = ui;
         this.client = client;
         this.openDuel = openDuel;
@@ -58,36 +58,26 @@ final class SocialPanel {
         this.openNotifications = openNotifications;
         this.openBeta = openBeta;
         this.betaInviteBase = betaInviteBase;
+        this.editEndpoint = editEndpoint;
+        this.openFriendInvitation = openFriendInvitation;
 
         root = ui.column();
         notice = ui.body("");
         notice.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         notice.setVisibility(View.GONE);
         root.addView(notice);
-        root.addView(TournamentPanel.entry(ui, this.openTournament));
         if (client.configured()) {
+            root.addView(TournamentPanel.entry(ui, this.openTournament));
             addAction(root, R.string.turn_notifications_title, false, this.openNotifications);
+            ui.gap(root, 14);
         }
-        ui.gap(root, 14);
         body = ui.column();
         root.addView(body);
         if (client.configured()) load();
-        else {
-            showNotice(label(R.string.social_not_configured));
-            render();
-        }
+        else render();
     }
 
     View view() { return root; }
-
-    static String invitationToken(String value) {
-        if (value == null) return null;
-        value = value.strip();
-        if (value.startsWith(WEB_INVITE)) value = value.substring(WEB_INVITE.length());
-        else if (value.startsWith(APP_INVITE)) value = value.substring(APP_INVITE.length());
-        if (value.startsWith("en/")) value = value.substring(3);
-        return TOKEN.matcher(value).matches() ? value : null;
-    }
 
     private void load() {
         if (!begin()) return;
@@ -119,6 +109,10 @@ final class SocialPanel {
 
     private void render() {
         body.removeAllViews();
+        if (!client.configured()) {
+            showConnection();
+            return;
+        }
         if (dashboard == null) {
             if (deleted) body.addView(ui.body(label(R.string.social_deleted)));
             addAction(body, R.string.social_refresh, false, this::load);
@@ -166,6 +160,17 @@ final class SocialPanel {
         addAction(body, R.string.social_delete, false, this::confirmDelete);
     }
 
+    private void showConnection() {
+        LinearLayout connection = ui.card();
+        connection.addView(ui.title(label(R.string.social_join_beta), 23));
+        ui.gap(connection, 7);
+        connection.addView(ui.body(label(invitation == null ? R.string.social_join_details
+                : R.string.social_join_pending_invite)));
+        addAction(connection, R.string.social_paste_beta_link, true, this::enterLink);
+        addAction(connection, R.string.social_enter_server, false, editEndpoint);
+        body.addView(connection);
+    }
+
     private void showInvitation() {
         ui.gap(body, 10);
         LinearLayout invite = ui.card();
@@ -206,7 +211,8 @@ final class SocialPanel {
                 addAction(card, R.string.social_play, true, () -> openLatestDuel(id));
             }
             if (status.equals("finished")) {
-                if (mirror) addAction(card, R.string.social_mirror_result, false, () -> openDuel.accept(duel));
+                addAction(card, mirror ? R.string.social_mirror_result : R.string.social_duel_details,
+                        false, () -> openLatestDuel(id));
                 String mirrorId = duel.isNull("mirror_id") ? "" : duel.optString("mirror_id");
                 if (!mirrorId.isEmpty()) {
                     addAction(card, R.string.social_mirror_resume, true, () -> openLatestDuel(mirrorId));
@@ -214,6 +220,8 @@ final class SocialPanel {
                     addAction(card, R.string.social_mirror_title, true, () -> confirmMirror(id));
                 }
                 addAction(card, R.string.social_rematch, false, () -> rematch(id));
+            } else if (duel.optBoolean("can_cancel")) {
+                addAction(card, R.string.social_duel_cancel, false, () -> confirmCancelDuel(id));
             }
             body.addView(card);
             ui.gap(body, 8);
@@ -275,14 +283,14 @@ final class SocialPanel {
         if (!begin()) return;
         client.createInvitation((result, error) -> {
             if (!finish(error) || !root.isAttachedToWindow()) return;
-            String token = invitationToken(result.optString("token"));
-            if (token == null) {
+            FriendInvitation invitation = FriendInvitation.parse(result.optString("token"));
+            if (invitation == null) {
                 showNotice(label(R.string.social_invalid_invite));
                 return;
             }
             String base = betaInviteBase.get();
             String message = label(R.string.social_share_invitation,
-                    (base == null ? WEB_INVITE + ui.language.text("", "en/") : base) + token);
+                    (base == null ? FriendInvitation.WEB + ui.language.text("", "en/") : base) + invitation.token());
             Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, message);
             try { ui.context.startActivity(Intent.createChooser(send, label(R.string.social_invite))); }
             catch (ActivityNotFoundException exception) { showNotice(label(R.string.social_share_error)); }
@@ -292,12 +300,26 @@ final class SocialPanel {
     private void enterLink() {
         EditText input = new EditText(ui.context);
         input.setSingleLine();
-        input.setHint(R.string.social_link_hint);
+        boolean configured = client.configured();
+        input.setHint(configured ? R.string.social_link_hint : R.string.social_beta_link_hint);
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI);
+        if (!configured) {
+            ClipboardManager clipboard = ui.context.getSystemService(ClipboardManager.class);
+            ClipData clip = clipboard == null ? null : clipboard.getPrimaryClip();
+            CharSequence copied = clip == null || clip.getItemCount() == 0 ? null : clip.getItemAt(0).getText();
+            if (copied != null && copied.length() <= 720) {
+                String link = copied.toString().strip();
+                if (BetaLink.parse(link) != null || FriendInvitation.parse(link) != null) {
+                    input.setText(link);
+                    input.setSelection(link.length());
+                }
+            }
+        }
         LinearLayout entry = ui.column();
         ui.inset(entry, 20, 4);
         entry.addView(input);
-        AlertDialog dialog = new AlertDialog.Builder(ui.context).setTitle(R.string.social_enter_link).setView(entry)
+        int title = configured ? R.string.social_enter_link : R.string.social_paste_beta_link;
+        AlertDialog dialog = new AlertDialog.Builder(ui.context).setTitle(title).setView(entry)
                 .setNegativeButton(R.string.social_cancel, null).setPositiveButton(R.string.social_confirm, null).create();
         dialog.setOnShowListener(view -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button -> {
             String value = input.getText().toString().strip();
@@ -307,11 +329,16 @@ final class SocialPanel {
                 openBeta.accept(beta);
                 return;
             }
-            String token = invitationToken(value);
-            if (token == null) input.setError(label(R.string.social_invalid_invite));
+            FriendInvitation friend = FriendInvitation.parse(value);
+            if (friend == null) input.setError(label(configured ? R.string.social_invalid_invite
+                    : R.string.social_beta_invalid));
             else {
                 dialog.dismiss();
-                invitation = token;
+                if (!configured || friend.language() != null && friend.language() != ui.language) {
+                    openFriendInvitation.accept(friend);
+                    return;
+                }
+                invitation = friend.token();
                 render();
                 for (ViewParent parent = root.getParent(); parent != null; parent = parent.getParent()) {
                     if (parent instanceof ScrollView scroll) {
@@ -340,6 +367,15 @@ final class SocialPanel {
 
     private void rematch(String duel) {
         if (begin()) client.rematch(duel, this::createdDuel);
+    }
+
+    private void confirmCancelDuel(String id) {
+        confirm(R.string.social_duel_cancel, label(R.string.social_duel_cancel_confirm), () -> {
+            if (!begin()) return;
+            client.cancelDuel(id, (result, error) -> {
+                if (finish(error) && root.isAttachedToWindow()) load();
+            });
+        });
     }
 
     private void confirmMirror(String id) {

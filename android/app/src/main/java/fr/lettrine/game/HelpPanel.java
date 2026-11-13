@@ -46,6 +46,7 @@ final class HelpPanel {
             section(R.string.help_rules, R.string.help_rules_copy);
             section(R.string.help_scoring, R.string.help_scoring_copy);
             section(R.string.help_local_bot, R.string.help_local_bot_copy);
+            section(R.string.help_competition, R.string.help_competition_copy);
             section(R.string.help_local_model, R.string.help_local_model_copy);
         }
     }

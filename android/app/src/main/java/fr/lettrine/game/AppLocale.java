@@ -26,8 +26,12 @@ final class AppLocale {
     }
 
     static Context wrap(Context context) {
+        return wrap(context, language(context));
+    }
+
+    static Context wrap(Context context, GameLanguage language) {
         Configuration configuration = new Configuration(context.getResources().getConfiguration());
-        configuration.setLocales(new LocaleList(locale(context)));
+        configuration.setLocales(new LocaleList(Locale.forLanguageTag(language.code)));
         return context.createConfigurationContext(configuration);
     }
 }

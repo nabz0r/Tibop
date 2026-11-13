@@ -5,6 +5,8 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.time.LocalDate;
@@ -15,6 +17,7 @@ import java.util.List;
 final class SocialDuelPanel {
     private final ViewKit ui;
     private final SocialClient client;
+    private final Lexicon lexicon;
     private final Runnable back;
     private final String duelId;
     private final LinearLayout root;
@@ -24,6 +27,7 @@ final class SocialDuelPanel {
     SocialDuelPanel(ViewKit ui, SocialClient client, JSONObject duel, Lexicon lexicon, Runnable back) {
         this.ui = ui;
         this.client = client;
+        this.lexicon = lexicon;
         this.back = back;
         duelId = duel.optString("id");
         root = ui.column();
@@ -131,7 +135,8 @@ final class SocialDuelPanel {
         root.removeAllViews();
         LinearLayout result = ui.card();
         int score = duel.optInt("score");
-        if (duel.optString("status").equals("finished")) {
+        boolean finished = duel.optString("status").equals("finished");
+        if (finished) {
             int opponentScore = duel.optInt("opponent_score");
             int outcome = score == opponentScore ? R.string.social_duel_draw
                     : score > opponentScore ? R.string.social_duel_win : R.string.social_duel_loss;
@@ -147,7 +152,57 @@ final class SocialDuelPanel {
             result.addView(ui.body(label(R.string.social_waiting)));
         }
         root.addView(result);
+        if (finished) showMoves(duel);
         backButton();
+    }
+
+    private void showMoves(JSONObject duel) {
+        JSONArray own = duel.optJSONArray("move");
+        JSONArray opponent = duel.optJSONArray("opponent_move");
+        if (own == null || opponent == null) return;
+        PracticePosition position = compatiblePosition(duel.optJSONObject("puzzle"), duel.optString("date"), lexicon);
+        if (position == null) return;
+        List<FrenchGame.Tile> ownTiles;
+        List<FrenchGame.Tile> opponentTiles;
+        try {
+            ownTiles = MatchCodec.readTiles(own, false);
+            opponentTiles = MatchCodec.readTiles(opponent, false);
+        } catch (JSONException invalid) {
+            return;
+        }
+        ui.gap(root, 12);
+        BoardView board = new BoardView(ui, null);
+        LinearLayout controls = ui.row();
+        TextView yours = ui.button(label(R.string.social_duel_your_move), false, () -> {});
+        TextView theirs = ui.button(label(R.string.social_duel_opponent_move), false, () -> {});
+        yours.setMinHeight(ui.dp(48));
+        theirs.setMinHeight(ui.dp(48));
+        yours.setOnClickListener(view -> showMove(board, position, ownTiles, yours, theirs));
+        theirs.setOnClickListener(view -> showMove(board, position, opponentTiles, theirs, yours));
+        ui.weight(controls, yours);
+        ui.space(controls, 6);
+        ui.weight(controls, theirs);
+        root.addView(controls);
+        ui.gap(root, 6);
+        root.addView(board, new LinearLayout.LayoutParams(-1, -2));
+        showMove(board, position, ownTiles, yours, theirs);
+    }
+
+    private void showMove(BoardView board, PracticePosition position, List<FrenchGame.Tile> tiles,
+                          TextView selected, TextView other) {
+        char[] letters = position.board();
+        boolean[] blanks = position.blanks();
+        for (FrenchGame.Tile tile : tiles) {
+            letters[tile.position()] = tile.letter();
+            blanks[tile.position()] = tile.blank();
+        }
+        selected.setSelected(true);
+        other.setSelected(false);
+        selected.setBackground(ui.touch(ui.palette.deep(), 12, 0));
+        selected.setTextColor(ui.palette.heroInk());
+        other.setBackground(ui.touch(ui.palette.paper(), 12, ui.palette.line()));
+        other.setTextColor(ui.palette.ink());
+        board.update(letters, blanks, List.of(), tiles, -1);
     }
 
     private void backButton() {
