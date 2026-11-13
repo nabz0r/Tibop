@@ -25,11 +25,11 @@ final class Lexicon {
     Bot.Policy expert = Bot.BASE_EXPERT;
     boolean trained;
 
-    private Lexicon(JSONObject meta) throws Exception {
-        label = meta.getString("label");
-        license = meta.getString("license");
-        hash = meta.getString("sha256");
-        size = meta.getInt("count");
+    private Lexicon(String label, String license, String hash, int size) {
+        this.label = label;
+        this.license = license;
+        this.hash = hash;
+        this.size = size;
     }
 
     static Lexicon load(Context context) throws Exception {
@@ -38,14 +38,13 @@ final class Lexicon {
                 context.getAssets().open("lexicon.json"), StandardCharsets.UTF_8))) {
             for (String line; (line = reader.readLine()) != null; ) metadata.append(line);
         }
-        Lexicon dictionary = new Lexicon(new JSONObject(metadata.toString()));
+        JSONObject meta = new JSONObject(metadata.toString());
+        Lexicon dictionary;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 context.getAssets().open("words-fr.txt"), StandardCharsets.US_ASCII), 65536)) {
-            int rank = 0;
-            for (String word; (word = reader.readLine()) != null; ) dictionary.add(word, ++rank);
-            if (rank != dictionary.size) throw new IllegalStateException("Liste incomplète");
+            dictionary = read(reader, meta.getString("label"), meta.getString("license"),
+                    meta.getString("sha256"), meta.getInt("count"));
         }
-        dictionary.pack();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 context.getAssets().open("bot-policy.json"), StandardCharsets.UTF_8))) {
             StringBuilder source = new StringBuilder();
@@ -63,6 +62,16 @@ final class Lexicon {
         } catch (java.io.IOException | org.json.JSONException ignored) {
             // Custom lexicons use the reference weights.
         }
+        return dictionary;
+    }
+
+    static Lexicon read(BufferedReader reader, String label, String license, String hash, int size)
+            throws java.io.IOException {
+        Lexicon dictionary = new Lexicon(label, license, hash, size);
+        int rank = 0;
+        for (String word; (word = reader.readLine()) != null; ) dictionary.add(word, ++rank);
+        if (rank != size) throw new IllegalStateException("Liste incomplète");
+        dictionary.pack();
         return dictionary;
     }
 

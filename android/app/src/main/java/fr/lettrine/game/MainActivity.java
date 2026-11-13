@@ -54,6 +54,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.IntFunction;
 
 public final class MainActivity extends Activity {
     private static final int BLUETOOTH_PERMISSION = 41;
@@ -62,11 +63,12 @@ public final class MainActivity extends Activity {
     private static final int APP_SETTINGS = 44;
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
 
-    private enum Screen { HOME, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME }
+    private enum Screen { HOME, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW }
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final ExecutorService explanationWorker = Executors.newSingleThreadExecutor();
+    private final ExecutorService reviewWorker = Executors.newSingleThreadExecutor();
     private final List<FrenchGame.Tile> staged = new ArrayList<>();
     private final List<Integer> rackOrder = new ArrayList<>();
     private SharedPreferences preferences;
@@ -107,6 +109,8 @@ public final class MainActivity extends Activity {
     private JSONObject detail;
     private int replayIndex;
     private AlertDialog explanationDialog;
+    private Future<?> reviewTask;
+    private Runnable reviewBack;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -189,6 +193,8 @@ public final class MainActivity extends Activity {
         if (music != null) music.release();
         if (explanationDialog != null) explanationDialog.dismiss();
         explanationWorker.shutdownNow();
+        cancelReview();
+        reviewWorker.shutdownNow();
         main.removeCallbacksAndMessages(null);
         worker.shutdownNow();
         super.onDestroy();
@@ -204,6 +210,7 @@ public final class MainActivity extends Activity {
         switch (screen) {
             case HOME -> { }
             case DETAIL -> showHistory();
+            case REVIEW -> reviewBack.run();
             case BLUETOOTH -> {
                 if (link != null && state() == null) closeLink();
                 showHome();
@@ -214,8 +221,16 @@ public final class MainActivity extends Activity {
 
     private void toast(String text) { Toast.makeText(this, text, Toast.LENGTH_SHORT).show(); }
 
+    private void cancelReview() {
+        if (reviewTask != null) {
+            reviewTask.cancel(true);
+            reviewTask = null;
+        }
+    }
+
     private void page(Screen next, boolean navigation) {
         if (explanationDialog != null) explanationDialog.dismiss();
+        cancelReview();
         screen = next;
         if (Build.VERSION.SDK_INT >= 33) {
             if (next == Screen.HOME && backCallback != null) {
@@ -522,14 +537,23 @@ public final class MainActivity extends Activity {
     }
 
     private void explainMove(List<FrenchGame.Move> history, int moveIndex) {
-        if (explanationDialog != null && explanationDialog.isShowing()) return;
         MoveExplanation explanation = MoveExplanation.create(history, moveIndex);
         if (explanation == null) return;
-        List<String> options = explanation.options();
+        showExplanation(getString(R.string.move_explanation_title, moveIndex + 1),
+                explanation.facts(), explanation.options(), explanation::text);
+    }
+
+    private void explainReview(MatchReview.Turn turn) {
+        showExplanation(getString(R.string.move_explanation_title, turn.index() + 1),
+                turn.facts(), turn.options(), turn::text);
+    }
+
+    private void showExplanation(String title, String facts, List<String> options, IntFunction<String> text) {
+        if (explanationDialog != null && explanationDialog.isShowing()) return;
 
         LinearLayout panel = ui.column();
         ui.inset(panel, 24, 12);
-        TextView body = ui.body(explanation.text(0));
+        TextView body = ui.body(text.apply(0));
         body.setTextColor(ui.palette.ink());
         body.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         panel.addView(body);
@@ -540,7 +564,7 @@ public final class MainActivity extends Activity {
         panel.addView(status);
         ScrollView scroll = new ScrollView(this);
         scroll.addView(panel, new ScrollView.LayoutParams(-1, -2));
-        AlertDialog active = dialog(getString(R.string.move_explanation_title, moveIndex + 1), null)
+        AlertDialog active = dialog(title, null)
                 .setView(scroll)
                 .setPositiveButton(R.string.move_explanation_close, null)
                 .show();
@@ -550,7 +574,7 @@ public final class MainActivity extends Activity {
             android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
             int index = -1;
             try {
-                index = new OfflineMoveModel(context).choose(explanation.facts(), options);
+                index = new OfflineMoveModel(context).choose(facts, options);
             } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
                 return;
@@ -562,7 +586,7 @@ public final class MainActivity extends Activity {
             int selected = modelUsed ? index : 0;
             main.post(() -> {
                 if (explanationDialog != active || !active.isShowing() || isDestroyed()) return;
-                body.setText(explanation.text(selected));
+                body.setText(text.apply(selected));
                 status.setText(modelUsed ? R.string.move_explanation_model : R.string.move_explanation_engine);
             });
         });
@@ -598,6 +622,7 @@ public final class MainActivity extends Activity {
             updateArena(-1);
         });
         final TextView tools = ui.textButton("Options", MainActivity.this::turnOptions);
+        final TextView review = ui.button(getString(R.string.match_review), true, MainActivity.this::reviewFinishedGame);
         final TextView explain = ui.button(getString(R.string.move_explanation_last), false, () -> {
             MatchCodec.State current = state();
             if (current != null) explainMove(current.history(), current.history().size() - 1);
@@ -616,6 +641,9 @@ public final class MainActivity extends Activity {
         arena = new Arena();
         content.addView(arena.scores);
         ui.gap(content, 8);
+        LinearLayout.LayoutParams reviewPosition = new LinearLayout.LayoutParams(-1, -2);
+        reviewPosition.bottomMargin = ui.dp(8);
+        content.addView(arena.review, reviewPosition);
         content.addView(arena.board, new LinearLayout.LayoutParams(-1, -2));
         LinearLayout controls = ui.row();
         TextView minus = ui.textButton("−", () -> arena.board.zoomBy(0.8f));
@@ -700,6 +728,7 @@ public final class MainActivity extends Activity {
         ui.enabled(arena.recall, canPlay && !staged.isEmpty());
         ui.enabled(arena.tools, canPlay);
         arena.explain.setVisibility(current.history().isEmpty() ? View.GONE : View.VISIBLE);
+        arena.review.setVisibility(current.end() == null ? View.GONE : View.VISIBLE);
     }
 
     private void renderRack(MatchCodec.State current) {
@@ -1257,6 +1286,8 @@ public final class MainActivity extends Activity {
         }
         content.addView(summary);
         ui.gap(content, 12);
+        content.addView(EloChart.card(ui, games));
+        ui.gap(content, 12);
         if (games.isEmpty()) {
             content.addView(ui.body("Terminez une partie pour la revoir ici."));
             return;
@@ -1302,6 +1333,57 @@ public final class MainActivity extends Activity {
         return title.toString();
     }
 
+    private void reviewFinishedGame() {
+        MatchCodec.State finished = state();
+        if (finished == null || finished.end() == null || !ready()) return;
+        String summary = resultTitle(finished);
+        showReview(List.copyOf(finished.history()), mode, summary, true, this::showGame);
+    }
+
+    private void showReview(List<FrenchGame.Move> moves, String gameMode, String summary,
+                            boolean compatible, Runnable back) {
+        reviewBack = back;
+        page(Screen.REVIEW, false);
+        top(getString(R.string.match_review), back, null);
+        heading(getString(R.string.match_review_heading), summary);
+
+        TextView status = ui.body(getString(R.string.match_review_loading));
+        status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        content.addView(status);
+        FrameLayout reviewFrame = frame;
+        boolean bluetooth = gameMode.equals("bluetooth");
+        int seat = gameMode.equals("solo") ? 0 : -1;
+        Lexicon dictionary = lexicon;
+        reviewTask = reviewWorker.submit(() -> {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+            try {
+                List<MatchReview.Turn> turns = MatchReview.analyze(moves, dictionary, seat, compatible && !bluetooth);
+                main.post(() -> {
+                    if (frame != reviewFrame || isDestroyed()) return;
+                    reviewTask = null;
+                    if (turns.isEmpty()) {
+                        status.setText(R.string.match_review_empty);
+                        return;
+                    }
+                    if (bluetooth || !compatible) {
+                        status.setText(bluetooth ? R.string.match_review_bluetooth : R.string.match_review_lexicon);
+                        ui.gap(content, 10);
+                    } else {
+                        content.removeView(status);
+                    }
+                    content.addView(new MatchReviewPanel(ui, turns, compatible && !bluetooth, this::explainReview).view());
+                });
+            } catch (RuntimeException exception) {
+                if (Thread.currentThread().isInterrupted()) return;
+                main.post(() -> {
+                    if (frame != reviewFrame || isDestroyed()) return;
+                    reviewTask = null;
+                    status.setText(R.string.match_review_error);
+                });
+            }
+        });
+    }
+
     private void showDetail() {
         if (detail == null) { showHistory(); return; }
         page(Screen.DETAIL, false);
@@ -1313,6 +1395,17 @@ public final class MainActivity extends Activity {
         } catch (JSONException | IllegalArgumentException exception) {
             content.addView(ui.body("Cette partie ne peut pas être rejouée."));
             return;
+        }
+        JSONObject replayed = detail;
+        if (!moves.isEmpty()) {
+            content.addView(ui.button(getString(R.string.match_review), true, () -> {
+                if (!ready()) return;
+                String digest = replayed.optString("lexicon_sha256");
+                boolean compatible = digest.isEmpty()
+                        ? lexicon.label.equals(replayed.optString("lexicon")) : lexicon.hash.equals(digest);
+                showReview(moves, replayed.optString("mode"), scoreText(replayed), compatible, this::showDetail);
+            }));
+            ui.gap(content, 9);
         }
         BoardView board = new BoardView(this, ui.palette, null);
         content.addView(board, new LinearLayout.LayoutParams(-1, -2));

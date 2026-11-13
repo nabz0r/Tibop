@@ -1,0 +1,34 @@
+<resources>
+    <string name="match_review">Bilan avec NAB</string>
+    <string name="match_review_heading">Les coups à revoir</string>
+    <string name="match_review_loading">NAB analyse les coups sur cet appareil…</string>
+    <string name="match_review_empty">Cette partie ne contient aucun coup à revoir.</string>
+    <string name="match_review_error">Le bilan de cette partie n’a pas pu être calculé.</string>
+    <string name="match_review_bluetooth">Les chevalets restent privés en Bluetooth. Le bilan explique les coups joués sur le plateau.</string>
+    <string name="match_review_lexicon">Cette partie utilise un autre lexique. Le bilan explique les coups enregistrés.</string>
+    <string name="match_review_turn">Coup %1$d</string>
+    <plurals name="match_review_choose_turn">
+        <item quantity="one">Coup %1$d, %2$s, %3$d point</item>
+        <item quantity="other">Coup %1$d, %2$s, %3$d points</item>
+    </plurals>
+    <string name="match_review_turn_title">Coup %1$d · %2$s</string>
+    <string name="match_review_played">Coup joué</string>
+    <string name="match_review_alternative">Alternative NAB</string>
+    <string name="match_review_played_score">Coup joué · %1$s · %2$d pts</string>
+    <string name="match_review_alternative_score">Alternative NAB · %1$s · %2$d pts</string>
+    <string name="match_review_equal">Même score immédiat</string>
+    <string name="match_review_score_delta">Écart immédiat de l’alternative · %1$+d pts</string>
+    <string name="match_review_rack_unavailable">Alternative indisponible. Le chevalet de ce tour est absent du journal.</string>
+    <string name="match_review_alternative_unavailable">Aucune autre pose à comparer pour ce tour.</string>
+    <string name="match_review_pass">Passe</string>
+    <string name="match_review_exchange">Échange</string>
+    <string name="match_review_explain">Expliquer la comparaison</string>
+    <string name="match_review_reset_zoom">Réinitialiser le zoom</string>
+    <string name="match_review_zoom">Agrandir le plateau</string>
+    <plurals name="match_review_board">
+        <item quantity="one">Plateau, %1$s. %2$s, %3$d point.</item>
+        <item quantity="other">Plateau, %1$s. %2$s, %3$d points.</item>
+    </plurals>
+    <string name="match_review_board_tile">%1$c en %2$c%3$d</string>
+    <string name="match_review_board_blank">Joker %1$c en %2$c%3$d</string>
+</resources>

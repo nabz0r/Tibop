@@ -37,7 +37,7 @@ Pour jouer, glisser une lettre sur le plateau ou sélectionner une lettre puis s
 
 [Télécharger l’APK](android/artifacts/lettrine.apk) · [Télécharger depuis le studio](http://127.0.0.1:8787/download/lettrine.apk) · [Guide Android et compilation](android/README.md)
 
-L’application propose le jeu hors ligne à deux, trois ou quatre sur un appareil, le duel Bluetooth et le solo. SmolLM2 est inclus dans l’APK pour expliquer le dernier coup ou un tour sélectionné dans l’historique. L’app garde la cote locale et exporte les parties en JSON.
+L’application propose le jeu hors ligne à deux, trois ou quatre sur un appareil, le duel Bluetooth et le solo. Après la partie, le bilan de NAB permet de comparer jusqu’à trois tours et leurs alternatives sur le plateau. SmolLM2 explique les coups et les comparaisons hors ligne. L’historique affiche la progression de l’Elo et exporte les parties en JSON.
 
 ## Laboratoire
 

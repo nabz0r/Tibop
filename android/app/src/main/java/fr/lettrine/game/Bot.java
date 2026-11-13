@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Random;
+import java.util.concurrent.CancellationException;
 
 final class Bot {
     static final int ADAPTIVE = 5;
@@ -20,6 +21,7 @@ final class Bot {
     static final int[] RATINGS = {0, 800, 1050, 1300, 1550, 0};
     private static final int ALL_LETTERS = (1 << 26) - 1;
     private static final int SHORTLIST = 36;
+    private static final int IMMEDIATE_SCORE_LEVEL = 3;
     private static final int[] KEEP = {
             2, -4, -3, -1, 3, -6, -4, -5, 2, -9, -12, 1, -2, 2, 0, -3, -14, 3, 9, 2, -4, -7,
             -13, -5, -12, -9
@@ -49,7 +51,7 @@ final class Bot {
 
     static Choice choose(char[] board, boolean[] blanks, List<Character> rack, int bagSize,
                          Lexicon lexicon, int level, long seed) {
-        Search search = new Search(board, blanks, rack, lexicon, bagSize, level);
+        Search search = new Search(board, blanks, rack, lexicon, bagSize, level, false);
         List<Candidate> top = search.run();
         if (!top.isEmpty()) {
             Candidate best = top.get(0);
@@ -83,6 +85,14 @@ final class Bot {
         return new Choice(List.of(), returned, level, 0);
     }
 
+    static List<List<FrenchGame.Tile>> scoreCandidates(char[] board, boolean[] blanks, List<Character> rack,
+                                                       Lexicon lexicon) {
+        Search search = new Search(board, blanks, rack, lexicon, 0, IMMEDIATE_SCORE_LEVEL, true);
+        List<List<FrenchGame.Tile>> result = new ArrayList<>();
+        for (Candidate candidate : search.run()) result.add(candidate.tiles);
+        return result;
+    }
+
     private static final class Search {
         private final char[] board;
         private final boolean[] blanks;
@@ -90,6 +100,7 @@ final class Bot {
         private final Lexicon lexicon;
         private final int bagSize;
         private final int level;
+        private final boolean interruptible;
         private final int[] counts = new int[26];
         private int jokers;
         private final int[] crossMask = new int[FrenchGame.CELLS];
@@ -106,13 +117,15 @@ final class Bot {
         private final HashSet<String> known = new HashSet<>();
         private int direction;
 
-        Search(char[] board, boolean[] blanks, List<Character> rack, Lexicon lexicon, int bagSize, int level) {
+        Search(char[] board, boolean[] blanks, List<Character> rack, Lexicon lexicon, int bagSize, int level,
+               boolean interruptible) {
             this.board = board;
             this.blanks = blanks;
             this.rack = rack;
             this.lexicon = lexicon;
             this.bagSize = bagSize;
             this.level = level;
+            this.interruptible = interruptible;
             policy = lexicon.expert;
             limit = level == 4 ? policy.width : SHORTLIST;
             shortlist = new PriorityQueue<>(level == 4 ? Comparator.comparingInt(Candidate::score)
@@ -147,7 +160,9 @@ final class Bot {
                     if (counts[i] > 0) mask |= 1 << i;
                 }
                 for (int start = 0; start < board.length; start++) {
-                    if (starts[start]) extend(start, lexicon.root(), mask, 0, 0, 0, 1, 0, false);
+                    if (!starts[start]) continue;
+                    if (interruptible && Thread.currentThread().isInterrupted()) throw new CancellationException();
+                    extend(start, lexicon.root(), mask, 0, 0, 0, 1, 0, false);
                 }
             }
             List<Candidate> sorted = new ArrayList<>(shortlist);
