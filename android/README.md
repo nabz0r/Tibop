@@ -1,6 +1,6 @@
 # Lettrine pour Android
 
-L’[APK 0.8.0](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe. Le [bundle 0.8.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK 0.9.0](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe. Le [bundle 0.9.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Jouer
 
@@ -12,10 +12,12 @@ L’[APK 0.8.0](artifacts/lettrine.apk) fonctionne en invité hors ligne à part
 - **Collection**, dans **Profil**, permet de choisir séparément le plateau et les tuiles. La porcelaine se débloque après un défi quotidien, Marée après trois jours de défi, Ambre après trois parties solo terminées et Ardoise après cinq. Les parties et défis déjà enregistrés comptent. La collection fonctionne hors ligne.
 - **Comment jouer**, depuis l’accueil, propose un premier coup guidé et une page sur les règles, NAB et le modèle d’explication embarqué. Dans un défi, faites glisser une tuile depuis le chevalet ou touchez une lettre puis une case. Vous pouvez déplacer un jeton déjà posé, zoomer dans les deux sens et vérifier la validité du coup avant de l’envoyer.
 - **Premier défi** ouvre une position courte depuis l’accueil. Prolongez le mot sur le plateau, validez votre pose, puis comparez votre score à la proposition de NAB. Vous pouvez retenter le défi à tout moment.
+- **Mes parties** permet de garder plusieurs solos et parties à tour de rôle sur l’appareil. Chaque partie reprend avec son score, son tour et ses tuiles en brouillon. Un abandon demande confirmation. Une connexion Bluetooth active reste liée à une seule partie.
 - **Entre amis** accueille deux à quatre joueurs sur le même appareil. Le chevalet est masqué à chaque changement de joueur. Les parties solo et locales en cours sont sauvegardées après chaque tour.
 - **Bluetooth** relie deux appareils préalablement associés dans Android. L’un choisit **Héberger** et l’autre choisit l’appareil hôte. Les deux APK doivent embarquer le même lexique. Une coupure interrompt la partie.
-- **Contre un bot** propose quatre niveaux et un niveau adaptatif. Celui-ci lit l’Elo local et ajuste sa difficulté pendant la partie en fonction de l’écart de score. Les parties avec aide au placement restent dans l’historique et sont exclues de l’Elo.
-- Toucher une lettre puis une case pour la poser, ou la faire glisser. Pincer pour zoomer. Les réglages donnent accès à trois thèmes et à l’ambiance sonore.
+- **Contre un bot** propose quatre niveaux et un niveau adaptatif. La première partie propose Promeneur et l’application mémorise ensuite le niveau choisi. L’adaptatif lit l’Elo local et ajuste sa difficulté pendant la partie en fonction de l’écart de score. Les parties avec aide au placement restent dans l’historique et sont exclues de l’Elo.
+- En partie, glissez une lettre depuis le chevalet ou touchez une lettre puis une case. Déplacez les tuiles encore en brouillon directement sur le plateau. Le jeu affiche la validité, le score ou la raison du refus avant la validation. Pincez pour zoomer, ou utilisez les boutons du plateau.
+- Dans **Profil → Réglages**, choisissez une ambiance originale et son volume, et activez séparément les sons de tuiles. Les sons se jouent hors ligne.
 - **Historique** présente les résultats, les statistiques et la relecture coup par coup. Exporter une partie ou tout l’historique en JSON, puis déposer le fichier dans l’administration du studio Lettrine.
 - **Évolution de l’Elo** se trouve dans l’historique. Elle suit la cote de départ puis les parties solo cotées. Sélectionnez un point pour retrouver la cote, sa variation et le niveau de NAB utilisé.
 - **Expliquer le dernier coup** s’affiche dans une partie après le premier tour. En relecture, **Expliquer ce coup** s’applique au tour affiché. Les scores, mots croisés, cases bonus et jokers proviennent du moteur. Le modèle embarqué choisit le détail à mettre en avant en français. Si le modèle ne répond pas, le moteur affiche son explication.
@@ -37,6 +39,8 @@ Installer le SDK Android 36, le NDK `28.2.13676358`, Java 17, Python 3, CMake 3.
 ```
 
 Sur un poste où les dépendances sont en cache, `LETTRINE_GRADLE_OFFLINE=1` compile sans téléchargement. `ANDROID_NDK_HOME` permet de sélectionner le NDK. Pour tester un autre lexique autorisé, définir `LETTRINE_WORDS` avec un chemin de fichier UTF-8 contenant un mot par ligne et `LETTRINE_WORDS_LABEL` avec le nom de l’édition. Les poids entraînés du bot s’activent si leur empreinte correspond au lexique de l’APK.
+
+Les livrables du dépôt compilent sans AdMob. Une variante distincte permet de tester une vidéo facultative qui ouvre un défi supplémentaire. [Configuration et récompenses](../docs/ECONOMIE_ANDROID.md) · [Simulations du moteur Android](../docs/SIMULATIONS_ANDROID.md)
 
 ## Préparer la bêta Google Play
 
@@ -95,5 +99,12 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 - Deux invités amis ont terminé les trois défis sur émulateurs Android 16 avec le serveur de test. Le classement est passé à 33 et 31 points, a survécu à la mise à jour et a réapparu après reconnexion. Le serveur de production refuse les coups avant l’ouverture. Les tests couvrent aussi la clôture, les égalités et les envois répétés.
 - En mode avion, trois défis quotidiens joués ont débloqué Porcelaine et Marée. Des parties solo archivées ont débloqué Ambre et Ardoise. Les deux sélections se combinent sur le plateau et le chevalet et persistent après redémarrage.
 - Le tutoriel a été terminé avec 11 points sur Android 8 en mode avion. Le zoom avant et arrière, la remise à 100 %, le glissement depuis le chevalet, le déplacement d’un jeton posé et les retours de validité ont été vérifiés. Les données de partie existantes ont été conservées.
+
+## Vérification de la version 0.9.0
+
+- 480 parties moteur Android et 30 défis du jour simulés avec le lexique embarqué. Les 28 tests Android passent. En mode avion sur Android 8, une partie complète contre l’Adaptatif a validé le glissement, le score, le calcul Elo, le bilan et l’inférence embarquée.
+- Sur Android 16 en mode avion, le solo et la partie locale ont gardé des tours indépendants. Le brouillon a survécu au changement de partie et au redémarrage. L’abandon d’une partie a conservé les autres, la sauvegarde d’origine et l’historique.
+- Le bundle est signé et validé avec `bundletool`. L’installation des APK issus du bundle et le tutoriel en mode avion ont été vérifiés sur Android 16 avec des pages de 16 Kio.
+- La variante de démonstration AdMob a présenté les choix UMP et une vidéo de test Google. La récompense a ouvert le défi après un redémarrage en mode avion, sans effet sur les fichiers de partie et la progression quotidienne.
 
 L’APK joue en français avec le moteur embarqué. Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.

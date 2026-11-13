@@ -7,6 +7,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -16,29 +17,105 @@ import java.util.List;
 
 final class GameStore {
     static final int BASE_ELO = 1100;
+    private static final Object SAVED_GAMES_LOCK = new Object();
     private final AtomicFile currentFile;
+    private final AtomicFile savedGamesFile;
     private final AtomicFile historyFile;
     private final ArrayList<JSONObject> history = new ArrayList<>();
 
     GameStore(Context context) throws IOException, JSONException {
-        currentFile = new AtomicFile(new File(context.getFilesDir(), "current-match.json"));
-        historyFile = new AtomicFile(new File(context.getFilesDir(), "history.json"));
-        if (historyFile.getBaseFile().isFile()) {
-            JSONArray rows = new JSONArray(new String(historyFile.readFully(), StandardCharsets.UTF_8));
+        this(context.getFilesDir());
+    }
+
+    GameStore(File filesDir) throws IOException, JSONException {
+        currentFile = new AtomicFile(new File(filesDir, "current-match.json"));
+        savedGamesFile = new AtomicFile(new File(filesDir, "saved-matches.json"));
+        historyFile = new AtomicFile(new File(filesDir, "history.json"));
+        String serialized = read(historyFile);
+        if (serialized != null) {
+            JSONArray rows = new JSONArray(serialized);
             for (int i = 0; i < rows.length(); i++) history.add(rows.getJSONObject(i));
+        }
+        migrateCurrent();
+    }
+
+    private void migrateCurrent() throws IOException, JSONException {
+        synchronized (SAVED_GAMES_LOCK) {
+            if (read(savedGamesFile) != null) return;
+            JSONArray rows = new JSONArray();
+            String legacy = read(currentFile);
+            if (legacy != null) {
+                JSONObject row = new JSONObject(legacy);
+                if (!archived(id(row))) rows.put(row);
+            }
+            // An empty list also marks migration complete, even after removing the last slot.
+            write(savedGamesFile, rows.toString());
         }
     }
 
-    JSONObject current() throws IOException, JSONException {
-        if (!currentFile.getBaseFile().isFile()) return null;
-        return new JSONObject(new String(currentFile.readFully(), StandardCharsets.UTF_8));
+    List<JSONObject> savedGames() throws IOException, JSONException {
+        synchronized (SAVED_GAMES_LOCK) {
+            JSONArray rows = readSavedGames();
+            List<JSONObject> games = new ArrayList<>(rows.length());
+            for (int i = 0; i < rows.length(); i++) {
+                JSONObject row = rows.getJSONObject(i);
+                if (!archived(id(row))) games.add(row);
+            }
+            return Collections.unmodifiableList(games);
+        }
     }
 
-    void current(JSONObject row) throws IOException {
-        write(currentFile, row.toString());
+    JSONObject loadGame(String gameId) throws IOException, JSONException {
+        for (JSONObject row : savedGames()) {
+            if (gameId.equals(id(row))) return row;
+        }
+        return null;
     }
 
-    void clearCurrent() { currentFile.delete(); }
+    void saveGame(JSONObject row) throws IOException, JSONException {
+        String gameId = id(row);
+        synchronized (SAVED_GAMES_LOCK) {
+            if (archived(gameId)) return;
+            JSONArray remaining = withoutGame(readSavedGames(), gameId);
+            JSONArray rows = new JSONArray();
+            rows.put(row);
+            for (int i = 0; i < remaining.length(); i++) rows.put(remaining.getJSONObject(i));
+            write(savedGamesFile, rows.toString());
+        }
+    }
+
+    void removeGame(String gameId) throws IOException, JSONException {
+        synchronized (SAVED_GAMES_LOCK) {
+            JSONArray existing = readSavedGames();
+            JSONArray remaining = withoutGame(existing, gameId);
+            if (existing.length() != remaining.length()) write(savedGamesFile, remaining.toString());
+        }
+    }
+
+    private JSONArray readSavedGames() throws IOException, JSONException {
+        return new JSONArray(new String(savedGamesFile.readFully(), StandardCharsets.UTF_8));
+    }
+
+    private static JSONArray withoutGame(JSONArray rows, String gameId) throws JSONException {
+        JSONArray remaining = new JSONArray();
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            if (!gameId.equals(id(row))) remaining.put(row);
+        }
+        return remaining;
+    }
+
+    private static String id(JSONObject row) throws JSONException {
+        if (row.opt("id") instanceof String id && !id.trim().isEmpty()) return id;
+        throw new JSONException("Identifiant de partie manquant.");
+    }
+
+    private boolean archived(String gameId) {
+        for (JSONObject row : history) {
+            if (gameId.equals(row.optString("id"))) return true;
+        }
+        return false;
+    }
 
     List<JSONObject> history() { return Collections.unmodifiableList(history); }
 
@@ -58,13 +135,20 @@ final class GameStore {
 
     void archive(JSONObject row) throws IOException {
         String id = row.optString("id");
-        for (JSONObject previous : history) {
-            if (id.equals(previous.optString("id"))) return;
-        }
+        if (archived(id)) return;
         JSONArray serialized = new JSONArray(history);
         serialized.put(row);
         write(historyFile, serialized.toString());
         history.add(row);
+    }
+
+    private static String read(AtomicFile file) throws IOException {
+        try {
+            return new String(file.readFully(), StandardCharsets.UTF_8);
+        } catch (FileNotFoundException exception) {
+            if (file.getBaseFile().exists()) throw exception;
+            return null;
+        }
     }
 
     private static void write(AtomicFile file, String text) throws IOException {

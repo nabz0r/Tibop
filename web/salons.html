@@ -20,7 +20,7 @@
         <span>Lettrine</span>
       </a>
       <a class="head-link" id="studio-link" href="/index.html#vue" hidden>Retour au studio <span aria-hidden="true">↗</span></a>
-      <a class="head-link" id="rooms-link" href="/salons.html" hidden><span aria-hidden="true">←</span> Accueil des salons</a>
+      <a class="head-link" id="rooms-link" href="/salons.html#my-rooms" hidden><span aria-hidden="true">←</span> Mes salons</a>
     </div>
   </header>
   <main class="frame" id="main">
@@ -53,10 +53,10 @@
           </div>
         </div>
       </div>
-      <div class="resume notice" id="resume" hidden>
-        <span>Une partie vous attend.</span>
-        <a class="button secondary" id="resume-link" href="/salons.html">Retrouver mon salon</a>
-      </div>
+      <section class="room-shelf panel" id="my-rooms" aria-labelledby="my-rooms-title" hidden>
+        <h2 id="my-rooms-title">Mes salons</h2>
+        <ul id="saved-rooms" class="saved-rooms"></ul>
+      </section>
       <div class="welcome-grid">
         <form class="panel form" id="create-form">
           <h2>Nouvelle partie</h2>
@@ -157,7 +157,17 @@
         <div class="game-layout">
           <div class="game-workspace">
             <section class="table-panel" aria-label="Plateau de jeu">
-              <div class="board" id="game-board" role="group" aria-label="Plateau de Scrabble, utilisez les flèches pour changer de case"></div>
+              <div class="board-tools">
+                <span class="board-caption" id="board-caption">Plateau</span>
+                <div class="board-zoom" role="group" aria-label="Zoom du plateau">
+                  <button id="zoom-out" type="button" aria-label="Réduire le plateau" disabled>−</button>
+                  <button id="zoom-reset" type="button" aria-label="Réinitialiser le zoom du plateau">100 %</button>
+                  <button id="zoom-in" type="button" aria-label="Agrandir le plateau">+</button>
+                </div>
+              </div>
+              <div class="board-viewport" id="board-viewport">
+                <div class="board" id="game-board" role="group" aria-label="Plateau de Lettrine, utilisez les flèches pour changer de case"></div>
+              </div>
             </section>
             <section class="hand" aria-labelledby="hand-title">
               <div class="hand-head">
@@ -194,7 +204,7 @@
                 <strong class="preview-score" id="move-preview-score" hidden></strong>
               </div>
               <div class="play-actions" id="play-actions">
-                <button class="button primary" id="play-move" type="button">Jouer ce mot</button>
+                <button class="button primary" id="play-move" type="button">Jouer le coup</button>
                 <button class="button secondary" id="clear-move" type="button">Reprendre les lettres</button>
                 <button class="button text" id="swap-mode" type="button">Échanger des lettres</button>
                 <button class="button text" id="pass-mode" type="button">Passer mon tour</button>
@@ -230,7 +240,8 @@
                 <li><span class="dl">L2</span> Lettre double</li>
               </ul>
               <p>Le premier mot traverse l’étoile. Les suivants se rattachent aux lettres déjà posées. Posez vos lettres sur une même ligne ou colonne.</p>
-              <p>Glissez vos lettres ou sélectionnez une lettre puis une case. Au clavier, utilisez Alt + ← ou → pour réordonner vos lettres. Un joker représente la lettre de votre choix et vaut zéro point.</p>
+              <p>Glissez une lettre ou sélectionnez-la puis choisissez une case. Les boutons − et + règlent le zoom. Faites glisser une zone libre du plateau agrandi pour voir ses bords.</p>
+              <p>Au clavier, les flèches changent de case. Alt + ← ou → réordonne les lettres. Un joker représente la lettre de votre choix et vaut zéro point.</p>
             </details>
           </aside>
         </div>

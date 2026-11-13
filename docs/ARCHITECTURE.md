@@ -25,7 +25,7 @@ flowchart LR
 | Service | Travail | Plafond RAM | Plafond CPU |
 |---|---|---:|---:|
 | `dashboard` | Fichiers web, compression HTTP, transfert de l’API et des téléchargements | 64 Mio | 0,5 |
-| `api` | Parties, statistiques, imports, analyses, recherche, duel diffusé et APK | 512 Mio | 2 |
+| `api` | Parties, statistiques, imports, analyses, recherche, duel diffusé et téléchargements Android | 512 Mio | 2 |
 | `postgres` | Métadonnées, parties simulées et importées, vecteurs | 384 Mio | 2 |
 | `redis` | File de travail, résultats temporaires, signaux de vie | 96 Mio | 0,5 |
 | `worker` | Commentaires Ollama et indexation du corpus | 160 Mio | 0,75 |
@@ -47,6 +47,8 @@ curl -fsS http://127.0.0.1:8787/health
 
 Le port local se règle via `LETTRINE_PORT`. Les tests de santé confirment que les services répondent. La présence des parties et des vecteurs se vérifie séparément.
 
+`./tools/start.sh --with-social` actualise aussi le service Android des amis, des duels et du tournoi. Ce service tourne dans le projet Compose séparé `lettrine-social`, utilise son propre volume SQLite et écoute sur la boucle locale du Mac. Le port se règle via `LETTRINE_SOCIAL_PORT` et vaut `8790` par défaut. `curl -fsS http://127.0.0.1:8790/health` vérifie ce service. [Configuration du service social](../compose.social.yaml)
+
 Pour jouer depuis plusieurs appareils, `./tools/start.sh` utilise l’IPv4 locale du Mac. Le port de jeu se règle via `LETTRINE_LAN_PORT`. Avec `docker compose` directement, définir `LETTRINE_LAN_IP` sur l’adresse IPv4 locale à utiliser. Les joueurs ouvrent le lien d’invitation depuis ce réseau. Le navigateur récupère périodiquement l’état de la partie. Le serveur valide le tour et les mots, conserve le sac et calcule le score. Le lien identifie le salon. Un jeton individuel conservé par le navigateur donne accès à sa place et à ses lettres.
 
 Les places des bots sont réservées à la création de la table. Le serveur calcule leur coup avec le moteur de jeu, à partir du plateau, de leur propre chevalet et des informations publiques. Lorsqu’une partie est ouverte dans un navigateur, la consultation du salon fait avancer les tours des bots. La partie reprend au même tour après une fermeture de l’onglet ou un redémarrage.
@@ -60,7 +62,7 @@ python3 tools/import_campaign.py \
 curl -fsS http://127.0.0.1:8787/api/stats
 ```
 
-La restauration charge les parties et les deux métadonnées dans une seule transaction. Elle accepte la relance sur la même campagne et refuse une campagne différente dans la même collection. Les parties importées depuis Android ont leur propre table. L’API sert l’APK depuis `android/artifacts/lettrine.apk`, monté en lecture seule. Compiler l’APK sur le Mac si cet artefact manque au dépôt ou à la version téléchargée. [Import de la campagne](../tools/import_campaign.py) · [Compilation Android](../android/README.md)
+La restauration charge les parties et les deux métadonnées dans une seule transaction. Elle accepte la relance sur la même campagne et refuse une campagne différente dans la même collection. Les parties importées depuis Android ont leur propre table. L’API lit le dossier `android/artifacts/` monté en lecture seule. Le studio sert l’APK et l’AAB via `/download/lettrine.apk` et `/download/lettrine.aab`. [Import de la campagne](../tools/import_campaign.py) · [Compilation Android](../android/README.md)
 
 ## Données et provenance
 
@@ -95,6 +97,7 @@ Les coordonnées des jetons sont des entiers de 0 à 14, ligne puis colonne. Les
 | `GET /api/adaptive?elo=1200` | Niveau le plus proche selon les cotes de la campagne et score attendu |
 | `GET /api/search?q=jouer+le+joker` | Jusqu’à huit extraits et leurs sources, classés par similarité cosinus |
 | `GET /download/lettrine.apk` | APK Android de test |
+| `GET /download/lettrine.aab` | Bundle Android signé pour Google Play |
 
 ```sh
 curl -fsS 'http://127.0.0.1:8787/api/games/100000/review?turn=1'

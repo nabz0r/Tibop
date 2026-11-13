@@ -6,6 +6,17 @@ def socialUrl = providers.environmentVariable('LETTRINE_SOCIAL_URL').orElse('').
 if (socialUrl && !(socialUrl ==~ /https:\/\/[A-Za-z0-9.-]+(?::[0-9]{1,5})?\/?/)) {
     throw new GradleException('LETTRINE_SOCIAL_URL doit être une origine HTTPS.')
 }
+def adTest = providers.environmentVariable('LETTRINE_ADMOB_TEST').orElse('0').get() == '1'
+def adApp = providers.environmentVariable('LETTRINE_ADMOB_APP_ID').orElse('').get()
+def adUnit = providers.environmentVariable('LETTRINE_ADMOB_REWARDED_ID').orElse('').get()
+if (adTest) {
+    adApp = 'ca-app-pub-3940256099942544~3347511713'
+    adUnit = 'ca-app-pub-3940256099942544/5224354917'
+}
+if ((adApp || adUnit) && (!(adApp ==~ /ca-app-pub-[0-9]+~[0-9]+/) || !(adUnit ==~ /ca-app-pub-[0-9]+\/[0-9]+/))) {
+    throw new GradleException('Fournir les deux identifiants AdMob, application et annonce récompensée.')
+}
+def ads = !adApp.isEmpty()
 
 android {
     namespace 'fr.lettrine.game'
@@ -15,9 +26,13 @@ android {
         applicationId 'fr.lettrine.game'
         minSdk 26
         targetSdk 36
-        versionCode 8
-        versionName '0.8.0'
+        versionCode 9
+        versionName '0.9.0'
         buildConfigField 'String', 'SOCIAL_BASE_URL', '"' + socialUrl + '"'
+        manifestPlaceholders.admobAppId = ads ? adApp : 'disabled'
+        if (ads) {
+            buildConfigField 'String', 'ADMOB_REWARDED_ID', '"' + adUnit + '"'
+        }
     }
 
     buildFeatures.buildConfig = true
@@ -30,6 +45,12 @@ android {
 
     sourceSets.main.assets.srcDir(layout.buildDirectory.dir('generated/lettrineAssets'))
     sourceSets.main.jniLibs.srcDir(layout.buildDirectory.dir('generated/lettrineJni'))
+    if (adTest) {
+        sourceSets.debug.java.srcDir('src/admob/java')
+        sourceSets.release.java.srcDir('src/noAds/java')
+    } else {
+        sourceSets.main.java.srcDir(ads ? 'src/admob/java' : 'src/noAds/java')
+    }
 
     packaging.jniLibs.useLegacyPackaging = true
 }
@@ -50,5 +71,9 @@ dependencies {
     implementation 'androidx.credentials:credentials:1.6.0'
     implementation 'androidx.credentials:credentials-play-services-auth:1.6.0'
     implementation 'com.google.android.libraries.identity.googleid:googleid:1.2.0'
+    if (ads) {
+        add(adTest ? 'debugImplementation' : 'implementation', 'com.google.android.gms:play-services-ads:25.5.0')
+        add(adTest ? 'debugImplementation' : 'implementation', 'com.google.android.ump:user-messaging-platform:4.0.0')
+    }
     testImplementation 'junit:junit:4.13.2'
 }

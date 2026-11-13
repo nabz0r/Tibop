@@ -7,12 +7,15 @@ const { premiums, tilePoints } = lettrineBoard;
 const bonusLabels = { tw: ["M3", "mot triple"], dw: ["M2", "mot double"], tl: ["L3", "lettre triple"], dl: ["L2", "lettre double"] };
 const sections = ["welcome", "invited", "room"];
 const forms = ["create-form", "join-form", "invite-form"].map(byId);
+const boardViewport = byId("board-viewport");
+const gameBoard = byId("game-board");
+const zoomLevels = [1, 1.35, 1.7, 2.1, 2.5];
 const botLevels = {
   discovery: ["Découverte", "Pour apprendre à votre rythme."],
   initiated: ["Initié", "Pour les joueurs qui connaissent déjà les règles."],
   strategist: ["Stratège", "Pour travailler vos placements et vos cases bonus."],
   expert: ["Expert", "Pour affronter le niveau fixe le plus difficile."],
-  adaptive: ["N A B · Adaptatif", "Sa difficulté s’ajuste selon l’écart de score pendant la partie."],
+  adaptive: ["NAB · Adaptatif", "Sa difficulté s’ajuste selon l’écart de score pendant la partie."],
 };
 const inMemory = new Map();
 const draft = new Map();
@@ -31,7 +34,10 @@ let inviteOrigin = location.origin;
 let timer;
 let generation = 0;
 let focusedCell = 112;
+let boardZoom = 0;
 let waiting = false;
+let refreshingRooms = false;
+let savedRoomList = "";
 
 function element(tag, className, text = "") {
   const result = document.createElement(tag);
@@ -87,10 +93,129 @@ function roomUrl(value, origin = location.origin) {
   return url;
 }
 
+const savedRoomStatuses = {
+  unknown: "État à vérifier",
+  lobby: "En attente de joueurs",
+  yours: "À vous de jouer",
+  waiting: "Tour de l’adversaire",
+  finished: "Partie terminée",
+};
+
+function savedRoom(value) {
+  try { return JSON.parse(read(`room.${value}`) || "{}") || {}; } catch { return {}; }
+}
+
+function savedRooms() {
+  const keys = new Set(inMemory.keys());
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key?.startsWith(storageKey("seat."))) keys.add(key.slice(storageKey("").length));
+    }
+  } catch { /* Continue with the memberships available in this tab. */ }
+  return [...keys].filter((key) => key.startsWith("seat.")).map((key) => key.slice(5))
+    .filter((value) => validCode(value) && read(`seat.${value}`))
+    .map((value) => ({ ...savedRoom(value), code: value }))
+    .filter(({ hidden }) => !hidden)
+    .sort((a, b) => Number(b.status === "yours") - Number(a.status === "yours") ||
+      Number(a.status === "finished") - Number(b.status === "finished") ||
+      (b.openedAt || 0) - (a.openedAt || 0) || a.code.localeCompare(b.code));
+}
+
+function rememberRoom(snapshot, opened = false) {
+  const value = snapshot.code;
+  const previous = savedRoom(value);
+  if (previous.hidden && !opened) return;
+  const opponents = snapshot.players.filter((player) => player.seat !== snapshot.seat);
+  const title = opponents.length ? `Avec ${opponents.map(displayName).join(", ")}` : "Salon entre amis";
+  const game = snapshot.game;
+  const status = !game ? "lobby" : game.status === "finished" ? "finished" :
+    game.turn === snapshot.seat ? "yours" : "waiting";
+  const item = previous.revision > snapshot.revision ? { ...previous } :
+    { title, status, revision: snapshot.revision, openedAt: previous.openedAt || 0 };
+  if (opened) {
+    item.openedAt = Date.now();
+    delete item.hidden;
+  }
+  if (JSON.stringify(item) !== read(`room.${value}`)) save(`room.${value}`, JSON.stringify(item));
+}
+
+function renderSavedRooms() {
+  const list = byId("saved-rooms");
+  const previous = list.contains(document.activeElement) ? document.activeElement : null;
+  const entries = savedRooms();
+  const listKey = JSON.stringify(entries.map(({ code: value, title, status }) => [value, title, status]));
+  if (listKey === savedRoomList) return;
+  savedRoomList = listKey;
+  const items = entries.map(({ code: value, title, status }) => {
+    const row = element("li", "saved-room");
+    row.dataset.status = status || "unknown";
+    const info = element("div", "saved-room-info");
+    const codeText = value.match(/.{1,4}/g).join(" ");
+    info.append(element("strong", "", title || "Salon enregistré"),
+      element("span", "saved-room-status", savedRoomStatuses[status] || savedRoomStatuses.unknown),
+      element("span", "saved-room-code", ` · ${codeText}`));
+    const actions = element("div", "saved-room-actions");
+    const open = element("a", "button secondary", status === "finished" ? "Revoir" : "Ouvrir");
+    open.href = roomUrl(value);
+    open.setAttribute("aria-label", `${open.textContent} le salon ${codeText}`);
+    const hide = element("button", "button text", "Masquer");
+    hide.type = "button";
+    hide.setAttribute("aria-label", `Masquer le salon ${codeText}`);
+    hide.title = "Retirer de Mes salons. Le lien du salon reste utilisable.";
+    hide.addEventListener("click", () => {
+      save(`room.${value}`, JSON.stringify({ ...savedRoom(value), hidden: true }));
+      renderSavedRooms();
+    });
+    actions.append(open, hide);
+    row.append(info, actions);
+    return row;
+  });
+  list.replaceChildren(...items);
+  byId("my-rooms").hidden = !entries.length;
+  if (previous) {
+    const same = Array.from(list.querySelectorAll("a, button"))
+      .find((control) => control.getAttribute("aria-label") === previous.getAttribute("aria-label"));
+    (same || list.querySelector("a") || byId("create-form").querySelector("button")).focus({ preventScroll: true });
+  }
+}
+
+async function refreshSavedRooms() {
+  if (refreshingRooms || byId("welcome").hidden) return;
+  refreshingRooms = true;
+  const entries = savedRooms().filter(({ status }) => status !== "finished");
+  async function refreshNext() {
+    while (entries.length && !byId("welcome").hidden) {
+      const { code: value } = entries.shift();
+      const authorization = read(`seat.${value}`);
+      if (!authorization) continue;
+      try {
+        const snapshot = await request(`/${value}`, { authorization });
+        if (authorization === read(`seat.${value}`)) rememberRoom(snapshot);
+      } catch (error) {
+        if ([401, 404].includes(error.status) && authorization === read(`seat.${value}`)) {
+          forget(`seat.${value}`);
+          forget(`room.${value}`);
+        }
+      }
+    }
+  }
+  try {
+    await Promise.all(Array.from({ length: Math.min(3, entries.length) }, refreshNext));
+    if (!byId("welcome").hidden) renderSavedRooms();
+  } finally {
+    refreshingRooms = false;
+  }
+}
+
 function show(section) {
   for (const name of sections) byId(name).hidden = name !== section;
   byId("rooms-link").hidden = section === "welcome";
   byId("studio-link").hidden = !local || section !== "welcome";
+  if (section === "welcome") {
+    renderSavedRooms();
+    refreshSavedRooms();
+  }
 }
 
 function updateInvite() {
@@ -238,7 +363,6 @@ async function enter(event, invitedCode) {
     token = result.token;
     code = result.room.code;
     save(`seat.${code}`, token);
-    save("last", code);
     history.replaceState(null, "", roomUrl(code));
     applyRoom(result.room);
     if (solo && isSolo() && !room.game) await commit("start", {});
@@ -280,7 +404,7 @@ async function poll() {
 
 function sessionEnded(status) {
   forget(`seat.${code}`);
-  if (read("last") === code) forget("last");
+  forget(`room.${code}`);
   token = null;
   room = null;
   clearDrag();
@@ -294,15 +418,19 @@ function sessionEnded(status) {
     show("invited");
     notice("error", "Votre place n’a pas pu être retrouvée. Vous pouvez rejoindre un salon qui attend encore des joueurs.");
   } else {
-    show("welcome");
-    byId("resume").hidden = true;
     history.replaceState(null, "", basePath);
+    show("welcome");
     notice("error", "Ce salon est introuvable. Vous pouvez en créer un autre.");
   }
 }
 
 function playerName(seat) {
-  return room.players.find((player) => player.seat === seat)?.name || "Joueur";
+  const player = room.players.find((member) => member.seat === seat);
+  return player ? displayName(player) : "Joueur";
+}
+
+function displayName(player) {
+  return player.bot ? player.name.replace(/^N A B\b/, "NAB") : player.name;
 }
 
 function isSolo() {
@@ -343,6 +471,7 @@ function applyRoom(snapshot) {
   clearHint();
   const prior = room;
   room = snapshot;
+  rememberRoom(snapshot, prior?.code !== snapshot.code);
   if (room.game && rackChanged(prior, room)) {
     clearDrag();
     rackOrder = room.game.rack.map((_, index) => index);
@@ -357,6 +486,7 @@ function applyRoom(snapshot) {
   notice("loading");
   show("room");
   const game = room.game;
+  if (game && (!prior?.game || prior.code !== room.code)) setBoardZoom(0);
   byId("room").dataset.phase = game ? "game" : "lobby";
   byId("lobby").hidden = !!game;
   byId("game").hidden = !game;
@@ -383,7 +513,7 @@ function renderLobby() {
     if (!player) return element("li", "empty-seat", "Place libre");
     const row = element("li", "");
     const tags = [player.seat === room.seat ? "Vous" : "", player.seat === room.host && !solo ? "Hôte" : "", player.bot ? "Bot" : ""].filter(Boolean);
-    row.append(element("span", "player-name", player.name), element("span", "player-note", tags.join(" · ")));
+    row.append(element("span", "player-name", playerName(player.seat)), element("span", "player-note", tags.join(" · ")));
     return row;
   });
   byId("lobby-players").replaceChildren(...seats);
@@ -423,8 +553,8 @@ const cells = Array.from({ length: 225 }, (_, index) => {
   square.addEventListener("pointerdown", (event) => beginDrag(event, "board", index));
   return square;
 });
-byId("game-board").append(...cells);
-byId("game-board").addEventListener("keydown", (event) => {
+gameBoard.append(...cells);
+gameBoard.addEventListener("keydown", (event) => {
   const shifts = { ArrowUp: -15, ArrowDown: 15, ArrowLeft: -1, ArrowRight: 1 };
   const shift = shifts[event.key];
   if (!shift) return;
@@ -432,13 +562,46 @@ byId("game-board").addEventListener("keydown", (event) => {
   const index = focusedCell + shift;
   if (!cells[index]) return;
   if (Math.abs(shift) === 1 && Math.floor(index / 15) !== Math.floor(focusedCell / 15)) return;
-  cells[index].focus();
+  focusSquare(index);
 });
+
+function focusSquare(index) {
+  const cell = cells[index];
+  cell.focus({ preventScroll: true });
+  if (!boardZoom) return;
+  const square = cell.getBoundingClientRect();
+  const viewport = boardViewport.getBoundingClientRect();
+  const offset = (start, end, min, max) => start < min ? start - min : Math.max(0, end - max);
+  boardViewport.scrollBy(offset(square.left, square.right, viewport.left, viewport.right),
+    offset(square.top, square.bottom, viewport.top, viewport.bottom));
+}
+
+function setBoardZoom(index) {
+  const viewport = boardViewport;
+  const width = viewport.clientWidth;
+  const height = viewport.clientHeight;
+  const x = width ? (viewport.scrollLeft + width / 2) / gameBoard.offsetWidth : .5;
+  const y = height ? (viewport.scrollTop + height / 2) / gameBoard.offsetHeight : .5;
+  boardZoom = index;
+  const zoom = zoomLevels[index];
+  gameBoard.style.setProperty("--board-zoom", zoom);
+  viewport.dataset.zoomed = String(index > 0);
+  viewport.scrollTo(x * gameBoard.offsetWidth - width / 2, y * gameBoard.offsetHeight - height / 2);
+  const percentage = `${Math.round(zoom * 100)} %`;
+  output("zoom-reset", percentage);
+  byId("zoom-reset").setAttribute("aria-label", `Zoom ${percentage}. Revenir à 100 %`);
+  byId("zoom-out").disabled = index === 0;
+  byId("zoom-in").disabled = index === zoomLevels.length - 1;
+}
+
+byId("zoom-out").addEventListener("click", () => setBoardZoom(boardZoom - 1));
+byId("zoom-reset").addEventListener("click", () => setBoardZoom(0));
+byId("zoom-in").addEventListener("click", () => setBoardZoom(boardZoom + 1));
 
 const rackButtons = Array.from({ length: 7 }, (_, slot) => {
   const button = element("button", "game-tile");
   button.type = "button";
-  button.addEventListener("click", () => useRackTile(rackOrder[slot]));
+  button.addEventListener("click", (event) => useRackTile(rackOrder[slot], event.detail === 0));
   button.addEventListener("pointerdown", (event) => beginDrag(event, "rack", rackOrder[slot]));
   button.addEventListener("keydown", (event) => {
     if (!event.altKey || !["ArrowLeft", "ArrowRight"].includes(event.key) || !canArrangeRack()) return;
@@ -503,15 +666,19 @@ function shuffleRack() {
 function beginDrag(event, kind, index) {
   if (!event.isPrimary || event.button !== 0 || drag) return;
   const tile = kind === "rack" ? room?.game?.rack[index] : draft.get(index);
-  if (!tile || (kind === "rack" ? !canArrangeRack() || isDrafted(index) : !canPlaceTile())) return;
+  if (kind === "rack" && (!tile || !canArrangeRack() || isDrafted(index))) return;
+  if (kind === "board" && (!tile || !canPlaceTile())) {
+    if (!boardZoom || event.pointerType === "touch") return;
+    kind = "pan";
+  }
   drag = {
     pointer: event.pointerId, kind, index, tile, source: event.currentTarget,
-    x: event.clientX, y: event.clientY, ghost: null, target: null,
+    x: event.clientX, y: event.clientY, moved: false, ghost: null, target: null, frame: 0,
   };
 }
 
-function dropTarget(event, source) {
-  const hit = document.elementFromPoint(event.clientX, event.clientY);
+function dropTarget(x, y, source) {
+  const hit = document.elementFromPoint(x, y);
   if (!hit) return null;
   const cell = hit.closest(".board-cell");
   if (cell && canPlaceTile() && cell.getAttribute("aria-disabled") === "false") {
@@ -534,43 +701,76 @@ function highlightDrop(target, highlighted) {
   target.element.classList.toggle(target.kind === "rack" && target.index < 0 ? "rack-drop-target" : "drop-target", highlighted);
 }
 
+function updateDropTarget() {
+  const target = dropTarget(drag.x, drag.y, drag);
+  if (target?.element === drag.target?.element) return;
+  highlightDrop(drag.target, false);
+  drag.target = target;
+  highlightDrop(target, true);
+}
+
+function panWhileDragging() {
+  if (!drag?.ghost) return;
+  drag.frame = 0;
+  const { x, y } = drag;
+  const { left, right, top, bottom } = boardViewport.getBoundingClientRect();
+  if (!boardZoom || x < left || x >= right || y < top || y >= bottom) return;
+  const edge = 30;
+  const speed = (position, min, max) => (
+    Math.max(0, edge - (max - position)) - Math.max(0, edge - (position - min))
+  ) / 3;
+  const beforeX = boardViewport.scrollLeft;
+  const beforeY = boardViewport.scrollTop;
+  boardViewport.scrollBy(speed(x, left, right), speed(y, top, bottom));
+  if (beforeX === boardViewport.scrollLeft && beforeY === boardViewport.scrollTop) return;
+  updateDropTarget();
+  drag.frame = requestAnimationFrame(panWhileDragging);
+}
+
 function moveDrag(event) {
   if (!drag || event.pointerId !== drag.pointer) return;
-  if (!drag.ghost) {
+  if (!drag.moved) {
     if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 6) return;
-    const { letter, blank } = drag.tile;
-    drag.ghost = element("span", "game-tile drag-ghost", letter);
-    drag.ghost.append(element("small", "", blank ? 0 : tilePoints[letter]));
-    drag.ghost.setAttribute("aria-hidden", "true");
-    document.body.append(drag.ghost);
+    drag.moved = true;
     document.body.classList.add("is-dragging");
-    drag.source.classList.add("drag-source");
     drag.source.setPointerCapture(event.pointerId);
+    if (drag.kind !== "pan") {
+      const { letter, blank } = drag.tile;
+      drag.ghost = element("span", "game-tile drag-ghost", letter);
+      drag.ghost.append(element("small", "", blank ? 0 : tilePoints[letter]));
+      drag.ghost.setAttribute("aria-hidden", "true");
+      document.body.append(drag.ghost);
+      drag.source.classList.add("drag-source");
+    }
   }
   event.preventDefault();
-  drag.ghost.style.left = `${event.clientX}px`;
-  drag.ghost.style.top = `${event.clientY}px`;
-  highlightDrop(drag.target, false);
-  drag.target = dropTarget(event, drag);
-  highlightDrop(drag.target, true);
+  if (drag.kind === "pan") boardViewport.scrollBy(drag.x - event.clientX, drag.y - event.clientY);
+  drag.x = event.clientX;
+  drag.y = event.clientY;
+  if (drag.kind === "pan") return;
+  drag.ghost.style.left = `${drag.x}px`;
+  drag.ghost.style.top = `${drag.y}px`;
+  updateDropTarget();
+  if (boardZoom && !drag.frame) drag.frame = requestAnimationFrame(panWhileDragging);
 }
 
 function clearDrag() {
   if (!drag) return;
   const previous = drag;
   drag = null;
+  cancelAnimationFrame(previous.frame);
   highlightDrop(previous.target, false);
   previous.source.classList.remove("drag-source");
   previous.ghost?.remove();
   document.body.classList.remove("is-dragging");
   if (previous.source.hasPointerCapture(previous.pointer)) previous.source.releasePointerCapture(previous.pointer);
-  if (previous.ghost) suppressedPointer = previous.pointer;
+  if (previous.moved) suppressedPointer = previous.pointer;
 }
 
 function endDrag(event) {
   if (!drag || event.pointerId !== drag.pointer) return;
   const previous = drag;
-  const target = previous.ghost && event.type === "pointerup" ? dropTarget(event, previous) : null;
+  const target = previous.ghost && event.type === "pointerup" ? dropTarget(event.clientX, event.clientY, previous) : null;
   clearDrag();
   if (!previous.ghost) return;
   if (!target) return;
@@ -617,7 +817,7 @@ document.addEventListener("click", (event) => {
   event.stopImmediatePropagation();
 }, true);
 
-function useRackTile(index) {
+function useRackTile(index, keyboard) {
   if (!yourTurn() || waiting || mode === "pass" || index === undefined || isDrafted(index)) return;
   if (mode === "swap") {
     if (swaps.has(index)) swaps.delete(index);
@@ -627,7 +827,7 @@ function useRackTile(index) {
   }
   notice("play-error");
   renderDraft();
-  if (mode === "play" && selected !== null) cells[focusedCell].focus({ preventScroll: true });
+  if (keyboard && mode === "play" && selected !== null) focusSquare(focusedCell);
 }
 
 function useSquare(index) {
@@ -807,7 +1007,7 @@ function placeHint() {
   clearHint();
   notice("play-error");
   renderDraft();
-  cells[draft.keys().next().value].focus({ preventScroll: true });
+  focusSquare(draft.keys().next().value);
 }
 
 function draftPlacements() {
@@ -815,24 +1015,30 @@ function draftPlacements() {
 }
 
 function renderPreview() {
-  const state = preview?.state;
+  const state = yourTurn() && mode === "play" ? preview?.state || "empty" : null;
   const panel = byId("move-preview");
   panel.hidden = !state;
+  gameBoard.dataset.draftState = state || "";
   byId("play-move").disabled = waiting || !["valid", "unavailable"].includes(state);
+  const score = preview?.result?.score;
+  output("play-move", state === "valid" ? `Jouer · ${pointLabel(score)}` : "Jouer le coup");
   if (!state) return;
   panel.dataset.state = state;
-  const { result } = preview;
+  const result = preview?.result;
+  const selectedTile = room.game.rack[selected];
   const [mark, label, detail] = {
-    pending: ["…", "Vérification…", ""],
+    empty: selectedTile ? ["↗", "Choisissez une case", selectedTile.blank ? "Joker sélectionné." : `Lettre ${selectedTile.letter} sélectionnée.`] :
+      ["✦", "Composez votre mot", room.game.board.length ? "Reliez-le aux lettres du plateau." : "Le premier mot passe par l’étoile."],
+    pending: ["…", "Vérification du coup…", ""],
     valid: ["✓", "Coup valide", result?.words?.join(" · ") || ""],
-    invalid: ["!", "Coup invalide", result?.reason || "Vérifiez les lettres et leur placement."],
+    invalid: ["!", "Coup à corriger", result?.reason || "Vérifiez les lettres et leur placement."],
     unavailable: ["!", "Aperçu indisponible", "Le coup sera vérifié au moment de jouer."],
   }[state];
   output("move-preview-mark", mark);
   output("move-preview-label", label);
   output("move-preview-detail", detail);
   byId("move-preview-detail").hidden = !detail;
-  output("move-preview-score", state === "valid" ? pointLabel(result.score) : "");
+  output("move-preview-score", state === "valid" ? `+${score}` : "");
   byId("move-preview-score").hidden = state !== "valid";
 }
 
@@ -841,7 +1047,6 @@ function clearPreview() {
   clearTimeout(preview.timer);
   preview.controller.abort();
   preview = null;
-  renderPreview();
 }
 
 function syncPreview() {
@@ -886,6 +1091,8 @@ function renderDraft() {
   const active = yourTurn();
   const placed = new Set(Array.from(draft.values(), ({ tile }) => tile));
   const suggested = new Set((currentHint()?.placements || []).map(({ tile }) => tile));
+  const selectedTile = game.rack[selected];
+  output("board-caption", selectedTile ? (selectedTile.blank ? "Placez le joker" : `Placez le ${selectedTile.letter}`) : "Plateau");
   renderBoard();
   for (const [slot, button] of rackButtons.entries()) {
     const index = rackOrder[slot];
@@ -921,14 +1128,11 @@ function renderDraft() {
   if (active) {
     if (mode === "swap") tip = "Touchez les lettres à échanger. L’échange passe le tour au joueur suivant.";
     else if (mode === "pass") tip = "Confirmez pour donner la main au joueur suivant.";
-    else if (selected !== null) tip = "Touchez la case où vous voulez poser cette lettre.";
-    else if (draft.size) tip = "Déplacez vos lettres pour ajuster votre coup.";
-    else if (!game.board.length) tip = "Glissez une lettre ou sélectionnez-la puis touchez une case. Le premier mot passe par l’étoile.";
-    else tip = "Glissez une lettre ou sélectionnez-la puis touchez une case. Rattachez votre mot aux lettres du plateau.";
+    else tip = "";
   } else if (game.status === "finished" && !game.rack.length) {
     tip = "Vous n’avez plus de lettres.";
   }
-  output("hand-tip", tip);
+  notice("hand-tip", tip);
 }
 
 function renderGame() {
@@ -942,7 +1146,7 @@ function renderGame() {
   const title = finished ? "Partie terminée" : yours ? "À vous de jouer !" : `Au tour de ${playerName(game.turn)}`;
   const help = finished
     ? (winners.length > 1 ? `Égalité entre ${winners.join(" et ")}.` : solo && game.winners[0] === room.seat ? "Vous remportez la partie !" : `${winners[0]} remporte la partie.`)
-    : yours ? "Choisissez une de vos lettres, puis une case." : active?.bot ? "Le bot cherche son prochain mot." : "Le plateau se mettra à jour après son coup.";
+    : yours ? "" : active?.bot ? "Le bot cherche son prochain mot." : "Le plateau se mettra à jour après son coup.";
   output("turn-title", title);
   output("turn-help", help);
   byId("replay-export").hidden = !finished;
@@ -950,7 +1154,7 @@ function renderGame() {
   output("replay-export-status", game.replay_available ? "Importez ce fichier dans Lettrine Studio pour revoir les coups." : "Journal complet indisponible pour cette partie.");
   const scores = room.players.map((player) => {
     const seat = player.seat;
-    const name = element("span", "player-name", seat === room.seat && solo ? "Vous" : `${player.name}${seat === room.seat ? " (vous)" : ""}`);
+    const name = element("span", "player-name", seat === room.seat && solo ? "Vous" : `${playerName(seat)}${seat === room.seat ? " (vous)" : ""}`);
     const count = game.rack_counts[seat];
     const info = element("div", "");
     const details = [player.bot ? "Bot" : "", !finished && game.turn === seat ? "À jouer" : "", `${count} lettre${count === 1 ? "" : "s"}`].filter(Boolean);
@@ -1086,14 +1290,19 @@ function openInitialView() {
   }
   show("welcome");
   if (code) notice("error", "Ce lien d’invitation est incomplet. Vérifiez-le auprès de votre ami.");
-  const last = read("last");
-  if (last && read(`seat.${last}`)) {
-    byId("resume-link").href = roomUrl(last);
-    byId("resume").hidden = false;
-  }
+  if (location.hash === "#my-rooms") byId("my-rooms").scrollIntoView();
 }
 
-document.addEventListener("visibilitychange", () => schedulePoll(document.hidden ? 4000 : 100));
+document.addEventListener("visibilitychange", () => {
+  schedulePoll(document.hidden ? 4000 : 100);
+  if (!document.hidden) refreshSavedRooms();
+});
+window.addEventListener("storage", (event) => {
+  if (event.key?.startsWith(storageKey("seat.")) || event.key?.startsWith(storageKey("room."))) {
+    inMemory.delete(event.key.slice(storageKey("").length));
+    if (!byId("welcome").hidden) renderSavedRooms();
+  }
+});
 const studioView = /^#(?:vue|meta|parties|decouverte|admin)(?:\?|$)/;
 if (local && location.pathname === "/" && studioView.test(location.hash)) {
   location.replace(`/index.html${location.search}${location.hash}`);
@@ -1106,6 +1315,10 @@ if (local && location.pathname === "/" && studioView.test(location.hash)) {
     showSoloHelp();
     updateBotCount();
     updateSetupMode();
+    if (!byId("welcome").hidden) {
+      renderSavedRooms();
+      refreshSavedRooms();
+    }
   });
   openInitialView();
   discoverInviteOrigin();

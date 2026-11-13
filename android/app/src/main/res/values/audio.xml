@@ -1,0 +1,9 @@
+<resources>
+    <string name="music_pick">Choisir une ambiance</string>
+    <string name="music_volume">Volume de la musique</string>
+    <string name="tile_sounds">Sons des tuiles</string>
+    <string-array name="music_tracks">
+        <item>Jardin calme</item>
+        <item>Atelier du soir</item>
+    </string-array>
+</resources>

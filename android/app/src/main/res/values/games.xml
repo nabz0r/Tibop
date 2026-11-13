@@ -1,0 +1,19 @@
+<resources>
+    <string name="games_title">Mes parties</string>
+    <string name="games_home_detail">Reprendre une partie ou en lancer une autre</string>
+    <string name="games_empty">Aucune partie en cours.</string>
+    <string name="games_new_solo">Nouvelle partie solo</string>
+    <string name="games_new_local">Nouvelle partie locale</string>
+    <string name="games_solo_score">Solo · %1$s · Tour %2$d</string>
+    <string name="games_local_score">Sur cet appareil · %1$s · Tour %2$d</string>
+    <string name="games_your_turn">À vous</string>
+    <string name="games_pending_archive">À archiver</string>
+    <string name="games_abandon">Abandonner</string>
+    <string name="games_abandon_title">Abandonner cette partie ?</string>
+    <string name="games_bluetooth_active">Connexion en cours</string>
+    <string name="games_bluetooth_title">Quitter la partie Bluetooth ?</string>
+    <string name="games_bluetooth_body">Le départ met fin à la connexion entre les deux appareils.</string>
+    <string name="games_bluetooth_continue">Quitter le Bluetooth</string>
+    <string name="games_read_error">Une partie sauvegardée n’a pas pu être lue.</string>
+    <string name="games_write_error">Impossible d’enregistrer la partie.</string>
+</resources>

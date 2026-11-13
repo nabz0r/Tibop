@@ -8,7 +8,6 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
-import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -16,7 +15,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
-import android.media.MediaPlayer;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -33,6 +32,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -68,7 +68,7 @@ public final class MainActivity extends Activity {
     private static final int PROFILE_PHOTO = 45;
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
 
-    private enum Screen { HOME, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW, PRACTICE,
+    private enum Screen { HOME, GAMES, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW, PRACTICE,
         SOCIAL, SOCIAL_DUEL, PROFILE, COLLECTION, TOURNAMENT, TOURNAMENT_ROUND, HELP }
 
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -101,7 +101,7 @@ public final class MainActivity extends Activity {
     private int botLevelSum;
     private int botLevelCount;
     private int historyLimit = 20;
-    private int soloSelection = 2;
+    private int soloSelection;
     private boolean privacy;
     private boolean botThinking;
     private boolean analysing;
@@ -115,10 +115,10 @@ public final class MainActivity extends Activity {
     private Arena arena;
     private FrameLayout frame;
     private LinearLayout content;
-    private MediaPlayer music;
+    private GameAudio audio;
+    private RewardedPractice rewarded;
     private String export;
     private String notice;
-    private boolean began;
     private JSONObject detail;
     private int replayIndex;
     private AlertDialog explanationDialog;
@@ -126,6 +126,8 @@ public final class MainActivity extends Activity {
     private Runnable reviewBack;
     private Runnable practiceBack;
     private Runnable pendingChallenge;
+    private Screen gameBack = Screen.HOME;
+    private Screen setupBack = Screen.HOME;
     private LocalDate homeDate;
     private final BroadcastReceiver calendarChanges = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) { refreshDailyHome(); }
@@ -134,6 +136,11 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         preferences = getSharedPreferences("preferences", MODE_PRIVATE);
+        audio = new GameAudio(this, preferences);
+        audio.prepareEffects();
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
+        soloSelection = Math.max(1, Math.min(Bot.ADAPTIVE, preferences.getInt("solo_level", 1)));
+        rewarded = new RewardedPractice(this);
         dailyProgress = new DailyProgress(this);
         skinStore = new SkinStore(this);
         profileStore = new ProfileStore(this);
@@ -147,21 +154,14 @@ public final class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 29) getWindow().setNavigationBarContrastEnforced(false);
         try {
             store = new GameStore(this);
-            JSONObject saved = store.current();
-            if (saved != null) {
-                game = MatchCodec.restore(saved);
-                mode = saved.getString("mode");
-                startRating = saved.optInt("start_rating", DEFAULT_RATING);
-                botLevelSum = saved.optInt("level_sum");
-                botLevelCount = saved.optInt("level_count");
-                assisted = saved.optBoolean("assisted");
-                privacy = mode.equals("local") && game.end == null;
-            }
+            List<JSONObject> saved = store.savedGames();
+            if (!saved.isEmpty()) restoreMatch(saved.get(0));
         } catch (Exception exception) {
             toast("Une sauvegarde locale n’a pas pu être lue.");
         }
         showHome();
         receiveChallenge(getIntent());
+        rewarded.refreshConsent(this::refreshRewardSettings);
         worker.submit(() -> {
             try {
                 Lexicon loaded = Lexicon.load(this);
@@ -180,6 +180,10 @@ public final class MainActivity extends Activity {
                     lexicon = loaded;
                     notice = sourceNotice;
                     if (game != null && game.end != null) archiveIfFinished();
+                    if (screen == Screen.GAME) {
+                        updateArena(-1);
+                        startBotIfNeeded();
+                    }
                     if (screen == Screen.HOME || screen == Screen.HELP) {
                         Runnable requested = pendingChallenge;
                         pendingChallenge = null;
@@ -234,24 +238,27 @@ public final class MainActivity extends Activity {
 
     @Override protected void onStart() {
         super.onStart();
-        began = true;
         IntentFilter changes = new IntentFilter(Intent.ACTION_DATE_CHANGED);
         changes.addAction(Intent.ACTION_TIME_CHANGED);
         changes.addAction(Intent.ACTION_TIMEZONE_CHANGED);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(calendarChanges, changes, Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(calendarChanges, changes);
-        updateMusic();
     }
 
     @Override protected void onResume() {
         super.onResume();
+        audio.foreground(true);
         refreshDailyHome();
+    }
+
+    @Override protected void onPause() {
+        if (screen == Screen.GAME) persist();
+        audio.foreground(false);
+        super.onPause();
     }
 
     @Override protected void onStop() {
         unregisterReceiver(calendarChanges);
-        began = false;
-        if (music != null) music.pause();
         super.onStop();
     }
 
@@ -262,7 +269,7 @@ public final class MainActivity extends Activity {
             getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
         }
         closeLink();
-        if (music != null) music.release();
+        audio.close();
         if (explanationDialog != null) explanationDialog.dismiss();
         explanationWorker.shutdownNow();
         cancelReview();
@@ -289,6 +296,8 @@ public final class MainActivity extends Activity {
             case TOURNAMENT_ROUND -> showTournament();
             case COLLECTION -> showProfile();
             case SETTINGS -> showProfile();
+            case GAME -> leaveGame();
+            case SOLO, LOCAL -> leaveGameSetup();
             case BLUETOOTH -> {
                 if (link != null && state() == null) closeLink();
                 showHome();
@@ -438,15 +447,18 @@ public final class MainActivity extends Activity {
         ui.gap(content, 10);
         content.addView(ui.option("✦", getString(R.string.practice_first), getString(R.string.practice_first_home),
                 () -> openChallenge(() -> openFirstChallenge(this::showHome, false))));
+        ui.gap(content, 9);
+        content.addView(ui.option("▤", getString(R.string.games_title), getString(R.string.games_home_detail),
+                this::showGames));
         ui.gap(content, 19);
         content.addView(ui.micro("NOUVELLE PARTIE", ui.palette.accent()));
         ui.gap(content, 8);
         content.addView(ui.option("✦", "Contre un bot", "Quatre niveaux et un bot adaptatif", () -> {
-            if (ready()) showSolo(soloSelection);
+            if (ready()) openSolo(Screen.HOME);
         }));
         ui.gap(content, 8);
         content.addView(ui.option("2–4", "Entre amis", "À tour de rôle sur cet appareil", () -> {
-            if (ready()) showLocal(2, null);
+            if (ready()) openLocal(Screen.HOME);
         }));
         ui.gap(content, 8);
         content.addView(ui.option("↔", "Bluetooth", "Deux appareils déjà associés", () -> {
@@ -552,10 +564,129 @@ public final class MainActivity extends Activity {
         back.run();
     }
 
+    private void showGames() {
+        page(Screen.GAMES, false);
+        top("Lettrine", this::showHome, null);
+        heading(getString(R.string.games_title), "");
+        List<JSONObject> games;
+        try {
+            games = store == null ? List.of() : store.savedGames();
+        } catch (Exception exception) {
+            games = List.of();
+            toast(getString(R.string.games_read_error));
+        }
+        boolean shown = false;
+        for (JSONObject saved : games) {
+            try {
+                MatchCodec.State match = MatchCodec.readState(saved);
+                String title = String.join(" · ", match.names());
+                boolean solo = "solo".equals(saved.getString("mode"));
+                String summary = getString(solo ? R.string.games_solo_score : R.string.games_local_score,
+                        Arrays.stream(match.scores()).mapToObj(Integer::toString)
+                                .collect(java.util.stream.Collectors.joining("–")),
+                        match.history().size() + 1);
+                if (match.end() != null) summary += " · " + getString(R.string.games_pending_archive);
+                else if (solo && match.active() == 0) summary += " · " + getString(R.string.games_your_turn);
+                LinearLayout card = ui.card();
+                card.addView(ui.option(solo ? "✦" : "2–4", title, summary, () -> resumeMatch(match.id())));
+                if (match.end() == null) {
+                    card.addView(ui.textButton(getString(R.string.games_abandon), () -> abandonMatch(match.id(), title)));
+                }
+                content.addView(card);
+                ui.gap(content, 9);
+                shown = true;
+            } catch (JSONException exception) {
+                toast(getString(R.string.games_read_error));
+            }
+        }
+        if (link != null && bluetoothReady && state() != null && state().end() == null) {
+            content.addView(ui.option("↔", "Bluetooth", getString(R.string.games_bluetooth_active), () -> {
+                gameBack = Screen.GAMES;
+                showGame();
+            }));
+            ui.gap(content, 9);
+            shown = true;
+        }
+        if (!shown) {
+            content.addView(ui.body(getString(R.string.games_empty)));
+            ui.gap(content, 14);
+        }
+        content.addView(ui.button(getString(R.string.games_new_solo), true, () -> {
+            if (ready()) openSolo(Screen.GAMES);
+        }));
+        ui.gap(content, 7);
+        content.addView(ui.button(getString(R.string.games_new_local), false, () -> {
+            if (ready()) openLocal(Screen.GAMES);
+        }));
+    }
+
+    private void openSolo(Screen origin) {
+        setupBack = origin;
+        showSolo(soloSelection);
+    }
+
+    private void openLocal(Screen origin) {
+        setupBack = origin;
+        showLocal(2, null);
+    }
+
+    private void leaveGameSetup() {
+        if (setupBack == Screen.GAMES) showGames();
+        else showHome();
+    }
+
+    private void leaveGame() {
+        if (!persist()) return;
+        if (gameBack == Screen.GAMES) showGames();
+        else showHome();
+    }
+
+    private void resumeMatch(String id) {
+        if (!ready()) return;
+        if (game != null && id.equals(game.id)) {
+            archiveIfFinished();
+            gameBack = Screen.GAMES;
+            showGame();
+            return;
+        }
+        switchMatch(() -> {
+            try {
+                JSONObject saved = store.loadGame(id);
+                if (saved == null) {
+                    showGames();
+                    return;
+                }
+                restoreMatch(saved);
+                archiveIfFinished();
+                gameBack = Screen.GAMES;
+                showGame();
+            } catch (Exception exception) {
+                toast(getString(R.string.games_read_error));
+            }
+        });
+    }
+
+    private void abandonMatch(String id, String title) {
+        dialog(getString(R.string.games_abandon_title), title)
+                .setNegativeButton("Annuler", null)
+                .setPositiveButton(R.string.games_abandon, (ignored, which) -> {
+                    try {
+                        store.removeGame(id);
+                        if (game != null && id.equals(game.id)) resetMatch();
+                        showGames();
+                    } catch (Exception exception) {
+                        toast(getString(R.string.games_write_error));
+                    }
+                }).show();
+    }
+
     private void showSolo(int selection) {
-        soloSelection = selection;
+        if (soloSelection != selection) {
+            soloSelection = selection;
+            preferences.edit().putInt("solo_level", selection).apply();
+        }
         page(Screen.SOLO, false);
-        top("Partie solo", this::showHome, null);
+        top("Partie solo", this::leaveGameSetup, null);
         heading("Choisir un bot", "Elo local " + currentRating() + "  ·  Niveaux indicatifs");
         for (int level = 1; level <= Bot.ADAPTIVE; level++) {
             int id = level;
@@ -569,13 +700,13 @@ public final class MainActivity extends Activity {
             ui.gap(content, 8);
         }
         ui.gap(content, 7);
-        content.addView(ui.button("Commencer", true, () -> replaceMatch(() ->
+        content.addView(ui.button("Commencer", true, () -> switchMatch(() ->
                 newMatch("solo", new String[]{"Vous", Bot.NAMES[selection]}, new int[]{0, selection}))));
     }
 
     private void showLocal(int count, String[] previous) {
         page(Screen.LOCAL, false);
-        top("Partie locale", this::showHome, null);
+        top("Partie locale", this::leaveGameSetup, null);
         heading("Entre amis", "Le chevalet est masqué à chaque changement de joueur.");
         LinearLayout counts = ui.row();
         List<EditText> names = new ArrayList<>();
@@ -594,7 +725,7 @@ public final class MainActivity extends Activity {
             ui.gap(content, 8);
         }
         ui.gap(content, 9);
-        content.addView(ui.button("Commencer", true, () -> replaceMatch(() -> {
+        content.addView(ui.button("Commencer", true, () -> switchMatch(() -> {
             String[] entered = getNames(names);
             for (int i = 0; i < entered.length; i++) if (entered[i].isEmpty()) entered[i] = "Joueur " + (i + 1);
             newMatch("local", entered, new int[entered.length]);
@@ -621,34 +752,61 @@ public final class MainActivity extends Activity {
         return names.stream().map(field -> field.getText().toString().trim()).toArray(String[]::new);
     }
 
-    private void replaceMatch(Runnable next) {
-        MatchCodec.State ongoing = state();
-        if ((ongoing == null || ongoing.end() != null) && link == null) {
+    private void switchMatch(Runnable next) {
+        if (!persist()) return;
+        if (link == null) {
             next.run();
             return;
         }
-        dialog("Remplacer la partie ?", "La partie en cours sera abandonnée.")
+        dialog(getString(R.string.games_bluetooth_title), getString(R.string.games_bluetooth_body))
                 .setNegativeButton("Annuler", null)
-                .setPositiveButton("Remplacer", (view, which) -> {
-                    clearMatch();
+                .setPositiveButton(R.string.games_bluetooth_continue, (view, which) -> {
+                    resetMatch();
                     next.run();
                 }).show();
     }
 
     private void newMatch(String newMode, String[] names, int[] levels) {
-        if (!ready()) return;
+        if (!ready() || store == null) return;
+        FrenchGame next = new FrenchGame(names, levels);
+        int rating = currentRating();
+        try {
+            store.saveGame(MatchCodec.saved(next, newMode, rating, 0, 0, false));
+        } catch (Exception exception) {
+            toast(getString(R.string.games_write_error));
+            return;
+        }
+        resetMatch();
+        game = next;
         mode = newMode;
-        game = new FrenchGame(names, levels);
-        guestState = null;
-        startRating = currentRating();
-        botLevelSum = botLevelCount = 0;
-        lastRackTurn = -1;
+        startRating = rating;
         privacy = mode.equals("local");
-        waiting = false;
-        botThinking = analysing = assisted = false;
-        clearStaged();
-        persist();
+        gameBack = setupBack;
         showGame();
+    }
+
+    private void restoreMatch(JSONObject saved) throws JSONException {
+        FrenchGame restored = MatchCodec.restore(saved);
+        String savedMode = saved.getString("mode");
+        JSONArray draft = saved.optJSONArray("draft");
+        List<FrenchGame.Tile> tiles = draft == null ? List.of() : MatchCodec.readTiles(draft, true);
+        resetMatch();
+        game = restored;
+        mode = savedMode;
+        startRating = saved.optInt("start_rating", DEFAULT_RATING);
+        botLevelSum = saved.optInt("level_sum");
+        botLevelCount = saved.optInt("level_count");
+        assisted = saved.optBoolean("assisted");
+        privacy = mode.equals("local") && game.end == null;
+        MatchCodec.State current = state();
+        if (current.end() != null) return;
+        for (FrenchGame.Tile tile : tiles) {
+            if (tile.rackIndex() < 0 || tile.rackIndex() >= current.rack().size()
+                    || current.board()[tile.position()] != 0 || stagedAt(tile.position()) >= 0
+                    || staged.stream().anyMatch(previous -> previous.rackIndex() == tile.rackIndex())) continue;
+            char letter = current.rack().get(tile.rackIndex());
+            if (tile.blank() ? letter == FrenchGame.JOKER : letter == tile.letter()) staged.add(tile);
+        }
     }
 
     private MatchCodec.State state() {
@@ -667,23 +825,31 @@ public final class MainActivity extends Activity {
         selected = -1;
     }
 
-    private void clearMatch() {
+    private void resetMatch() {
         closeLink();
+        mode = "";
         game = null;
         guestState = null;
         privacy = botThinking = analysing = assisted = waiting = false;
         lastRackTurn = -1;
         clearStaged();
-        if (store != null) store.clearCurrent();
     }
 
-    private void persist() {
-        if (store == null || game == null || mode.equals("bluetooth")) return;
+    private boolean persist() {
+        if (store == null || game == null || mode.equals("bluetooth") || game.end != null) return true;
         try {
-            store.current(MatchCodec.saved(game, mode, startRating, botLevelSum, botLevelCount, assisted));
+            store.saveGame(savedMatch());
+            return true;
         } catch (Exception exception) {
-            toast("Impossible d’enregistrer la partie en cours.");
+            toast(getString(R.string.games_write_error));
+            return false;
         }
+    }
+
+    private JSONObject savedMatch() {
+        JSONObject saved = MatchCodec.saved(game, mode, startRating, botLevelSum, botLevelCount, assisted);
+        if (!staged.isEmpty()) MatchCodec.put(saved, "draft", MatchCodec.tiles(staged, true));
+        return saved;
     }
 
     private void archiveIfFinished() {
@@ -693,7 +859,7 @@ public final class MainActivity extends Activity {
         int after = 0;
         int opponent = 0;
         if (mode.equals("solo") && !assisted) {
-            before = startRating;
+            before = currentRating();
             int level = finished.levels()[1];
             opponent = level == Bot.ADAPTIVE
                     ? (botLevelCount == 0 ? Bot.RATINGS[2] : Math.round(botLevelSum / (float) botLevelCount))
@@ -708,7 +874,7 @@ public final class MainActivity extends Activity {
             if (assisted) MatchCodec.put(archived, "assisted", true);
             store.archive(archived);
             skinStore.refresh(store, dailyProgress);
-            if (!mode.equals("bluetooth")) store.clearCurrent();
+            if (!mode.equals("bluetooth")) store.removeGame(finished.id());
         } catch (Exception exception) {
             toast("L’historique n’a pas pu être enregistré.");
         }
@@ -780,27 +946,12 @@ public final class MainActivity extends Activity {
         });
     }
 
-    private void updateMusic() {
-        if (!began || !preferences.getBoolean("music", false)) {
-            if (music != null) music.pause();
-            return;
-        }
-        if (music == null) {
-            music = MediaPlayer.create(this, R.raw.ambient);
-            if (music != null) {
-                music.setLooping(true);
-                music.setVolume(0.52f, 0.52f);
-            }
-        }
-        if (music != null) music.start();
-    }
-
     private final class Arena {
         final LinearLayout scores = ui.row();
         final LinearLayout rack = ui.row();
         final TextView status = ui.body("");
         final TextView preview = ui.text("", 14, ui.palette.ink(), ui.medium);
-        final TextView confirm = ui.button("Jouer", true, MainActivity.this::commit);
+        final TextView confirm = ui.button(getString(R.string.practice_ready), true, MainActivity.this::commit);
         final TextView recall = ui.textButton("Retirer", () -> {
             clearStaged();
             updateArena(-1);
@@ -814,6 +965,10 @@ public final class MainActivity extends Activity {
         final BoardView board = new BoardView(ui, new BoardView.Interaction() {
             @Override public void tap(int position) { boardTap(position); }
             @Override public void drop(int position, int rackIndex) { place(position, rackIndex); }
+            @Override public boolean dragTile(int position) {
+                return myTurn(state()) && !analysing && stagedAt(position) >= 0;
+            }
+            @Override public void moveTile(int from, int to) { moveStaged(from, to); }
         });
     }
 
@@ -821,7 +976,9 @@ public final class MainActivity extends Activity {
         if (state() == null) { showHome(); return; }
         page(Screen.GAME, false);
         top(mode.equals("local") ? "Entre amis" : mode.equals("bluetooth") ? "Bluetooth" : "Partie solo",
-                this::showHome, null);
+                this::leaveGame, mode.equals("bluetooth") ? null : ui.textButton(getString(R.string.games_title), () -> {
+                    if (persist()) showGames();
+                }));
         arena = new Arena();
         content.addView(arena.scores);
         ui.gap(content, 8);
@@ -834,7 +991,8 @@ public final class MainActivity extends Activity {
         minus.setContentDescription("Réduire le zoom");
         TextView plus = ui.textButton("+", () -> arena.board.zoomBy(1.25f));
         plus.setContentDescription("Agrandir le plateau");
-        TextView reset = ui.textButton("1×", () -> arena.board.resetZoom());
+        TextView reset = ui.textButton("", () -> arena.board.resetZoom());
+        arena.board.onZoom(zoom -> reset.setText(getString(R.string.practice_zoom_percent, Math.round(zoom * 100))));
         reset.setContentDescription("Réinitialiser le zoom");
         ui.weight(controls, arena.status);
         controls.addView(minus);
@@ -843,6 +1001,8 @@ public final class MainActivity extends Activity {
         content.addView(controls);
         content.addView(arena.rack);
         ui.gap(content, 11);
+        ui.inset(arena.preview, 12, 10);
+        arena.preview.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         content.addView(arena.preview, new LinearLayout.LayoutParams(-1, -2));
         ui.gap(content, 10);
         LinearLayout actions = ui.row();
@@ -888,6 +1048,9 @@ public final class MainActivity extends Activity {
 
         boolean canPlay = myTurn(current) && !analysing;
         FrenchGame.Preview result = evaluate(current);
+        boolean draft = canPlay && !staged.isEmpty();
+        arena.preview.setBackground(ui.shape(draft && result.valid() ? ui.palette.ordinary() : ui.palette.paper(),
+                12, draft && result.valid() ? ui.palette.accent() : ui.palette.line()));
         if (current.end() != null) {
             ui.weight(arena.rack, ui.button("Voir l’historique", true, this::showHistory));
             arena.preview.setText(resultTitle(current));
@@ -905,8 +1068,10 @@ public final class MainActivity extends Activity {
         } else {
             renderRack(current);
             arena.preview.setText(analysing ? "Analyse en cours…" : staged.isEmpty()
-                    ? "Touchez une lettre, puis une case."
-                    : result.valid() ? result.word() + "  ·  " + result.score() + " points" : result.error());
+                    ? getString(R.string.practice_guide)
+                    : result.valid() ? getString(R.string.practice_status_valid) + "  ·  " + result.word()
+                    + "  ·  " + getResources().getQuantityString(R.plurals.practice_points, result.score(), result.score())
+                    : getString(R.string.practice_status_invalid) + "\n" + result.error());
         }
         ui.enabled(arena.confirm, canPlay && result.valid());
         ui.enabled(arena.recall, canPlay && !staged.isEmpty());
@@ -950,9 +1115,7 @@ public final class MainActivity extends Activity {
                     selected = selected == index ? -1 : index;
                     updateArena(-1);
                 });
-                token.setOnLongClickListener(view -> !analysing && view.startDragAndDrop(
-                        ClipData.newPlainText("Lettrine", String.valueOf(letter)),
-                        new View.DragShadowBuilder(view), index, 0));
+                ui.dragTile(token, index, letter, () -> !analysing && myTurn(state()));
             } else token.setAlpha(0.42f);
             ui.weight(arena.rack, token);
         }
@@ -966,16 +1129,29 @@ public final class MainActivity extends Activity {
     private void boardTap(int position) {
         MatchCodec.State current = state();
         if (!myTurn(current) || analysing) return;
-        for (int i = 0; i < staged.size(); i++) {
-            FrenchGame.Tile tile = staged.get(i);
-            if (tile.position() == position) {
-                staged.remove(i);
-                selected = tile.rackIndex();
-                updateArena(-1);
-                return;
-            }
+        int index = stagedAt(position);
+        if (index >= 0) {
+            selected = staged.remove(index).rackIndex();
+            updateArena(-1);
+            return;
         }
         if (selected >= 0) place(position, selected);
+    }
+
+    private int stagedAt(int position) {
+        for (int i = 0; i < staged.size(); i++) if (staged.get(i).position() == position) return i;
+        return -1;
+    }
+
+    private void moveStaged(int from, int to) {
+        MatchCodec.State current = state();
+        if (!myTurn(current) || analysing || to < 0 || current.board()[to] != 0 || stagedAt(to) >= 0) return;
+        int index = stagedAt(from);
+        if (index < 0) return;
+        FrenchGame.Tile tile = staged.get(index);
+        staged.set(index, new FrenchGame.Tile(to, tile.rackIndex(), tile.letter(), tile.blank()));
+        audio.tile();
+        updateArena(to);
     }
 
     private void place(int position, int rackIndex) {
@@ -1000,6 +1176,7 @@ public final class MainActivity extends Activity {
         staged.add(new FrenchGame.Tile(position, rackIndex, letter, blank));
         selected = -1;
         if (arena != null) arena.board.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        audio.tile();
         updateArena(position);
     }
 
@@ -1023,7 +1200,10 @@ public final class MainActivity extends Activity {
         }
         String error = apply(type, tiles, exchange);
         if (error != null) toast(error);
-        else afterMove();
+        else {
+            if (type.equals("play")) audio.played();
+            afterMove();
+        }
     }
 
     private String apply(String type, List<FrenchGame.Tile> tiles, List<Integer> exchange) {
@@ -1047,13 +1227,21 @@ public final class MainActivity extends Activity {
         clearStaged();
         lastRackTurn = -1;
         privacy = mode.equals("local") && game.end == null;
-        persist();
+        if (game.end == null) persist();
+        else if (store != null && !mode.equals("bluetooth")) {
+            try {
+                store.saveGame(savedMatch());
+            } catch (Exception exception) {
+                toast(getString(R.string.games_write_error));
+            }
+        }
         archiveIfFinished();
         if (mode.equals("bluetooth") && bluetoothHost && link != null) {
             link.send(MatchCodec.visible(game, 1));
         }
         List<FrenchGame.Tile> last = game.history.get(game.history.size() - 1).tiles();
         updateArena(last.isEmpty() ? -1 : last.get(0).position());
+        if (screen == Screen.GAMES) showGames();
         startBotIfNeeded();
     }
 
@@ -1064,10 +1252,11 @@ public final class MainActivity extends Activity {
         updateArena(-1);
         FrenchGame snapshot = game;
         int turn = snapshot.history.size();
+        int rating = startRating;
         worker.submit(() -> {
             Bot.Choice result;
             try {
-                result = Bot.choose(snapshot, lexicon, snapshot.levels[1], startRating);
+                result = Bot.choose(snapshot, lexicon, snapshot.levels[1], rating);
             } catch (RuntimeException exception) {
                 result = new Bot.Choice(List.of(), List.of(), 2, 0);
             }
@@ -1123,6 +1312,7 @@ public final class MainActivity extends Activity {
             return;
         }
         analysing = true;
+        FrenchGame gameAtRequest = game;
         updateArena(-1);
         worker.submit(() -> {
             Bot.Choice candidate;
@@ -1135,7 +1325,8 @@ public final class MainActivity extends Activity {
             Bot.Choice result = candidate;
             main.post(() -> {
                 MatchCodec.State latest = state();
-                if (latest == null || !latest.id().equals(current.id()) || latest.history().size() != current.history().size()) return;
+                if (game != gameAtRequest || latest == null || !latest.id().equals(current.id())
+                        || latest.history().size() != current.history().size()) return;
                 analysing = false;
                 if (screen != Screen.GAME) return;
                 if (result == null || result.tiles().isEmpty()) {
@@ -1231,7 +1422,7 @@ public final class MainActivity extends Activity {
         ui.gap(content, 11);
         content.addView(ui.button("Héberger", true, () -> {
             String entered = name.getText().toString().trim();
-            replaceMatch(() -> beginLink(null, entered));
+            switchMatch(() -> beginLink(null, entered));
         }));
         ui.gap(content, 15);
         content.addView(ui.micro("APPAREILS ASSOCIÉS", ui.palette.accent()));
@@ -1241,7 +1432,7 @@ public final class MainActivity extends Activity {
         for (BluetoothDevice device : devices) {
             content.addView(ui.option("↔", deviceName(device), "Rejoindre une partie hébergée", () -> {
                 String entered = name.getText().toString().trim();
-                replaceMatch(() -> beginLink(device, entered));
+                switchMatch(() -> beginLink(device, entered));
             }));
             ui.gap(content, 8);
         }
@@ -1283,8 +1474,9 @@ public final class MainActivity extends Activity {
         if (!ready() || !bluetoothPermission()) return;
         BluetoothAdapter adapter = adapter();
         if (adapter == null || !adapter.isEnabled()) { toast("Activez d’abord le Bluetooth."); return; }
-        clearMatch();
+        resetMatch();
         mode = "bluetooth";
+        gameBack = Screen.HOME;
         bluetoothHost = peer == null;
         bluetoothName = name.isEmpty() ? (bluetoothHost ? "Hôte" : "Invité") : name;
         bluetoothStatus = bluetoothHost ? "En attente d’un joueur…" : "Connexion à " + deviceName(peer) + "…";
@@ -1402,19 +1594,52 @@ public final class MainActivity extends Activity {
         top("Lettrine", this::showProfile, null);
         heading("Réglages", "");
         LinearLayout settings = ui.card();
-        Switch audio = new Switch(this);
-        audio.setText(R.string.ambient_sound);
-        audio.setTextColor(ui.palette.ink());
-        audio.setTextSize(15);
-        audio.setMinimumHeight(ui.dp(43));
-        audio.setChecked(preferences.getBoolean("music", false));
-        audio.setOnCheckedChangeListener((view, checked) -> {
-            preferences.edit().putBoolean("music", checked).apply();
-            updateMusic();
+        Switch musicSwitch = soundSwitch(R.string.ambient_sound, "music");
+        settings.addView(musicSwitch);
+        String[] tracks = getResources().getStringArray(R.array.music_tracks);
+        LinearLayout track = ui.option("♫", tracks[preferences.getInt("music_track", 0)], "", () ->
+                dialog(getString(R.string.music_pick), null)
+                        .setSingleChoiceItems(tracks, preferences.getInt("music_track", 0), (choice, index) -> {
+                            preferences.edit().putInt("music_track", index).apply();
+                            audio.refresh();
+                            choice.dismiss();
+                            showSettings();
+                        }).show());
+        settings.addView(track);
+        TextView volumeLabel = ui.body(getString(R.string.music_volume));
+        settings.addView(volumeLabel);
+        SeekBar volume = new SeekBar(this);
+        volume.setContentDescription(getString(R.string.music_volume));
+        volume.setMax(100);
+        volume.setProgress(preferences.getInt("music_volume", 50));
+        volume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                if (!fromUser) return;
+                preferences.edit().putInt("music_volume", progress).apply();
+                audio.adjustVolume();
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) {}
+            @Override public void onStopTrackingTouch(SeekBar bar) {}
         });
-        settings.addView(audio);
+        settings.addView(volume);
+        settings.addView(soundSwitch(R.string.tile_sounds, "effects"));
         content.addView(settings);
         ui.gap(content, 12);
+        if (rewarded.available()) {
+            LocalDate date = LocalDate.now();
+            if (date.toString().equals(preferences.getString("rewarded_date", ""))) {
+                content.addView(ui.option("✦", getString(R.string.rewarded_play), "", () -> openBonus(date)));
+            } else {
+                content.addView(ui.option("✦", getString(R.string.rewarded_title),
+                        getString(R.string.rewarded_details), () -> confirmBonus(date)));
+            }
+            ui.gap(content, 8);
+            if (rewarded.hasPrivacyOptions()) {
+                content.addView(ui.option("○", getString(R.string.rewarded_privacy), "",
+                        () -> rewarded.privacyOptions(this::refreshRewardSettings)));
+                ui.gap(content, 8);
+            }
+        }
         content.addView(ui.option("↗", getString(R.string.social_navigation_endpoint),
                 socialBaseUrl().isEmpty() ? "" : Uri.parse(socialBaseUrl()).getHost(), this::editSocialEndpoint));
         ui.gap(content, 18);
@@ -1439,6 +1664,51 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private Switch soundSwitch(int label, String key) {
+        Switch toggle = new Switch(this);
+        toggle.setText(label);
+        toggle.setTextColor(ui.palette.ink());
+        toggle.setTextSize(15);
+        toggle.setMinimumHeight(ui.dp(48));
+        toggle.setChecked(preferences.getBoolean(key, false));
+        toggle.setOnCheckedChangeListener((view, checked) -> {
+            preferences.edit().putBoolean(key, checked).apply();
+            if (key.equals("music")) audio.refresh();
+            else audio.prepareEffects();
+        });
+        return toggle;
+    }
+
+    private void confirmBonus(LocalDate date) {
+        if (!ready()) return;
+        FrameLayout origin = frame;
+        dialog(getString(R.string.rewarded_title), getString(R.string.rewarded_confirm))
+                .setNegativeButton("Annuler", null)
+                .setPositiveButton(R.string.rewarded_watch, (ignored, which) -> rewarded.request(
+                        () -> screen == Screen.SETTINGS && frame == origin,
+                        () -> preferences.edit().putString("rewarded_date", date.toString()).apply(),
+                        this::refreshRewardSettings))
+                .show();
+    }
+
+    private void refreshRewardSettings() {
+        if (screen == Screen.SETTINGS) showSettings();
+    }
+
+    private void openBonus(LocalDate date) {
+        if (!ready()) return;
+        DailyChallenge challenge = DailyChallenge.forDate(date.minusWeeks(5), lexicon);
+        if (challenge == null) {
+            toast(getString(R.string.daily_unavailable));
+            return;
+        }
+        page(Screen.PRACTICE, false);
+        practiceBack = this::showSettings;
+        top("Lettrine", this::leavePractice, null);
+        heading(getString(R.string.rewarded_title), getString(R.string.daily_goal, challenge.openingWord()));
+        content.addView(new PracticePanel(ui, challenge.position(), lexicon, false, false).view());
+    }
+
     private void showProfile() {
         page(Screen.PROFILE, true);
         top("Lettrine", null, ui.textButton("Réglages", this::showSettings));
@@ -1450,7 +1720,7 @@ public final class MainActivity extends Activity {
     }
 
     private void updateAppearance() {
-        ui = new ViewKit(this, Palette.THEMES[skin], skinStore.selection());
+        ui = new ViewKit(this, Palette.THEMES[skin], skinStore.selection(), audio);
     }
 
     private void showCollection() {

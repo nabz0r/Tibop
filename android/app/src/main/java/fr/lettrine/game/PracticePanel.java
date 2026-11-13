@@ -1,14 +1,10 @@
 package fr.lettrine.game;
 
 import android.app.AlertDialog;
-import android.annotation.SuppressLint;
-import android.content.ClipData;
 import android.graphics.Rect;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -180,7 +176,7 @@ final class PracticePanel {
                 selected = selected == index ? -1 : index;
                 renderAttempt(-1);
             });
-            directDrag(tile, index, letter);
+            ui.dragTile(tile, index, letter, () -> !finished && !submitting && !used(index));
             rackButtons.add(tile);
             if (i > 0) ui.space(hand, 4);
             ui.weight(hand, tile);
@@ -212,32 +208,6 @@ final class PracticePanel {
         button.setContentDescription(label(description));
         button.setOnClickListener(view -> action.run());
         return button;
-    }
-
-    @SuppressLint("ClickableViewAccessibility") // A regular tap still uses the TextView click action.
-    private void directDrag(TextView tile, int index, char letter) {
-        int threshold = ViewConfiguration.get(ui.context).getScaledTouchSlop();
-        tile.setOnTouchListener(new View.OnTouchListener() {
-            private float x;
-            private float y;
-            private boolean started;
-
-            @Override public boolean onTouch(View view, MotionEvent event) {
-                if (finished || submitting || used(index)) return false;
-                if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                    x = event.getX();
-                    y = event.getY();
-                    started = false;
-                    view.getParent().requestDisallowInterceptTouchEvent(true);
-                } else if (event.getActionMasked() == MotionEvent.ACTION_MOVE && !started
-                        && Math.hypot(event.getX() - x, event.getY() - y) > threshold) {
-                    started = view.startDragAndDrop(ClipData.newPlainText("Lettrine", String.valueOf(letter)),
-                            new View.DragShadowBuilder(view), index, 0);
-                    if (started) view.setPressed(false);
-                }
-                return started;
-            }
-        });
     }
 
     void setSubmitting(boolean pending) {
@@ -287,6 +257,7 @@ final class PracticePanel {
         if (index < 0 || to < 0 || letters[to] != 0 || stagedAt(to) >= 0) return;
         FrenchGame.Tile tile = staged.get(index);
         staged.set(index, new FrenchGame.Tile(to, tile.rackIndex(), tile.letter(), tile.blank()));
+        ui.audio.tile();
         renderAttempt(to);
     }
 
@@ -307,6 +278,7 @@ final class PracticePanel {
         staged.add(new FrenchGame.Tile(square, index, letter, blank));
         selected = -1;
         board.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        ui.audio.tile();
         renderAttempt(square);
     }
 
@@ -348,6 +320,7 @@ final class PracticePanel {
     private void submit() {
         FrenchGame.Preview move = position.preview(staged, lexicon);
         if (!move.valid() || tutorial && !tutorialMove()) return;
+        ui.audio.played();
         if (duelSubmit == null) finish(move);
         else duelSubmit.accept(List.copyOf(staged));
     }

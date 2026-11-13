@@ -109,9 +109,9 @@ impl Room {
             .map(|(index, &level)| PlayerView {
                 seat: self.human_capacity() + index,
                 name: if self.bots.len() == 1 {
-                    format!("N A B · {}", level.label())
+                    format!("NAB · {}", level.label())
                 } else {
-                    format!("N A B {} · {}", index + 1, level.label())
+                    format!("NAB {} · {}", index + 1, level.label())
                 },
                 bot: Some(level),
             });

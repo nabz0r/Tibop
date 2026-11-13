@@ -736,12 +736,12 @@ async fn live(State(app): State<App>, Query(q): Query<Live>) -> ApiResult<Respon
     .await?;
     let mut labels = levels.map(|i| LEVELS[i as usize].to_string());
     if mode == "peak" {
-        labels[0] = "N A B · Recherche avancée".into();
+        labels[0] = "NAB · Recherche avancée".into();
         if levels[1] == 3 {
             labels[1] = "Expert entraîné".into();
         }
     } else if let Some(elo) = target_elo {
-        labels[0] = format!("N A B · {elo:.0}");
+        labels[0] = format!("NAB · {elo:.0}");
     }
     let mut events = vec![
         json!({"type":"start","seed":seed,"levels":levels,"labels":labels,"turns":game.turns,"target_elo":target_elo,"adaptive_seat":target_elo.map(|_|0),"policy":mode,"method":method}),
@@ -838,6 +838,7 @@ pub async fn serve(app_db: PathBuf, engine: Engine, address: String, web: PathBu
             .build()?,
     };
     let apk = env::var("LETTRINE_APK").unwrap_or_else(|_| "android/artifacts/lettrine.apk".into());
+    let aab = env::var("LETTRINE_AAB").unwrap_or_else(|_| "android/artifacts/lettrine.aab".into());
     let room_engine = if app.engine.profile.id == pg::FRENCH {
         Some(app.engine.clone())
     } else if let Some(profile) = app.profiles.get(pg::FRENCH)
@@ -896,6 +897,10 @@ pub async fn serve(app_db: PathBuf, engine: Engine, address: String, web: PathBu
         .route("/api/imports/export", get(dump_imports))
         .route("/api/imports/{id}", get(imported))
         .route_service("/download/lettrine.apk", ServeFile::new(apk))
+        .route_service(
+            "/download/lettrine.aab",
+            ServeFile::new_with_mime(aab, &"application/octet-stream".parse()?),
+        )
         .fallback_service(ServeDir::new(web))
         .with_state(app);
     let listener = tokio::net::TcpListener::bind(&address).await?;

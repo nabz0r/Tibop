@@ -76,6 +76,8 @@ Le moteur français embarque Grammalecte 7.7. Le comparateur fournit un audit de
 - [Profils de langues](docs/LANGUES.md)
 - [Archives humaines et provenance](data/expert/README.md)
 - [Comparatif Android](docs/COMPARATIF_ANDROID.md)
+- [Simulations des parties Android](docs/SIMULATIONS_ANDROID.md)
+- [Récompenses et modèle économique Android](docs/ECONOMIE_ANDROID.md)
 
 - [Modèles Ollama et projet mobile](docs/CHOIX_MODELES.md)
 - [Histoire, maîtres et archives](docs/HISTOIRE_ET_MAITRES.md)

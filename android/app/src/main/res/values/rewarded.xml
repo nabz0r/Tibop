@@ -1,0 +1,10 @@
+<resources>
+    <string name="rewarded_title">Défi bonus</string>
+    <string name="rewarded_details">Un plateau d’entraînement à jouer après une courte vidéo.</string>
+    <string name="rewarded_watch">Regarder la vidéo</string>
+    <string name="rewarded_play">Jouer le défi bonus</string>
+    <string name="rewarded_loading">Préparation de la vidéo…</string>
+    <string name="rewarded_unavailable">Vidéo indisponible. Vous pouvez continuer à jouer.</string>
+    <string name="rewarded_privacy">Confidentialité publicitaire</string>
+    <string name="rewarded_confirm">La vidéo ouvre un défi d’entraînement. Il se joue à votre rythme.</string>
+</resources>

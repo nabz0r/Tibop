@@ -1,5 +1,7 @@
 package fr.lettrine.game;
 
+import android.annotation.SuppressLint;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -9,22 +11,54 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import java.util.function.BooleanSupplier;
 
 final class ViewKit {
     final Context context;
     final Palette palette;
     final SkinStore.Selection skins;
+    final GameAudio audio;
     final Typeface serif = Typeface.create("serif", Typeface.NORMAL);
     final Typeface medium = Typeface.create("sans-serif-medium", Typeface.NORMAL);
     final Typeface regular = Typeface.create("sans-serif", Typeface.NORMAL);
 
-    ViewKit(Context context, Palette palette, SkinStore.Selection skins) {
+    ViewKit(Context context, Palette palette, SkinStore.Selection skins, GameAudio audio) {
         this.context = context;
         this.palette = palette;
         this.skins = skins;
+        this.audio = audio;
+    }
+
+    @SuppressLint("ClickableViewAccessibility") // Taps keep the accessible click action.
+    void dragTile(View tile, int index, char letter, BooleanSupplier enabled) {
+        int threshold = ViewConfiguration.get(context).getScaledTouchSlop();
+        tile.setOnTouchListener(new View.OnTouchListener() {
+            private float x;
+            private float y;
+            private boolean started;
+
+            @Override public boolean onTouch(View view, MotionEvent event) {
+                if (!enabled.getAsBoolean()) return false;
+                int action = event.getActionMasked();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    x = event.getX();
+                    y = event.getY();
+                    started = false;
+                    view.getParent().requestDisallowInterceptTouchEvent(true);
+                } else if (action == MotionEvent.ACTION_MOVE && !started
+                        && Math.hypot(event.getX() - x, event.getY() - y) > threshold) {
+                    started = view.startDragAndDrop(ClipData.newPlainText("Lettrine", String.valueOf(letter)),
+                            new View.DragShadowBuilder(view), index, 0);
+                    if (started) view.setPressed(false);
+                }
+                return started;
+            }
+        });
     }
 
     int tileInk() { return skins.tiles() == null ? palette.ink() : skins.tiles().ink(); }

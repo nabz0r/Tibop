@@ -5,18 +5,20 @@ services:
     build:
       context: .
       target: api
-    image: lettrine-api:local
+    image: lettrine-social:local
     command: ["social"]
     environment:
       LETTRINE_SOCIAL_BIND: 0.0.0.0:8790
       LETTRINE_SOCIAL_DB: /var/lib/lettrine/social.sqlite
       LETTRINE_GOOGLE_CLIENT_ID: ${LETTRINE_GOOGLE_CLIENT_ID:-}
+      SQLITE_TMPDIR: /tmp
       TOKIO_WORKER_THREADS: "2"
     ports:
       - "127.0.0.1:${LETTRINE_SOCIAL_PORT:-8790}:8790"
     volumes:
       - social_data:/var/lib/lettrine
     read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,noexec,size=16m,mode=1777"]
     user: "10001:10001"
     init: true
     pids_limit: 64
