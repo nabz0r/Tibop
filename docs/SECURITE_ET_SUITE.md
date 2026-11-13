@@ -16,7 +16,7 @@ Les vérifications locales couvrent la configuration, les en-têtes, les restric
 2. Mesurer les politiques rapides par autojeu et réserver la recherche approfondie aux positions où le gain attendu justifie son coût. Tester toute promotion sur des graines distinctes.
 3. Comparer les coups aux archives humaines avec leur édition de dictionnaire. Jouer des rencontres consenties avec des adversaires de référence pour étalonner l’Elo du bot face au jeu humain.
 4. Étendre les salons locaux aux autres profils de langue. Les nouvelles parties françaises enregistrent déjà leur profil, leurs sièges, leurs coups et leurs résultats pour le rejeu.
-5. Tester la reprise et le Bluetooth sur des téléphones physiques et préparer les clients à une éventuelle publication. L’APK fourni est un prototype Android signé pour installation directe.
+5. Tester la reprise, le Bluetooth et les temps de réponse du modèle embarqué sur des téléphones physiques. L’APK fourni est signé pour installation directe.
 
 ## Ouverture éventuelle au public
 

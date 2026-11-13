@@ -8,6 +8,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.ClipData;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -52,6 +53,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public final class MainActivity extends Activity {
     private static final int BLUETOOTH_PERMISSION = 41;
@@ -64,6 +66,7 @@ public final class MainActivity extends Activity {
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private final ExecutorService explanationWorker = Executors.newSingleThreadExecutor();
     private final List<FrenchGame.Tile> staged = new ArrayList<>();
     private final List<Integer> rackOrder = new ArrayList<>();
     private SharedPreferences preferences;
@@ -103,6 +106,7 @@ public final class MainActivity extends Activity {
     private boolean began;
     private JSONObject detail;
     private int replayIndex;
+    private AlertDialog explanationDialog;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -183,6 +187,8 @@ public final class MainActivity extends Activity {
         }
         closeLink();
         if (music != null) music.release();
+        if (explanationDialog != null) explanationDialog.dismiss();
+        explanationWorker.shutdownNow();
         main.removeCallbacksAndMessages(null);
         worker.shutdownNow();
         super.onDestroy();
@@ -209,6 +215,7 @@ public final class MainActivity extends Activity {
     private void toast(String text) { Toast.makeText(this, text, Toast.LENGTH_SHORT).show(); }
 
     private void page(Screen next, boolean navigation) {
+        if (explanationDialog != null) explanationDialog.dismiss();
         screen = next;
         if (Build.VERSION.SDK_INT >= 33) {
             if (next == Screen.HOME && backCallback != null) {
@@ -514,6 +521,57 @@ public final class MainActivity extends Activity {
         return builder;
     }
 
+    private void explainMove(List<FrenchGame.Move> history, int moveIndex) {
+        if (explanationDialog != null && explanationDialog.isShowing()) return;
+        MoveExplanation explanation = MoveExplanation.create(history, moveIndex);
+        if (explanation == null) return;
+        List<String> options = explanation.options();
+
+        LinearLayout panel = ui.column();
+        ui.inset(panel, 24, 12);
+        TextView body = ui.body(explanation.text(0));
+        body.setTextColor(ui.palette.ink());
+        body.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        panel.addView(body);
+        ui.gap(panel, 9);
+        TextView status = ui.body(getString(options.isEmpty()
+                ? R.string.move_explanation_partial : R.string.move_explanation_loading));
+        status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        panel.addView(status);
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(panel, new ScrollView.LayoutParams(-1, -2));
+        AlertDialog active = dialog(getString(R.string.move_explanation_title, moveIndex + 1), null)
+                .setView(scroll)
+                .setPositiveButton(R.string.move_explanation_close, null)
+                .show();
+        explanationDialog = active;
+        Context context = getApplicationContext();
+        Future<?> request = options.isEmpty() ? null : explanationWorker.submit(() -> {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+            int index = -1;
+            try {
+                index = new OfflineMoveModel(context).choose(explanation.facts(), options);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                return;
+            } catch (Exception | LinkageError ignored) {
+                // The verified explanation stays available if local inference fails.
+            }
+            if (Thread.currentThread().isInterrupted()) return;
+            boolean modelUsed = index >= 0 && index < options.size();
+            int selected = modelUsed ? index : 0;
+            main.post(() -> {
+                if (explanationDialog != active || !active.isShowing() || isDestroyed()) return;
+                body.setText(explanation.text(selected));
+                status.setText(modelUsed ? R.string.move_explanation_model : R.string.move_explanation_engine);
+            });
+        });
+        active.setOnDismissListener(ignored -> {
+            if (request != null) request.cancel(true);
+            if (explanationDialog == active) explanationDialog = null;
+        });
+    }
+
     private void updateMusic() {
         if (!began || !preferences.getBoolean("music", false)) {
             if (music != null) music.pause();
@@ -540,6 +598,10 @@ public final class MainActivity extends Activity {
             updateArena(-1);
         });
         final TextView tools = ui.textButton("Options", MainActivity.this::turnOptions);
+        final TextView explain = ui.button(getString(R.string.move_explanation_last), false, () -> {
+            MatchCodec.State current = state();
+            if (current != null) explainMove(current.history(), current.history().size() - 1);
+        });
         final BoardView board = new BoardView(MainActivity.this, ui.palette, new BoardView.Interaction() {
             @Override public void tap(int position) { boardTap(position); }
             @Override public void drop(int position, int rackIndex) { place(position, rackIndex); }
@@ -577,6 +639,9 @@ public final class MainActivity extends Activity {
         actions.addView(arena.recall);
         actions.addView(arena.tools);
         content.addView(actions);
+        LinearLayout.LayoutParams explanationPosition = new LinearLayout.LayoutParams(-1, -2);
+        explanationPosition.topMargin = ui.dp(7);
+        content.addView(arena.explain, explanationPosition);
         updateArena(-1);
         startBotIfNeeded();
     }
@@ -634,6 +699,7 @@ public final class MainActivity extends Activity {
         ui.enabled(arena.confirm, canPlay && result.valid());
         ui.enabled(arena.recall, canPlay && !staged.isEmpty());
         ui.enabled(arena.tools, canPlay);
+        arena.explain.setVisibility(current.history().isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void renderRack(MatchCodec.State current) {
@@ -1264,6 +1330,8 @@ public final class MainActivity extends Activity {
         controls.addView(zoom);
         controls.addView(ui.textButton("1×", board::resetZoom));
         content.addView(controls);
+        TextView explain = ui.button(getString(R.string.move_explanation_current), false,
+                () -> explainMove(moves, replayIndex - 1));
         Runnable replay = () -> {
             char[] letters = new char[FrenchGame.CELLS];
             boolean[] blanks = new boolean[FrenchGame.CELLS];
@@ -1280,12 +1348,15 @@ public final class MainActivity extends Activity {
             label.setText(getString(R.string.replay_position, replayIndex, moves.size(), word));
             ui.enabled(previous, replayIndex > 0);
             ui.enabled(next, replayIndex < moves.size());
+            ui.enabled(explain, shown != null);
         };
         previous.setOnClickListener(view -> { if (replayIndex > 0) { replayIndex--; replay.run(); } });
         next.setOnClickListener(view -> { if (replayIndex < moves.size()) { replayIndex++; replay.run(); } });
         replayIndex = Math.max(0, Math.min(moves.size(), replayIndex));
         replay.run();
         ui.gap(content, 9);
+        content.addView(explain);
+        ui.gap(content, 7);
         content.addView(ui.button("Exporter cette partie en JSON", false,
                 () -> export("lettrine-partie.json", detail.toString())));
     }

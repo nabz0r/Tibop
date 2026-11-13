@@ -76,7 +76,7 @@ final class FrenchGame {
         boolean valid() { return error == null; }
     }
 
-    private record FormedWord(String word, int score, boolean touchesExisting) {}
+    record FormedWord(String word, int score, boolean touchesExisting) {}
 
     record Move(int player, String type, String word, int score, List<Tile> tiles, int exchanged,
                 String rack, int bagBefore) {}
@@ -118,36 +118,72 @@ final class FrenchGame {
         if (!sameRow && !sameCol) return Preview.invalid("Alignez les nouvelles lettres.");
         boolean opening = empty(board);
         if (opening && placement[CENTER] == null) return Preview.invalid("Le premier mot couvre l’étoile centrale.");
-        int direction = sameRow ? 1 : SIZE;
-        if (tiles.size() == 1 && run(board, blanks, placement, first, 1).word.length() < 2) {
-            direction = SIZE;
-        }
+        int direction = wordDirection(board, blanks, placement, tiles, sameRow);
         for (int pos = from; pos <= to; pos += direction) {
             if (board[pos] == 0 && placement[pos] == null) {
                 return Preview.invalid("Comblez les trous entre les lettres.");
             }
         }
-        FormedWord main = run(board, blanks, placement, first, direction);
+        List<FormedWord> formed = formedWords(board, blanks, placement, tiles, direction);
+        FormedWord main = formed.get(0);
         if (main.word.length() < 2) return Preview.invalid("Formez un mot d’au moins deux lettres.");
-        List<String> words = new ArrayList<>();
-        words.add(main.word);
-        int score = main.score;
-        boolean connected = main.touchesExisting;
-        int other = direction == 1 ? SIZE : 1;
-        for (Tile tile : tiles) {
-            FormedWord cross = run(board, blanks, placement, tile.position, other);
-            if (cross.word.length() > 1) {
-                words.add(cross.word);
-                score += cross.score;
-                connected = true;
-            }
+        if (!opening && !main.touchesExisting && formed.size() == 1) {
+            return Preview.invalid("Reliez le mot aux lettres déjà posées.");
         }
-        if (!opening && !connected) return Preview.invalid("Reliez le mot aux lettres déjà posées.");
-        for (String word : words) {
-            if (!lexicon.contains(word)) return Preview.invalid("« " + word + " » est absent du lexique.");
+        List<String> words = new ArrayList<>(formed.size());
+        int score = 0;
+        for (FormedWord word : formed) {
+            if (!lexicon.contains(word.word)) return Preview.invalid("« " + word.word + " » est absent du lexique.");
+            words.add(word.word);
+            score += word.score;
         }
         if (tiles.size() == RACK_SIZE) score += 50;
         return new Preview(score, main.word, List.copyOf(words), null);
+    }
+
+    private static int wordDirection(char[] board, boolean[] blanks, Tile[] placement,
+                                     List<Tile> tiles, boolean sameRow) {
+        if (!sameRow || (tiles.size() == 1 && run(board, blanks, placement, tiles.get(0).position, 1).word.length() < 2)) {
+            return SIZE;
+        }
+        return 1;
+    }
+
+    private static List<FormedWord> formedWords(char[] board, boolean[] blanks, Tile[] placement,
+                                                List<Tile> tiles, int direction) {
+        List<FormedWord> words = new ArrayList<>();
+        words.add(run(board, blanks, placement, tiles.get(0).position, direction));
+        int other = direction == 1 ? SIZE : 1;
+        for (Tile tile : tiles) {
+            FormedWord cross = run(board, blanks, placement, tile.position, other);
+            if (cross.word.length() > 1) words.add(cross);
+        }
+        return words;
+    }
+
+    static List<FormedWord> recordedWords(char[] board, boolean[] blanks, List<Tile> tiles) {
+        if (tiles.isEmpty() || tiles.size() > RACK_SIZE) return List.of();
+        Tile[] placement = new Tile[CELLS];
+        int first = tiles.get(0).position;
+        boolean sameRow = true;
+        boolean sameCol = true;
+        int from = first;
+        int to = first;
+        for (Tile tile : tiles) {
+            int pos = tile.position;
+            if (board[pos] != 0 || placement[pos] != null) return List.of();
+            placement[pos] = tile;
+            sameRow &= pos / SIZE == first / SIZE;
+            sameCol &= pos % SIZE == first % SIZE;
+            from = Math.min(from, pos);
+            to = Math.max(to, pos);
+        }
+        if (!sameRow && !sameCol) return List.of();
+        int direction = wordDirection(board, blanks, placement, tiles, sameRow);
+        for (int pos = from; pos <= to; pos += direction) {
+            if (board[pos] == 0 && placement[pos] == null) return List.of();
+        }
+        return formedWords(board, blanks, placement, tiles, direction);
     }
 
     private static FormedWord run(char[] board, boolean[] blanks, Tile[] placement, int pos, int direction) {

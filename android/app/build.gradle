@@ -10,8 +10,8 @@ android {
         applicationId 'fr.lettrine.game'
         minSdk 26
         targetSdk 36
-        versionCode 1
-        versionName '0.1.0'
+        versionCode 2
+        versionName '0.2.0'
     }
 
     compileOptions {
@@ -21,8 +21,23 @@ android {
     }
 
     sourceSets.main.assets.srcDir(layout.buildDirectory.dir('generated/lettrineAssets'))
+    sourceSets.main.jniLibs.srcDir(layout.buildDirectory.dir('generated/lettrineJni'))
+
+    packaging.jniLibs.useLegacyPackaging = true
+}
+
+tasks.named('preBuild').configure {
+    doFirst {
+        if (!layout.buildDirectory.file('generated/lettrineAssets/smollm2-135m-instruct-q4_0.gguf').get().asFile.isFile() ||
+                !['arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'].every { abi ->
+                    layout.buildDirectory.file("generated/lettrineJni/$abi/liblettrine_offline.so").get().asFile.isFile()
+                }) {
+            throw new GradleException('Lancer android/scripts/build.sh pour préparer le modèle embarqué.')
+        }
+    }
 }
 
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+    testImplementation 'junit:junit:4.13.2'
 }

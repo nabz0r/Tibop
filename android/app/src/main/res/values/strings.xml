@@ -3,4 +3,12 @@
     <string name="bluetooth_disconnected">La connexion Bluetooth est terminée.</string>
     <string name="ambient_sound">Ambiance sonore</string>
     <string name="replay_position">%1$d/%2$d  ·  %3$s</string>
+    <string name="move_explanation_last">Expliquer le dernier coup</string>
+    <string name="move_explanation_current">Expliquer ce coup</string>
+    <string name="move_explanation_title">Explication du coup %1$d</string>
+    <string name="move_explanation_loading">Analyse sur cet appareil…</string>
+    <string name="move_explanation_model">Explication avec le modèle embarqué</string>
+    <string name="move_explanation_engine">Explication du moteur de jeu · modèle indisponible</string>
+    <string name="move_explanation_partial">Détail des points indisponible pour ce coup.</string>
+    <string name="move_explanation_close">Fermer</string>
 </resources>

@@ -2,7 +2,7 @@
 
 # Lettrine
 
-Laboratoire local de stratégie pour jeux de lettres. Le studio explore 128 000 duels en quatre langues, les archives de maîtres, les variantes de placement et la progression du bot adaptatif N A B. Le prototype Android reste disponible pendant le chantier de recherche.
+Laboratoire local de stratégie pour jeux de lettres. Le studio explore 128 000 duels en quatre langues, les archives de maîtres, les variantes de placement et la progression du bot adaptatif N A B. L’application Android permet de jouer et d’expliquer les coups hors ligne.
 
 ## Ouvrir sur le Mac
 
@@ -33,11 +33,11 @@ Pour jouer, glisser une lettre sur le plateau ou sélectionner une lettre puis s
 
 À la fin d’une partie jouée avec cette version, les participants peuvent télécharger le journal des coups en JSON. Dans le studio, ouvrez **Outils**, importez ce fichier, puis ouvrez **Parties → Parties importées** pour le rejeu. Les salons qui avaient déjà enregistré des coups avant cette mise à jour restent jouables et leur journal antérieur est indisponible.
 
-## Prototype Android
+## Application Android
 
 [Télécharger l’APK](android/artifacts/lettrine.apk) · [Télécharger depuis le studio](http://127.0.0.1:8787/download/lettrine.apk) · [Guide Android et compilation](android/README.md)
 
-Le prototype conserve le jeu hors ligne à deux, trois ou quatre sur un appareil, le duel Bluetooth et le solo. L’app garde l’historique et la cote locale, exporte ses parties en JSON et propose zoom, palettes et ambiance musicale optionnelle.
+L’application propose le jeu hors ligne à deux, trois ou quatre sur un appareil, le duel Bluetooth et le solo. SmolLM2 est inclus dans l’APK pour expliquer le dernier coup ou un tour sélectionné dans l’historique. L’app garde la cote locale et exporte les parties en JSON.
 
 ## Laboratoire
 

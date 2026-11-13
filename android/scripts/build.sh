@@ -34,6 +34,7 @@ if [[ -f "$root/data/models/fr-bots-v1.json" ]]; then
     cp "$root/data/models/fr-bots-v1.json" "$generated/bot-policy.json"
 fi
 python3 scripts/prepare_words.py "$words" "$words_label" "$words_license" "$generated"
+./scripts/prepare_model.sh
 if [[ "${LETTRINE_GRADLE_OFFLINE:-0}" == 1 ]]; then
     "$gradle_bin" --offline :app:assembleDebug
 else

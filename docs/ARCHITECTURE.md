@@ -141,4 +141,6 @@ Android utilise un moteur natif Java et le lexique français intégré. Le jeu e
 
 Les parties terminées, statistiques et cotes Android restent dans le stockage de l’application jusqu’à un export volontaire. Le mode adaptatif utilise la cote locale et l’écart en cours. Les cotes du studio et celles du téléphone s’étalonnent séparément. L’APK reste français et son paquet de test est destiné à l’installation directe.
 
+L’APK inclut SmolLM2 135M Instruct en 4 bits et llama.cpp. Une tâche Android dédiée évalue la réponse du modèle parmi les angles d’explication disponibles. Le moteur Java reconstruit le score à partir du journal et rédige le texte en français. Le commentaire peut s’afficher pendant une partie ou dans l’historique et fonctionne sans connexion. Les chevalets privés restent en dehors de cette analyse. [Modèle et licences](../android/app/src/main/assets/SmolLM2-NOTICE.md)
+
 Les profils de jeu versionnés regroupent géométrie, jetons, conditions de fin, lexique et orthographe. Les profils classiques français, anglais, allemand et russe fournissent chacun un lexique libre. Le profil japonais documente une mécanique propre. Un profil incompatible ou un lexique différent empêche de recalculer les variantes d’une campagne. Les archives historiques conservent leurs éditions de référence. [Profils de langue](LANGUES.md)
