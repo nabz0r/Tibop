@@ -14,7 +14,7 @@ from index_moves import PREMIUM_AT, ROOT
 
 def normalized(line):
     word = line.strip().upper().replace("Œ", "OE").replace("Æ", "AE")
-    return "".join(c for c in unicodedata.normalize("NFD", word) if not unicodedata.combining(c))
+    return "".join(c for c in unicodedata.normalize("NFD", word) if not unicodedata.category(c).startswith("M"))
 
 
 def words_and_score(board, placed, direction, points):
@@ -157,12 +157,14 @@ def main():
     parser.add_argument("report", type=Path)
     parser.add_argument("games", type=Path)
     args = parser.parse_args()
+    if not __debug__:
+        parser.error("Désactivez le mode Python optimisé pour vérifier le journal.")
     report = json.loads(args.report.read_bytes())
     profile = json.loads((ROOT / "data/profiles/fr-classic-v1.json").read_bytes())
     assert report["profile"] == profile["id"] and report["initial_clock_ms"] == 1_200_000
     lexicon = args.words.read_bytes()
     assert sha256(lexicon).hexdigest() == report["lexicon_sha256"]
-    valid = {normalized(line) for line in lexicon.decode("utf-8-sig").splitlines()} - {""}
+    valid = {normalized(line) for line in lexicon.decode("utf-8").lstrip("\ufeff").splitlines()} - {""}
     assert len(valid) == report["normalized_forms"]
     inventory = Counter({t["symbol"]: t["count"] for t in profile["tiles"]})
     points = {t["symbol"]: t["points"] for t in profile["tiles"]}

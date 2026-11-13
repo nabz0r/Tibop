@@ -172,7 +172,7 @@ Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’app
 
 - Les 65 tests Android et l’analyse Lint passent. L’installation par-dessus la version précédente a réussi sur Android 8 et 16. Sur Android 16, la partie existante a repris avec son plateau, ses chevalets et son score.
 - Le bundle signé a été validé et ses APK fractionnés installés sur Android 16 avec des pages de 16 Kio. L’APK directe utilise le même certificat que la version précédente.
-- Le lexique personnel a importé une liste de test en UTF-8 avec accents. Son empreinte affichée correspond au SHA-256 recalculé sur la liste normalisée. Le règlement FISF et la comparaison avec Macondo sont documentés dans le [banc du laboratoire](../docs/SIMULATION_FISF.md).
+- Le lexique personnel a importé une liste de test en UTF-8 avec accents, puis les 406 312 formes de Grammalecte 7.7. L’empreinte affichée correspond au SHA-256 recalculé sur la liste normalisée. L’écran de parties d’entraînement s’ouvre avec le lexique importé. [Règlement FISF et comparaison avec Macondo](../docs/SIMULATION_FISF.md)
 
 ## Vérification de la version 0.15.0
 

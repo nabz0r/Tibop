@@ -1,12 +1,20 @@
 # NAB contre Macondo en classique
 
-NAB Recherche avancée affronte [Macondo v0.13.9](https://github.com/domino14/macondo/tree/v0.13.9) dans un processus local. Macondo génère ses coups avec son propre moteur et choisit le meilleur score immédiat. Lorsqu’il ne trouve aucun placement, il échange si le règlement le permet, en gardant les jokers et les S. Chaque graine fournit deux parties complètes sur le même tirage initial, avec inversion du siège de NAB.
+NAB Recherche avancée affronte Macondo v0.13.9 dans un processus local. Macondo génère ses coups avec son propre moteur et choisit le meilleur score immédiat. Lorsqu’il ne trouve aucun placement, il échange si le règlement le permet, en gardant les jokers et les S. Chaque graine fournit deux parties complètes sur le même tirage initial, avec inversion du siège de NAB. [Macondo v0.13.9](https://github.com/domino14/macondo/tree/v0.13.9)
 
 Le laboratoire construit le graphe des mots à partir d’une seule liste UTF-8 de formes jouables. Les deux moteurs et l’arbitre emploient ce graphe. Le rapport indique le nom déclaré du lexique, le nombre de formes normalisées, le SHA-256 du fichier d’origine, le SHA-256 du moteur externe et les paramètres de NAB. Le modèle entraîné s’applique lorsque l’empreinte correspond à celle de son lexique d’entraînement. Pour un autre lexique, le banc utilise la politique Expert de base avec la même recherche avancée.
 
 Le laboratoire applique les règles de jeu du Scrabble classique FISF de septembre 2026. Chaque moteur dispose de 20 minutes pour décider de ses coups. La durée de décision est mesurée avec une horloge monotone et arrondie à la milliseconde supérieure. Elle inclut la communication avec Macondo. À expiration, le moteur passe et les échanges deviennent indisponibles pour les deux sièges. Le journal conserve les temps par tour et les points de reliquat. Le banc conteste automatiquement les mots hors lexique avant la pioche lorsque la fenêtre réglementaire le permet. Les deux moteurs génèrent leurs coups avec la même liste, donc les contestations restent exceptionnelles. Des scénarios de test vérifient aussi les pénalités de contestation à tort et la fenêtre du dernier coup. [Règlement FISF, sections 2.4, 3.3 à 3.5 et 5](https://www.ffsc.fr/files/public/fichiers/reglements/classique/Reglement.international.du.Scrabble.classique.pdf)
 
 Un moteur Macondo qui ne rend pas de réponse dans son temps restant augmenté de cinq secondes interrompt la campagne. Le journal partiel permet de diagnostiquer le problème. Le rapport est écrit après la dernière partie. Une réponse reçue pendant ces cinq secondes donne une passe pour temps épuisé.
+
+Le taux de points de match compte chaque victoire pour un point et chaque nulle pour un demi-point. L’intervalle de confiance est calculé sur les paires de parties. L’écart Elo est calculé à partir du taux avec un lissage d’un demi-point. L’écart moyen en points de jeu utilise les scores finaux bruts. Cette mesure compare les deux politiques dans cette configuration.
+
+## Répétition sur Grammalecte 7.7
+
+Le 14 novembre 2026, NAB a joué 1 000 parties complètes sur 500 tirages appariés, à partir de la graine `984230000`. Les deux moteurs utilisaient les 406 312 formes de Grammalecte 7.7. NAB a obtenu 651 victoires, une nulle et 348 défaites, soit **65,15 % des points de match** (intervalle à 95 % de 59,33 à 70,97 %). L’écart est de **+109 Elo relatif à Macondo au meilleur score immédiat** et de +39,84 points bruts par partie.
+
+Le contrôle indépendant a recalculé les 23 151 tours. Toutes les parties se sont terminées par épuisement d’un chevalet, sans expiration de pendule ni contestation. Les scénarios de test couvrent ces deux cas. La campagne sur ODS 9 attend une liste intégrale utilisable localement.
 
 ## Lancer en local avec Docker
 
