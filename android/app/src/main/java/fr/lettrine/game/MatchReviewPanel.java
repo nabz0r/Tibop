@@ -22,10 +22,12 @@ final class MatchReviewPanel {
     private final TextView playedButton;
     private final TextView alternativeButton;
     private final TextView explainButton;
+    private final TextView practiceButton;
     private int selected;
+    private boolean alternativeRevealed;
 
     MatchReviewPanel(ViewKit ui, List<MatchReview.Turn> turns, boolean alternativesAllowed,
-                     Consumer<MatchReview.Turn> explain) {
+                     Consumer<MatchReview.Turn> explain, Consumer<MatchReview.Turn> practice) {
         this.ui = ui;
         this.turns = turns;
         this.alternativesAllowed = alternativesAllowed;
@@ -45,6 +47,14 @@ final class MatchReviewPanel {
         }
         panel.addView(positions);
         ui.gap(panel, 10);
+
+        practiceButton = ui.button(label(R.string.match_review_practice), true, () -> {
+            MatchReview.Turn turn = turns.get(selected);
+            if (turn.practice() != null) practice.accept(turn);
+        });
+        LinearLayout.LayoutParams practicePosition = new LinearLayout.LayoutParams(-1, -2);
+        practicePosition.bottomMargin = ui.dp(10);
+        panel.addView(practiceButton, practicePosition);
 
         LinearLayout scores = ui.card();
         turnTitle = ui.title("", 22);
@@ -74,8 +84,11 @@ final class MatchReviewPanel {
         board = new BoardView(ui.context, ui.palette, null);
         panel.addView(board, new LinearLayout.LayoutParams(-1, -2));
         LinearLayout actions = ui.row();
-        explainButton = ui.button(label(R.string.match_review_explain), false,
-                () -> explain.accept(turns.get(selected)));
+        explainButton = ui.button(label(R.string.match_review_explain), false, () -> {
+            MatchReview.Turn turn = turns.get(selected);
+            revealAlternative(turn);
+            explain.accept(turn);
+        });
         ui.weight(actions, explainButton);
         ui.space(actions, 5);
         TextView reset = ui.textButton("1×", board::resetZoom);
@@ -99,19 +112,15 @@ final class MatchReviewPanel {
         MatchReview.Alternative alternative = turn.alternative();
         turnTitle.setText(label(R.string.match_review_turn_title, turn.index() + 1, playedWord(played)));
         playedScore.setText(label(R.string.match_review_played_score, playedWord(played), played.score()));
+        practiceButton.setVisibility(turn.practice() == null ? View.GONE : View.VISIBLE);
+        alternativeRevealed = turn.practice() == null;
         if (alternative == null) {
             alternativeScore.setVisibility(View.GONE);
             comparison.setVisibility(alternativesAllowed ? View.VISIBLE : View.GONE);
             comparison.setText(turn.rackAvailable()
                     ? R.string.match_review_alternative_unavailable : R.string.match_review_rack_unavailable);
         } else {
-            int points = alternative.preview().score();
-            alternativeScore.setText(label(R.string.match_review_alternative_score, alternative.preview().word(), points));
-            alternativeScore.setVisibility(View.VISIBLE);
-            comparison.setVisibility(View.VISIBLE);
-            int delta = points - played.score();
-            comparison.setText(delta == 0 ? label(R.string.match_review_equal)
-                    : label(R.string.match_review_score_delta, delta));
+            showAlternativeScores(turn);
         }
         ui.enabled(alternativeButton, alternative != null);
         explainButton.setText(alternative == null ? R.string.move_explanation_current : R.string.match_review_explain);
@@ -124,6 +133,7 @@ final class MatchReviewPanel {
         FrenchGame.Move played = turn.played();
         MatchReview.Alternative alternative = turn.alternative();
         if (showAlternative && alternative == null) return;
+        if (showAlternative) revealAlternative(turn);
         char[] letters = turn.board().clone();
         boolean[] blanks = turn.blanks().clone();
         List<FrenchGame.Tile> tiles = showAlternative ? alternative.tiles() : played.tiles();
@@ -146,6 +156,27 @@ final class MatchReviewPanel {
                 + (placed.isEmpty() ? "" : " " + String.join(", ", placed) + "."));
         highlight(playedButton, !showAlternative);
         highlight(alternativeButton, showAlternative);
+    }
+
+    private void revealAlternative(MatchReview.Turn turn) {
+        if (alternativeRevealed || turn.alternative() == null) return;
+        alternativeRevealed = true;
+        showAlternativeScores(turn);
+    }
+
+    private void showAlternativeScores(MatchReview.Turn turn) {
+        if (!alternativeRevealed) {
+            alternativeScore.setVisibility(View.GONE);
+            comparison.setVisibility(View.GONE);
+            return;
+        }
+        FrenchGame.Preview preview = turn.alternative().preview();
+        alternativeScore.setText(label(R.string.match_review_alternative_score, preview.word(), preview.score()));
+        alternativeScore.setVisibility(View.VISIBLE);
+        int delta = preview.score() - turn.played().score();
+        comparison.setText(delta == 0 ? label(R.string.match_review_equal)
+                : label(R.string.match_review_score_delta, delta));
+        comparison.setVisibility(View.VISIBLE);
     }
 
     private void highlight(TextView button, boolean active) {

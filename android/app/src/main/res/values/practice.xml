@@ -1,0 +1,38 @@
+<resources>
+    <string name="practice_first">Premier défi</string>
+    <string name="practice_first_home">Un coup à trouver en moins d’une minute</string>
+    <string name="practice_first_goal">Prolongez CHAT vers la droite ou formez un mot qui s’y raccorde.</string>
+    <string name="practice_first_unavailable">Ce défi demande un lexique qui accepte CHAT, CHATS et CHATONS.</string>
+    <string name="practice_retry_title">Rejouer le coup %1$d</string>
+    <string name="practice_retry_goal">Retrouvez le plateau et votre chevalet d’origine. Cherchez un meilleur placement.</string>
+    <string name="practice_guide">Touchez une lettre, puis une case.</string>
+    <string name="practice_ready">Valider le coup</string>
+    <string name="practice_clear">Effacer</string>
+    <string name="practice_reveal">Voir le coup de NAB</string>
+    <string name="practice_yours">Votre coup</string>
+    <string name="practice_reference">Coup de NAB</string>
+    <string name="practice_reset">Réessayer</string>
+    <string name="practice_original">Votre coup dans la partie · %1$s</string>
+    <string name="practice_score_line">%1$s · %2$s · %3$s</string>
+    <string name="practice_preview_score">%1$s · %2$s</string>
+    <string name="practice_better">Votre coup rapporte %1$s de plus que la proposition de NAB.</string>
+    <string name="practice_lower">Votre coup rapporte %1$s de moins que la proposition de NAB.</string>
+    <string name="practice_equal">Votre coup et celui de NAB rapportent le même nombre de points.</string>
+    <string name="practice_first_tip">NAB prolonge CHAT avec ONS. Le O en H12 vaut deux points grâce à la case lettre double.</string>
+    <string name="practice_joker_choice">Quelle lettre pour le joker ?</string>
+    <string name="practice_cancel">Annuler</string>
+    <string name="practice_letter">Lettre %1$c</string>
+    <string name="practice_joker">Joker</string>
+    <string name="practice_placed">%1$s, déjà sur le plateau</string>
+    <string name="practice_board_description">Plateau de l’exercice, 15 lignes sur 15 colonnes.</string>
+    <string name="practice_board_first_description">Plateau de l’exercice. CHAT est posé de H8 à H11.</string>
+    <string name="practice_board_result">Plateau, %1$s. %2$s, %3$s.</string>
+    <string name="practice_board_tile">%1$c en %2$c%3$d</string>
+    <string name="practice_board_blank">Joker %1$c en %2$c%3$d</string>
+    <string name="practice_zoom">Agrandir le plateau</string>
+    <string name="practice_zoom_reset">Réinitialiser le zoom</string>
+    <plurals name="practice_points">
+        <item quantity="one">%d point</item>
+        <item quantity="other">%d points</item>
+    </plurals>
+</resources>

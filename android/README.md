@@ -1,9 +1,10 @@
 # Lettrine pour Android
 
-L’[APK 0.3.0](artifacts/lettrine.apk) fonctionne hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe.
+L’[APK 0.4.0](artifacts/lettrine.apk) fonctionne hors ligne à partir d’Android 8 (API 26). Il contient le modèle d’explication des coups et porte la même signature que l’APK précédent pour permettre une mise à jour directe.
 
 ## Jouer
 
+- **Premier défi** ouvre une position courte depuis l’accueil. Prolongez le mot sur le plateau, validez votre pose, puis comparez votre score à la proposition de NAB. Vous pouvez retenter le défi à tout moment.
 - **Entre amis** accueille deux à quatre joueurs sur le même appareil. Le chevalet est masqué à chaque changement de joueur. Les parties solo et locales en cours sont sauvegardées après chaque tour.
 - **Bluetooth** relie deux appareils préalablement associés dans Android. L’un choisit **Héberger** et l’autre choisit l’appareil hôte. Les deux APK doivent embarquer le même lexique. Une coupure interrompt la partie.
 - **Contre un bot** propose quatre niveaux et un niveau adaptatif. Celui-ci lit l’Elo local et ajuste sa difficulté pendant la partie en fonction de l’écart de score. Les parties avec aide au placement restent dans l’historique et sont exclues de l’Elo.
@@ -12,6 +13,7 @@ L’[APK 0.3.0](artifacts/lettrine.apk) fonctionne hors ligne à partir d’Andr
 - **Évolution de l’Elo** se trouve dans l’historique. Elle suit la cote de départ puis les parties solo cotées. Sélectionnez un point pour retrouver la cote, sa variation et le niveau de NAB utilisé.
 - **Expliquer le dernier coup** s’affiche dans une partie après le premier tour. En relecture, **Expliquer ce coup** s’applique au tour affiché. Les scores, mots croisés, cases bonus et jokers proviennent du moteur. Le modèle embarqué choisit le détail à mettre en avant en français. Si le modèle ne répond pas, le moteur affiche son explication.
 - **Bilan avec NAB** est disponible en fin de partie et depuis son rejeu. NAB sélectionne jusqu’à trois tours à revoir. Alternez entre le coup joué et la proposition pour comparer leurs scores immédiats sur le même plateau. **Expliquer la comparaison** s’appuie sur les données du moteur et fonctionne hors ligne.
+- **Rejouer mes coups manqués** ouvre la position et le chevalet du tour sélectionné dans le bilan. Ce bouton apparaît quand NAB a trouvé un placement qui marque plus de points et que le journal contient le chevalet du tour. Jouez votre propre tentative ou affichez la proposition. Les exercices ne modifient ni la partie ni l’Elo.
 
 Le jeu valide automatiquement les placements avec Grammalecte 7.7. Les scores affichés par le moteur Android sont liés à cette édition du lexique. Le niveau Maître applique les poids sélectionnés lors de l’entraînement du moteur Mac pour le même lexique. Le générateur de coups Android et ses cotes locales sont propres à l’application.
 
@@ -39,5 +41,11 @@ Sur un poste où les dépendances sont en cache, `LETTRINE_GRADLE_OFFLINE=1` com
 
 - Sur émulateurs Android 8 et 16, la mise à jour depuis la 0.2.0 a conservé la partie en cours et les archives. Deux parties complètes contre NAB Adaptatif ont validé le recalcul de la cote et l’ouverture du bilan à la fin.
 - En mode avion, les trois tours du bilan s’ouvrent et alternent entre la pose jouée et sa variante. L’explication embarquée, les points de la courbe d’Elo, le rejeu d’une ancienne partie et l’export JSON ont été vérifiés.
+
+## Vérification de la version 0.4.0
+
+- En mode avion sur une installation neuve d’Android 16, le premier défi a pris 16,3 secondes entre le bouton d’accueil et le résultat. Une pose invalide, l’affichage volontaire de la solution et la possibilité de réessayer ont aussi été vérifiés.
+- Sur émulateurs Android 8 et 16, la mise à jour depuis la 0.3.0 a conservé les sauvegardes à l’identique. Retenter un tour archivé restaure le plateau et le chevalet d’origine, puis rend le même tour du bilan sans modifier les sauvegardes. Les journaux sans chevalet, Bluetooth ou issus d’un autre lexique masquent le bouton d’exercice.
+- En mode avion, une partie contre NAB Adaptatif a validé le recalcul de l’Elo et l’accès au bilan. La courbe, la relecture, l’export JSON et l’explication par le modèle embarqué ont aussi été vérifiés.
 
 L’APK joue en français avec le moteur embarqué. Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.

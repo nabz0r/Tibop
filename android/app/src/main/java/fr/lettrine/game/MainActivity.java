@@ -63,7 +63,7 @@ public final class MainActivity extends Activity {
     private static final int APP_SETTINGS = 44;
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
 
-    private enum Screen { HOME, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW }
+    private enum Screen { HOME, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW, PRACTICE }
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -111,6 +111,8 @@ public final class MainActivity extends Activity {
     private AlertDialog explanationDialog;
     private Future<?> reviewTask;
     private Runnable reviewBack;
+    private Runnable practiceBack;
+    private boolean firstChallengeRequested;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -156,7 +158,10 @@ public final class MainActivity extends Activity {
                     lexicon = loaded;
                     notice = sourceNotice;
                     if (game != null && game.end != null) archiveIfFinished();
-                    if (screen == Screen.HOME) showHome();
+                    if (screen == Screen.HOME) {
+                        if (firstChallengeRequested) openFirstChallenge();
+                        else showHome();
+                    }
                 });
             } catch (Exception exception) {
                 main.post(() -> {
@@ -211,6 +216,7 @@ public final class MainActivity extends Activity {
             case HOME -> { }
             case DETAIL -> showHistory();
             case REVIEW -> reviewBack.run();
+            case PRACTICE -> leavePractice();
             case BLUETOOTH -> {
                 if (link != null && state() == null) closeLink();
                 showHome();
@@ -231,6 +237,7 @@ public final class MainActivity extends Activity {
     private void page(Screen next, boolean navigation) {
         if (explanationDialog != null) explanationDialog.dismiss();
         cancelReview();
+        if (next != Screen.HOME) firstChallengeRequested = false;
         screen = next;
         if (Build.VERSION.SDK_INT >= 33) {
             if (next == Screen.HOME && backCallback != null) {
@@ -336,6 +343,9 @@ public final class MainActivity extends Activity {
         top("Lettrine", null, rating);
         ui.gap(content, 8);
         content.addView(ui.hero(), new LinearLayout.LayoutParams(-1, ui.dp(137)));
+        ui.gap(content, 9);
+        content.addView(ui.option("✦", getString(R.string.practice_first), getString(R.string.practice_first_home),
+                this::openFirstChallenge));
         MatchCodec.State ongoing = state();
         if (ongoing != null && ongoing.end() == null && (!mode.equals("bluetooth") || bluetoothReady)) {
             ui.gap(content, 13);
@@ -367,6 +377,47 @@ public final class MainActivity extends Activity {
         if (lexicon != null) return true;
         toast(lexiconError == null ? "Le lexique se charge…" : lexiconError);
         return false;
+    }
+
+    private void openFirstChallenge() {
+        firstChallengeRequested = lexicon == null && lexiconError == null;
+        if (!ready()) return;
+        PracticePosition position = PracticePosition.first(lexicon);
+        if (position == null) {
+            toast(getString(R.string.practice_first_unavailable));
+            return;
+        }
+        showPractice(getString(R.string.practice_first), getString(R.string.practice_first_goal),
+                position, true, this::showHome);
+    }
+
+    private void practiceReviewedTurn(MatchReview.Turn turn) {
+        PracticePosition position = turn.practice();
+        if (position == null || !ready()) return;
+        FrameLayout reviewFrame = frame;
+        LinearLayout reviewContent = content;
+        showPractice(getString(R.string.practice_retry_title, turn.index() + 1),
+                getString(R.string.practice_retry_goal), position, false, () -> {
+                    screen = Screen.REVIEW;
+                    frame = reviewFrame;
+                    content = reviewContent;
+                    setContentView(frame);
+                    frame.requestApplyInsets();
+                });
+    }
+
+    private void showPractice(String title, String goal, PracticePosition position, boolean first, Runnable back) {
+        page(Screen.PRACTICE, false);
+        practiceBack = back;
+        top(first ? "Lettrine" : getString(R.string.match_review), this::leavePractice, null);
+        heading(title, goal);
+        content.addView(new PracticePanel(ui, position, lexicon, first).view());
+    }
+
+    private void leavePractice() {
+        Runnable back = practiceBack;
+        practiceBack = null;
+        back.run();
     }
 
     private void showSolo(int selection) {
@@ -1371,7 +1422,8 @@ public final class MainActivity extends Activity {
                     } else {
                         content.removeView(status);
                     }
-                    content.addView(new MatchReviewPanel(ui, turns, compatible && !bluetooth, this::explainReview).view());
+                    content.addView(new MatchReviewPanel(ui, turns, compatible && !bluetooth, this::explainReview,
+                            this::practiceReviewedTurn).view());
                 });
             } catch (RuntimeException exception) {
                 if (Thread.currentThread().isInterrupted()) return;

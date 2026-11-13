@@ -20,6 +20,7 @@
     <string name="match_review_score_delta">Écart immédiat de l’alternative · %1$+d pts</string>
     <string name="match_review_rack_unavailable">Alternative indisponible. Le chevalet de ce tour est absent du journal.</string>
     <string name="match_review_alternative_unavailable">Aucune autre pose à comparer pour ce tour.</string>
+    <string name="match_review_practice">Rejouer mes coups manqués</string>
     <string name="match_review_pass">Passe</string>
     <string name="match_review_exchange">Échange</string>
     <string name="match_review_explain">Expliquer la comparaison</string>

@@ -145,4 +145,6 @@ L’APK inclut SmolLM2 135M Instruct en 4 bits et llama.cpp. Une tâche Android 
 
 Le bilan d’une partie terminée reconstruit le plateau tour par tour et calcule des placements alternatifs quand le journal contient le chevalet et que le lexique est compatible. Le moteur contrôle leur légalité et compare les points immédiats. L’interface affiche jusqu’à trois tours et les deux placements sur la position du tour. Les parties Bluetooth utilisent les coups publics. La courbe d’Elo lit les cotes enregistrées des parties solo cotées sans recalculer les résultats.
 
+Le premier défi utilise une position préparée et la validation habituelle des coups. Pour retenter un tour du bilan, l’exercice reprend une copie du plateau avant le coup et du chevalet enregistré. La tentative et la comparaison restent en mémoire. Le moteur de partie, l’historique et la cote ne sont pas modifiés.
+
 Les profils de jeu versionnés regroupent géométrie, jetons, conditions de fin, lexique et orthographe. Les profils classiques français, anglais, allemand et russe fournissent chacun un lexique libre. Le profil japonais documente une mécanique propre. Un profil incompatible ou un lexique différent empêche de recalculer les variantes d’une campagne. Les archives historiques conservent leurs éditions de référence. [Profils de langue](LANGUES.md)

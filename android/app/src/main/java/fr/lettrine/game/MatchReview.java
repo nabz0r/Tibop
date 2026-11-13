@@ -15,11 +15,12 @@ final class MatchReview {
     record Alternative(FrenchGame.Preview preview, List<FrenchGame.Tile> tiles) {}
 
     record Turn(int index, FrenchGame.Move played, char[] board, boolean[] blanks, boolean rackAvailable,
-                Alternative alternative, String facts, List<String> options, List<String> explanations) {
+                Alternative alternative, PracticePosition practice, String facts,
+                List<String> options, List<String> explanations) {
         String text(int option) { return explanations.get(option); }
     }
 
-    private record RankedTurn(int index, char[] board, boolean[] blanks, boolean rackAvailable,
+    private record RankedTurn(int index, char[] board, boolean[] blanks, List<Character> rack,
                               Alternative alternative, int gain, int publicInterest) {}
 
     static List<Turn> analyze(List<FrenchGame.Move> moves, Lexicon lexicon, int focusSeat,
@@ -36,10 +37,10 @@ final class MatchReview {
                         ? alternative(board, blanks, rack, move, lexicon) : null;
                 int gain = alternative == null ? Integer.MIN_VALUE : alternative.preview().score() - move.score();
                 int publicInterest = move.type().equals("play") ? move.score() : -1;
-                RankedTurn candidate = new RankedTurn(index, board, blanks, !rack.isEmpty(), alternative,
+                RankedTurn candidate = new RankedTurn(index, board, blanks, rack, alternative,
                         gain, publicInterest);
                 if (ranked.size() < TURN_LIMIT || REVIEW_ORDER.compare(candidate, ranked.get(TURN_LIMIT - 1)) < 0) {
-                    ranked.add(new RankedTurn(index, board.clone(), blanks.clone(), !rack.isEmpty(), alternative,
+                    ranked.add(new RankedTurn(index, board.clone(), blanks.clone(), rack, alternative,
                             gain, publicInterest));
                     ranked.sort(REVIEW_ORDER);
                     if (ranked.size() > TURN_LIMIT) ranked.remove(TURN_LIMIT);
@@ -149,8 +150,10 @@ final class MatchReview {
             options.add("Alternative board squares " + cells);
             explanations.add(comparison + "\n\nCases où poser les nouvelles lettres. " + cells + ".");
         }
-        return new Turn(row.index(), played, row.board(), row.blanks(), row.rackAvailable(), alternative, facts,
-                List.copyOf(options), List.copyOf(explanations));
+        PracticePosition practice = row.gain() > 0
+                ? new PracticePosition(row.board(), row.blanks(), row.rack(), alternative, played.score()) : null;
+        return new Turn(row.index(), played, row.board(), row.blanks(), !row.rack().isEmpty(),
+                alternative, practice, facts, List.copyOf(options), List.copyOf(explanations));
     }
 
     private static String points(int score) { return score + (score == 1 || score == 0 ? " point" : " points"); }
