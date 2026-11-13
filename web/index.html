@@ -3,33 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Tableau de bord local des simulations de Scrabble francophone.">
-  <meta name="theme-color" content="#080b10">
-  <title>Lettrine · Laboratoire de Scrabble</title>
+  <meta name="description" content="Rejouez des parties de Scrabble, comparez les stratégies et explorez les archives de compétition.">
+  <meta name="theme-color" content="#f5efe4">
+  <title>Lettrine Studio · Comprendre le jeu</title>
   <link rel="icon" href="/assets/lettrine-mark.png" type="image/png">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/theme.css">
+  <link rel="stylesheet" href="/charts.css">
   <script src="/i18n.js" defer></script>
   <script src="/analysis.js" defer></script>
   <script src="/research.js" defer></script>
+  <script src="/board-rules.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#content">Aller au contenu</a>
   <div class="layout">
     <aside class="sidebar">
-      <a href="#vue" class="brand" aria-label="Lettrine, vue d’ensemble">
+      <a href="#vue" class="brand" aria-label="Accueil de Lettrine Studio">
         <img class="brand-tile" src="/assets/lettrine-mark.png" width="36" height="36" alt="">
-        <strong>Lettrine</strong>
+        <span class="brand-copy"><strong>Lettrine</strong><span class="brand-product">Studio</span></span>
       </a>
+      <a href="/salons.html" class="button play-link">Jouer au Scrabble <span aria-hidden="true">↗</span></a>
       <nav class="nav" aria-label="Navigation principale">
-        <a href="#vue" data-view="vue" aria-current="page"><span class="nav-icon icon-overview" aria-hidden="true"></span>Vue d’ensemble</a>
-        <a href="#meta" data-view="meta"><span class="nav-icon icon-meta" aria-hidden="true"></span>Analyse</a>
-        <a href="#parties" data-view="parties"><span class="nav-icon icon-games" aria-hidden="true"></span>Parties</a>
-        <a href="#decouverte" data-view="decouverte" data-english="Discovery"><span class="nav-icon icon-discover" aria-hidden="true"></span>Découverte</a>
-        <a href="#admin" data-view="admin"><span class="nav-icon icon-admin" aria-hidden="true"></span>Administration</a>
+        <a href="#vue" data-view="vue" aria-current="page">Vue d’ensemble</a>
+        <a href="#parties" data-view="parties">Parties</a>
+        <a href="#meta" data-view="meta">Stratégie</a>
+        <a href="#decouverte" data-view="decouverte">Championnats</a>
+        <a href="#admin" data-view="admin">Outils</a>
       </nav>
-      <label class="profile-picker">Profil de jeu<select id="profile-select"><option value="fr-classic-v1">Français</option></select></label>
+      <label class="profile-picker">Langue des parties<select id="profile-select"><option value="fr-classic-v1">Français</option></select></label>
       <div class="sidebar-footer">
         <div class="server-status"><span class="status-dot"></span><span id="connection">Connexion…</span></div>
         <p id="sidebar-lexicon">Scrabble francophone</p>
@@ -37,89 +40,104 @@
     </aside>
 
     <main id="content" class="content" tabindex="-1">
-      <section class="telemetry-strip" id="system-telemetry" aria-label="Télémétrie du laboratoire" hidden>
-        <div class="telemetry-main"><div class="telemetry-services" id="telemetry-services"></div><span class="telemetry-updated" id="telemetry-updated"></span></div>
-        <div class="telemetry-host" id="telemetry-host"></div>
-      </section>
       <section class="view" id="view-vue" aria-labelledby="overview-title">
         <header class="page-head">
           <div>
-            <h1 id="overview-title">Vue d’ensemble</h1>
-            <p>Suivez les simulations et comparez les quatre niveaux de jeu.</p>
+            <h1 id="overview-title">Les parties à la loupe</h1>
+            <p>Rejouez les meilleurs coups et découvrez ce qui fait la différence sur le plateau.</p>
           </div>
-          <a class="button primary" href="#parties?live=1"><span aria-hidden="true">▶</span> Suivre un duel</a>
+          <div class="overview-actions">
+            <a class="button primary" href="#parties?live=1"><span aria-hidden="true">▶</span> Voir un duel</a>
+            <a class="button secondary" href="#meta">Étudier les coups</a>
+          </div>
         </header>
 
         <section class="run-card" aria-labelledby="run-title">
           <div class="run-copy">
-            <div class="run-head"><h2 id="run-title">Campagne de simulation</h2><span class="run-status" id="run-status"><span class="status-dot"></span><span id="run-status-label">Connexion…</span></span></div>
+            <div class="run-head"><h2 id="run-title">Parties simulées</h2><span class="run-status" id="run-status"><span class="status-dot"></span><span id="run-status-label">Connexion…</span></span></div>
             <div class="run-count"><strong id="run-count">—</strong><span id="run-target"></span></div>
             <progress id="run-progress" max="100000" value="0" aria-label="Progression de la campagne"></progress>
             <div class="run-caption"><span id="run-label">Parties enregistrées</span><span id="run-percent">—</span></div>
           </div>
-          <div class="run-art" aria-hidden="true">
-            <div class="art-grid"></div>
-            <span class="art-tile art-tile-a">J<sub>8</sub></span>
-            <span class="art-tile art-tile-b">E<sub>1</sub></span>
-            <span class="art-tile art-tile-c">U<sub>1</sub></span>
-          </div>
+          <div class="run-art" aria-hidden="true"></div>
         </section>
 
         <div class="metrics" aria-label="Indicateurs de simulation">
-          <a class="metric metric-link" id="kpi-score" href="#meta?section=rating"><div class="metric-icon" aria-hidden="true">↗</div><p>Score moyen</p><div class="metric-value" id="metric-score">—</div><small>Points par joueur</small></a>
-          <a class="metric metric-link" id="kpi-best" href="#parties?sort=peak"><div class="metric-icon" aria-hidden="true">↗</div><p>Meilleur score</p><div class="metric-value" id="metric-best">—</div><small>Points en une partie</small></a>
-          <a class="metric metric-link" id="kpi-turns" href="#parties?sort=turns"><div class="metric-icon" aria-hidden="true">↗</div><p>Durée moyenne</p><div class="metric-value" id="metric-turns">—</div><small>Tours par partie</small></a>
-          <a class="metric metric-link" id="kpi-bingos" href="#meta?section=bingos"><div class="metric-icon" aria-hidden="true">↗</div><p>Scrabbles</p><div class="metric-value" id="metric-bingos">—</div><small id="kpi-bingo-context">Poses de sept lettres</small></a>
+          <a class="metric metric-link" id="kpi-score" href="#meta?section=rating"><p>Score moyen</p><div class="metric-value" id="metric-score">—</div><small>Points par joueur</small></a>
+          <a class="metric metric-link" id="kpi-best" href="#parties?sort=peak"><p>Meilleur score</p><div class="metric-value" id="metric-best">—</div><small>Points en une partie</small></a>
+          <a class="metric metric-link" id="kpi-turns" href="#parties?sort=turns"><p>Durée moyenne</p><div class="metric-value" id="metric-turns">—</div><small>Tours par partie</small></a>
+          <a class="metric metric-link" id="kpi-bingos" href="#meta?section=bingos"><p>Scrabbles</p><div class="metric-value" id="metric-bingos">—</div><small id="kpi-bingo-context">Poses de sept lettres</small></a>
         </div>
 
         <div class="overview-grid">
           <section class="panel" aria-labelledby="level-title">
-            <div class="panel-head"><div><h2 id="level-title">Elo des niveaux de référence</h2><p>Échelle relative à la campagne de référence</p></div><a href="#meta" class="text-link">Voir l’analyse <span aria-hidden="true">→</span></a></div>
+            <div class="panel-head"><div><h2 id="level-title">La force des joueurs</h2><p>Le classement Elo compare les résultats des quatre niveaux de jeu.</p></div><a href="#meta?section=rating" class="text-link">Voir le classement <span aria-hidden="true">→</span></a></div>
             <div id="overview-levels" class="level-list"><p class="empty">En attente des premiers résultats.</p></div>
           </section>
           <section class="panel models-panel" aria-labelledby="models-title">
-            <div class="panel-head"><div><h2 id="models-title">Modèles du laboratoire</h2><p>Performance de jeu et analyse de position</p></div></div>
+            <div class="panel-head"><div><h2 id="models-title">Résultats des bots</h2><p>Duels sur des tirages réservés.</p></div></div>
             <div class="model-entry" id="trained-panel" hidden>
               <div class="model-head"><h3>Expert entraîné</h3><a class="model-elo text-link" id="trained-elo" href="/api/models" download="lettrine-expert-fr.json"></a></div>
-              <p>Face à l’Expert de référence, sur des tirages réservés.</p>
+              <p>Face à l’Expert de référence.</p>
               <div class="model-performance"><span>Score de match</span><strong id="trained-match-rate"></strong></div>
               <div id="trained-track"></div>
               <div class="model-foot"><span id="trained-games"></span></div>
             </div>
-            <div class="model-entry" id="local-model-entry">
-              <div class="model-head"><h3 id="local-model">Llama local</h3><span class="model-role">Analyse</span></div>
-              <p>Commente les coups et leurs variantes.</p>
-              <p id="llm-elo-placeholder">Elo en jeu non mesuré.</p>
-              <div id="llm-benchmarks"></div>
+            <div class="model-entry" id="peak-panel" hidden>
+              <div class="model-head"><h3>NAB, recherche avancée</h3></div>
+              <p>Face à l’Expert entraîné.</p>
+              <div class="model-performance"><span>Score de match</span><strong id="peak-match-rate"></strong></div>
+              <div class="model-foot"><span id="peak-games"></span></div>
             </div>
-            <div class="model-entry commentary-tests" id="commentary-tests" hidden>
-              <h3>Commentaires de position</h3>
-              <p>Une réponse exacte reprend les scores du moteur et choisit une variante à marge simulée maximale.</p>
-              <div class="table-wrap">
-                <table aria-label="Comparatif des modèles d’analyse">
-                  <thead><tr><th scope="col">Modèle</th><th class="numeric" scope="col">JSON valides</th><th class="numeric" scope="col">Exactes</th><th class="numeric" scope="col">Médiane</th><th class="numeric" scope="col">p95</th></tr></thead>
-                  <tbody id="commentary-benchmarks"></tbody>
-                </table>
+            <p class="empty" id="trained-unavailable" hidden>Les résultats du bot Expert sont disponibles dans le profil français.</p>
+            <details class="advanced-details">
+              <summary>Tests des modèles d’analyse</summary>
+              <div class="model-entry" id="local-model-entry">
+                <div class="model-head"><h3 id="local-model">Modèle local</h3><span class="model-role">Analyse</span></div>
+                <p>Commente les coups et leurs variantes.</p>
+                <p id="llm-elo-placeholder">Elo en jeu non mesuré.</p>
+                <div id="llm-benchmarks"></div>
               </div>
-            </div>
+              <div class="model-entry commentary-tests" id="commentary-tests" hidden>
+                <h3>Commentaires de position</h3>
+                <p>Le test vérifie les scores annoncés et le choix du meilleur coup selon la simulation.</p>
+                <div class="table-wrap">
+                  <table aria-label="Comparatif des modèles d’analyse">
+                    <thead><tr><th scope="col">Modèle</th><th class="numeric" scope="col">Format valide</th><th class="numeric" scope="col">Réponses exactes</th><th class="numeric" scope="col">Temps médian</th><th class="numeric" scope="col" title="95 % des réponses arrivent avant ce délai.">Temps p95</th></tr></thead>
+                    <tbody id="commentary-benchmarks"></tbody>
+                  </table>
+                </div>
+              </div>
+            </details>
           </section>
         </div>
         <section class="panel analysis-panel" aria-labelledby="study-title">
-          <div class="panel-head"><div><h2 id="study-title">Historique des recherches</h2><p>Campagnes, entraînements et évaluations par profil.</p></div><a class="text-link" href="#decouverte">Découvrir les maîtres <span aria-hidden="true">→</span></a></div>
+          <div class="panel-head"><div><h2 id="study-title">Carnet de recherche</h2><p>Simulations, entraînements et résultats des tests.</p></div><a class="text-link" href="#decouverte">Découvrir les champions <span aria-hidden="true">→</span></a></div>
           <div id="study-list" class="study-list"><p class="empty">En attente des premières études.</p></div>
         </section>
       </section>
 
       <section class="view" id="view-meta" hidden aria-labelledby="meta-title">
         <header class="page-head">
-          <div><h1 id="meta-title">Analyse du jeu</h1><p>Mesurez l’écart entre les niveaux et les habitudes de jeu.</p></div>
+          <div><h1 id="meta-title">Stratégie</h1><p>Comparez les joueurs, leurs mots préférés et les cases qu’ils utilisent.</p></div>
           <a href="#parties" class="button secondary">Explorer les parties <span aria-hidden="true">→</span></a>
         </header>
         <div class="metrics" aria-label="Indicateurs de stratégie">
-          <article class="metric"><div class="metric-icon" aria-hidden="true">↗</div><p>Victoires du premier joueur</p><div class="metric-value" id="metric-first">—</div><small id="metric-first-context">Sur l’ensemble des parties</small></article>
-          <article class="metric"><div class="metric-icon" aria-hidden="true">✦</div><p>Scrabbles</p><div class="metric-value" id="metric-meta-bingos">—</div><small id="metric-bingo-context">Poses de sept lettres</small></article>
-          <article class="metric"><div class="metric-icon" aria-hidden="true">↔</div><p>Échanges</p><div class="metric-value" id="metric-exchanges">—</div><small id="metric-exchange-context">Part des tours</small></article>
-          <article class="metric"><div class="metric-icon" aria-hidden="true">»</div><p>Passes</p><div class="metric-value" id="metric-passes">—</div><small id="metric-pass-context">Part des tours</small></article>
+          <article class="metric"><p>Victoires du premier joueur</p><div class="metric-value" id="metric-first">—</div><small id="metric-first-context">Sur l’ensemble des parties</small></article>
+          <article class="metric"><p>Scrabbles</p><div class="metric-value" id="metric-meta-bingos">—</div><small id="metric-bingo-context">Poses de sept lettres</small></article>
+          <article class="metric"><p>Échanges</p><div class="metric-value" id="metric-exchanges">—</div><small id="metric-exchange-context">Part des tours</small></article>
+          <article class="metric"><p>Passes</p><div class="metric-value" id="metric-passes">—</div><small id="metric-pass-context">Part des tours</small></article>
+        </div>
+
+        <div class="overview-grid meta-grid">
+          <section class="panel" aria-labelledby="pairs-title">
+            <div class="panel-head"><div><h2 id="pairs-title">Qui gagne face à qui ?</h2><p>Résultats des duels entre niveaux, parties nulles comprises.</p></div></div>
+            <div id="meta-matchups" class="matchup-list"><p class="empty">En attente des premières confrontations.</p></div>
+          </section>
+          <section class="panel" aria-labelledby="meta-words-title">
+            <div class="panel-head"><div><h2 id="meta-words-title">Mots les plus joués</h2><p>Nombre d’apparitions et score moyen des coups.</p></div></div>
+            <div id="meta-words" class="words-list"><p class="empty">En attente des premiers résultats.</p></div>
+          </section>
         </div>
 
         <div class="analysis-data" id="analysis-data" hidden>
@@ -129,19 +147,19 @@
               <div class="analytics-list" id="opening-list"></div>
             </section>
             <section class="panel" aria-labelledby="premiums-title">
-              <div class="panel-head"><div><h2 id="premiums-title">Cases bonus utilisées</h2><p>Jetons posés et score moyen des coups concernés.</p></div></div>
+              <div class="panel-head"><div><h2 id="premiums-title">Les cases bonus</h2><p>Combien de fois servent-elles et combien rapportent les coups qui les utilisent ?</p></div></div>
               <div class="analytics-list" id="premium-list"></div>
               <div class="analytics-list" id="premium-context"></div>
             </section>
           </div>
           <div class="overview-grid">
             <section class="panel" aria-labelledby="heat-title">
-              <div class="panel-head"><div><h2 id="heat-title">Carte des placements</h2><p>Explorez les cases avec la souris ou les flèches du clavier.</p></div><label class="sr-only" for="heat-mode">Mesure du plateau</label><select id="heat-mode"><option value="count">Jetons posés</option><option value="mean_score">Score moyen</option></select></div>
+              <div class="panel-head"><div><h2 id="heat-title">Où joue-t-on ?</h2><p>Sélectionnez une case pour voir ses chiffres.</p></div><label class="sr-only" for="heat-mode">Mesure du plateau</label><select id="heat-mode"><option value="count">Lettres posées</option><option value="mean_score">Score moyen</option></select></div>
               <div class="heat-board" id="heat-board" role="group" aria-labelledby="heat-title"></div>
               <div class="heat-detail" id="heat-detail" aria-live="polite"></div>
             </section>
             <section class="panel" aria-labelledby="exchanges-title">
-              <div class="panel-head"><div><h2 id="exchanges-title">Contenu des échanges</h2><p id="exchanges-context"></p></div></div>
+              <div class="panel-head"><div><h2 id="exchanges-title">Lettres échangées</h2><p id="exchanges-context"></p></div></div>
               <div class="analytics-list" id="exchange-letters"></div>
               <div class="analytics-list" id="exchange-sizes"></div>
             </section>
@@ -150,25 +168,15 @@
         <p id="analysis-status" class="empty" role="status" hidden></p>
 
         <section class="panel meta-panel" aria-labelledby="rating-title">
-          <div class="panel-head"><div><h2 id="rating-title">Performances par niveau</h2><p>Classement, victoires et scores observés</p></div></div>
+          <div class="panel-head"><div><h2 id="rating-title">Le classement en détail</h2><p>Scores, victoires et classement Elo par niveau.</p></div></div>
           <div class="table-wrap"><table>
             <thead><tr><th scope="col">Niveau</th><th scope="col" class="numeric">Elo</th><th scope="col" class="numeric">Parties</th><th scope="col" class="numeric">Victoires</th><th scope="col" class="numeric">Nuls</th><th scope="col" class="numeric">Score moyen</th></tr></thead>
             <tbody id="meta-levels"><tr><td colspan="6" class="empty">En attente des premiers résultats.</td></tr></tbody>
           </table></div>
         </section>
 
-        <div class="overview-grid meta-grid">
-          <section class="panel" aria-labelledby="pairs-title">
-            <div class="panel-head"><div><h2 id="pairs-title">Confrontations</h2><p>Victoires et nuls pour chaque paire de bots</p></div></div>
-            <div id="meta-matchups" class="matchup-list"><p class="empty">En attente des premières confrontations.</p></div>
-          </section>
-          <section class="panel" aria-labelledby="meta-words-title">
-            <div class="panel-head"><div><h2 id="meta-words-title">Fréquence des mots</h2><p>Occurrences et points du coup</p></div></div>
-            <div id="meta-words" class="words-list"><p class="empty">En attente des premiers résultats.</p></div>
-          </section>
-        </div>
         <section class="panel analysis-panel" aria-labelledby="corpus-title">
-          <div class="panel-head"><div><h2 id="corpus-title">Recherche dans le corpus</h2><p>Trouvez des positions, des archives et des analyses par thème.</p></div></div>
+          <div class="panel-head"><div><h2 id="corpus-title">Rechercher une idée de jeu</h2><p>Trouvez des exemples dans les parties, les archives et les analyses.</p></div></div>
           <form id="corpus-search" class="filters corpus-filters" role="search" aria-labelledby="corpus-title">
             <label>Thème ou position<input type="search" name="q" id="corpus-query" placeholder="Ex. conserver un joker en milieu de partie" minlength="2" maxlength="180" required></label>
             <button type="submit" class="button primary" id="corpus-submit">Rechercher</button>
@@ -180,7 +188,7 @@
 
       <section class="view" id="view-parties" hidden aria-labelledby="games-title">
         <header class="page-head">
-          <div><h1 id="games-title">Parties</h1><p>Ouvrez une partie pour reconstituer le plateau, coup par coup.</p></div>
+          <div><h1 id="games-title">Parties à rejouer</h1><p>Choisissez une partie et avancez à votre rythme, un coup à la fois.</p></div>
           <a class="button secondary" href="#admin"><span aria-hidden="true">↓</span> Exporter les parties</a>
         </header>
         <div class="source-switch" aria-label="Origine des parties">
@@ -191,12 +199,12 @@
         </div>
         <section id="simulation-games" class="panel game-panel" aria-label="Historique des parties simulées">
           <form class="filters" id="games-filters" role="search">
-            <label>Rechercher<input type="search" name="q" id="games-query" placeholder="Identifiant ou graine" autocomplete="off"></label>
+            <label>Rechercher<input type="search" name="q" id="games-query" placeholder="Numéro de partie ou de tirage" autocomplete="off"></label>
             <label>Niveau<select name="level" id="games-level">
               <option value="">Tous les niveaux</option><option value="0">Découverte</option><option value="1">Initié</option><option value="2">Stratège</option><option value="3">Expert</option>
             </select></label>
-            <label class="check-filter"><input type="checkbox" name="elite" id="games-elite"> Expert × Expert</label>
-            <label>Trier par<select id="games-sort"><option value="recent:desc">Récentes</option><option value="elo:desc">Elo le plus fort</option><option value="peak:desc">Score individuel le plus élevé</option><option value="score:desc">Score total le plus élevé</option><option value="turns:desc">Parties les plus longues</option><option value="turns:asc">Parties les plus courtes</option></select></label>
+            <label class="check-filter"><input type="checkbox" name="elite" id="games-elite"> Entre deux experts</label>
+            <label>Trier par<select id="games-sort"><option value="recent:desc">Récentes</option><option value="elo:desc">Meilleurs classements</option><option value="peak:desc">Meilleurs scores individuels</option><option value="score:desc">Meilleurs scores cumulés</option><option value="turns:desc">Parties les plus longues</option><option value="turns:asc">Parties les plus courtes</option></select></label>
             <button type="submit" class="button primary">Filtrer</button>
           </form>
           <div class="match-grid" id="games-rows"><p class="empty">Chargement des parties…</p></div>
@@ -233,26 +241,29 @@
           </div>
         </section>
         <section id="live-games" class="panel live-panel" hidden aria-labelledby="live-title">
-          <div class="panel-head"><div><h2 id="live-title">Duel en direct</h2><p>Choisissez deux bots et suivez leur partie tour par tour.</p></div></div>
+          <div class="panel-head"><div><h2 id="live-title">Duel en direct</h2><p>Réglez le niveau des deux joueurs et regardez-les jouer.</p></div></div>
           <form id="live-form" class="filters live-form">
-            <label>Mode de jeu<select id="live-mode"><option value="adaptive">NAB · bot adaptatif</option><option value="fixed">Niveaux fixes</option></select></label>
-            <label class="live-target" id="live-target-wrap"><span>Elo cible du laboratoire <output id="live-target-value" for="live-target">1 200</output></span><input type="range" id="live-target" min="700" max="1627" step="1" value="1200"><span class="elo-tier" id="live-tier"></span></label>
+            <label>Mode de jeu<select id="live-mode"><option value="adaptive">NAB, niveau réglable</option><option id="live-peak" value="peak" hidden disabled>NAB, recherche avancée</option><option value="fixed">Choisir un niveau fixe</option></select></label>
+            <label class="live-target" id="live-target-wrap"><span>Niveau de NAB (Elo) <output id="live-target-value" for="live-target">1 200</output></span><input type="range" id="live-target" min="700" max="1627" step="1" value="1200"><span class="elo-tier" id="live-tier"></span></label>
             <label id="live-a-wrap" hidden>Premier joueur<select id="live-a"><option value="0">Découverte</option><option value="1">Initié</option><option value="2">Stratège</option><option value="3" selected>Expert</option></select></label>
             <label>Second joueur<select id="live-b"><option value="0">Découverte</option><option value="1">Initié</option><option value="2">Stratège</option><option value="3" selected>Expert</option></select></label>
-            <label>Graine facultative<input type="number" id="live-seed" inputmode="numeric" min="0" max="4294967295" placeholder="Aléatoire"></label>
-            <button type="submit" class="button primary"><span aria-hidden="true">▶</span> Suivre le duel</button>
+            <button type="submit" class="button primary"><span aria-hidden="true">▶</span> Lancer le duel</button>
+            <details class="advanced-details live-options">
+              <summary>Reproduire un tirage</summary>
+              <label>Numéro du tirage<input type="number" id="live-seed" inputmode="numeric" min="0" max="4294967295" placeholder="Aléatoire"></label>
+            </details>
           </form>
         </section>
       </section>
 
       <section class="view" id="view-decouverte" hidden aria-labelledby="discovery-title">
-        <header class="page-head"><div><h1 id="discovery-title" data-english="Discovery">Découverte</h1><p>Retracez le jeu en compétition, ses maîtres et ses moments marquants.</p></div></header>
+        <header class="page-head"><div><h1 id="discovery-title">Championnats</h1><p>Remontez le fil des finales et découvrez les joueurs qui ont marqué la compétition.</p></div></header>
         <section class="panel analysis-panel" id="legacy-panel" aria-labelledby="legacy-title">
-          <div class="panel-head"><div><h2 id="legacy-title">Maîtres historiques</h2><p>Points de classement publiés, groupés par système de compétition.</p></div></div>
+          <div class="panel-head"><div><h2 id="legacy-title">Les grands joueurs</h2><p>Suivez leur classement au fil des ans, selon les règles de chaque compétition.</p></div></div>
           <div class="legacy-scales" id="legacy-scales"><p class="empty">Chargement des archives…</p></div>
         </section>
         <section class="panel analysis-panel" id="geography-panel" aria-labelledby="geography-title" hidden>
-          <div class="panel-head"><div><h2 id="geography-title">Carte des championnats</h2><p>Les lieux et les résultats des finales documentées.</p></div></div>
+          <div class="panel-head"><div><h2 id="geography-title">Les finales sur la carte</h2><p>Choisissez un lieu ou parcourez les années pour retrouver les résultats.</p></div></div>
           <div class="championship-map" id="championship-map"></div>
           <div class="geography-controls">
             <label for="championship-time">Parcourir les finales</label>
@@ -263,19 +274,19 @@
           <div class="geography-credit"><a class="text-link" href="https://www.naturalearthdata.com/downloads/110m-physical-vectors/110m-land/" target="_blank" rel="noopener noreferrer">Natural Earth</a></div>
         </section>
         <section class="panel analysis-panel" id="chronology-panel" hidden aria-labelledby="chronology-title">
-          <div class="panel-head"><div><h2 id="chronology-title">Moments marquants</h2><p>Repères et anecdotes documentés.</p></div></div>
+          <div class="panel-head"><div><h2 id="chronology-title">Moments marquants</h2></div></div>
           <div class="study-list" id="chronology-list"></div>
         </section>
       </section>
 
       <section class="view" id="view-admin" hidden aria-labelledby="admin-title">
         <header class="page-head">
-          <div><h1 id="admin-title">Administration</h1><p>Importez des parties, téléchargez les données et consultez l’état du service.</p></div>
+          <div><h1 id="admin-title">Outils</h1><p>Retrouvez vos fichiers de parties et téléchargez Lettrine pour Android.</p></div>
           <button type="button" class="button secondary" id="refresh"><span aria-hidden="true">↻</span> Actualiser</button>
         </header>
         <div class="admin-grid">
           <section class="panel" aria-labelledby="export-title">
-            <div class="panel-head"><div><h2 id="export-title">Exports</h2><p>Téléchargez les parties déjà enregistrées.</p></div></div>
+            <div class="panel-head"><div><h2 id="export-title">Télécharger des parties</h2><p>Utilisez le format CSV pour ouvrir les résultats dans un tableur.</p></div></div>
             <div class="export-row"><div><h3>Simulations et coups</h3><p>Historique complet de la campagne.</p></div><div class="export-actions"><a class="button primary" href="/api/export?format=json" download aria-label="Exporter les simulations en JSON">↓ JSON</a><a class="button secondary" href="/api/export?format=jsonl" download aria-label="Exporter les simulations en JSONL">↓ JSONL</a></div></div>
             <div class="export-row"><div><h3>Résumé des parties</h3><p>Une ligne par partie, pour un tableur.</p></div><a class="button secondary" href="/api/export?format=csv" download>↓ CSV</a></div>
             <div class="export-row"><div><h3>Archive Expert × Expert</h3><p>Parties et coups des confrontations entre bots experts.</p></div><div class="export-actions"><a class="button secondary" href="/api/export?format=json&amp;elite=1" download aria-label="Exporter les parties expertes en JSON">↓ JSON</a><a class="button secondary" href="/api/export?format=jsonl&amp;elite=1" download aria-label="Exporter les parties expertes en JSONL">↓ JSONL</a></div></div>
@@ -284,8 +295,8 @@
           </section>
           <div class="admin-stack">
             <section class="panel app-download" aria-labelledby="app-title">
-              <div class="app-download-copy"><h2 id="app-title">Prototype Android</h2><p>Le jeu et l’historique de vos parties.</p></div>
-              <a class="button primary" href="/download/lettrine.apk" download aria-label="Télécharger Lettrine pour Android">↓ APK</a>
+              <div class="app-download-copy"><h2 id="app-title">Lettrine pour Android</h2><p>Version de test à installer sur un appareil Android.</p></div>
+              <a class="button primary" href="/download/lettrine.apk" download aria-label="Télécharger Lettrine pour Android">Télécharger l’APK</a>
             </section>
             <section class="panel" aria-labelledby="import-title">
               <div class="panel-head"><div><h2 id="import-title">Importer des parties</h2><p>Ajoutez un export Lettrine ou un fichier de parties.</p></div></div>
@@ -300,8 +311,9 @@
                 <p id="import-status" class="import-status" role="status" hidden></p>
               </form>
             </section>
-            <section class="panel" aria-labelledby="runtime-title">
-              <div class="panel-head"><div><h2 id="runtime-title">État de la campagne</h2><p id="last-sync">En attente de la première mise à jour.</p></div></div>
+            <details class="panel advanced-details">
+              <summary>État de la simulation et du service</summary>
+              <p id="last-sync">En attente de la première mise à jour.</p>
               <dl class="runtime">
                 <div><dt>État</dt><dd id="admin-state">—</dd></div>
                 <div><dt>Base de données</dt><dd id="admin-storage">—</dd></div>
@@ -310,7 +322,11 @@
                 <div><dt>Lexique</dt><dd id="admin-lexicon">—</dd></div>
                 <div><dt>Mots du lexique</dt><dd id="admin-lexicon-count">—</dd></div>
               </dl>
-            </section>
+              <section class="telemetry-strip" id="system-telemetry" aria-label="État du service" hidden>
+                <div class="telemetry-main"><div class="telemetry-services" id="telemetry-services"></div><span class="telemetry-updated" id="telemetry-updated"></span></div>
+                <div class="telemetry-host" id="telemetry-host"></div>
+              </section>
+            </details>
           </div>
         </div>
       </section>
@@ -345,11 +361,11 @@
         </div>
         <div class="replay-moves">
           <section id="match-timeline" class="match-timeline" aria-labelledby="timeline-title" hidden>
-            <h3 id="timeline-title">Dynamique du duel</h3>
+            <h3 id="timeline-title">Comment la partie évolue</h3>
             <div class="timeline-legend" id="timeline-legend"></div>
             <div class="timeline-graphs">
               <div class="timeline-graph"><h4>Score cumulé</h4><div id="score-chart"></div></div>
-              <div class="timeline-graph" id="chance-panel" hidden><h4>Chances de victoire</h4><div id="chance-chart"></div></div>
+              <div class="timeline-graph" id="chance-panel" hidden><h4>Chances de victoire estimées</h4><div id="chance-chart"></div></div>
             </div>
             <p id="timeline-method"></p>
           </section>
@@ -371,7 +387,7 @@
             <div id="position-challenge" class="position-challenge">
               <div class="challenge-controls">
                 <label>Modèle d’analyse<select id="challenge-select"><option value="llama3.2:3b">llama3.2:3b</option></select></label>
-                <button id="challenge-run" class="button secondary compact" type="button">Challenger le coup</button>
+                <button id="challenge-run" class="button secondary compact" type="button">Demander un commentaire</button>
               </div>
               <p id="challenge-status" class="review-note" role="status" hidden></p>
               <div id="challenge-result" hidden><p id="challenge-model" class="challenge-model"></p><p id="challenge-commentary"></p></div>

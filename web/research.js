@@ -84,28 +84,29 @@ function legacyChart(series, scale) {
   const times = points.map((point) => point.time);
   const ratings = points.map((point) => point.rating);
   const first = Math.min(...times), last = Math.max(...times);
-  const min = Math.floor(Math.min(...ratings) / 50) * 50;
-  const max = Math.max(min + 50, Math.ceil(Math.max(...ratings) / 50) * 50);
-  const x = (time) => first === last ? 226 : 36 + 376 * (time - first) / (last - first);
-  const y = (rating) => 112 - 95 * (rating - min) / (max - min);
-  const chart = svgElement("svg", { viewBox: "0 0 428 138", role: "img", "aria-label": t("Échelle ") + scale.label });
-  for (const value of [min, (min + max) / 2, max]) {
-    chart.append(svgElement("line", { class: "plot-grid", x1: 36, x2: 412, y1: y(value), y2: y(value) }));
-    const text = svgElement("text", { x: 31, y: y(value) + 3, "text-anchor": "end" });
-    text.textContent = format(value, integer);
-    chart.append(text);
+  const step = Math.max(50, Math.ceil((Math.max(...ratings) - Math.min(...ratings)) / 200) * 50);
+  const min = Math.floor(Math.min(...ratings) / step) * step;
+  const max = Math.max(min + step * 2, Math.ceil(Math.max(...ratings) / step) * step);
+  const left = 44, right = 408, top = 27, bottom = 174;
+  const x = (time) => first === last ? (left + right) / 2 : left + (right - left) * (time - first) / (last - first);
+  const y = (rating) => bottom - (bottom - top) * (rating - min) / (max - min);
+  const chart = svgElement("svg", { viewBox: "0 0 424 206", role: "img", "aria-label": t("Cotes publiées") + " · " + scale.label });
+  chart.append(svgText(t("Cotes publiées"), { class: "plot-unit", x: left, y: 13 }));
+  for (let value = min; value <= max; value += step) {
+    chart.append(svgElement("line", { class: "plot-grid", x1: left, x2: right, y1: y(value), y2: y(value) }));
+    chart.append(svgText(format(value, integer), { x: left - 7, y: y(value) + 3, "text-anchor": "end" }));
   }
-  for (const time of [...new Set([first, last])]) {
-    const label = svgElement("text", { x: x(time), y: 129, "text-anchor": first === last ? "middle" : time === first ? "start" : "end" });
-    label.textContent = new Date(time).toLocaleDateString(uiLocale, { year: "numeric", month: "short", timeZone: "UTC" });
-    chart.append(label);
+  const dateTicks = [...new Set([first, ...(last - first > 180 * 86400000 ? [(first + last) / 2] : []), last])];
+  for (const time of dateTicks) {
+    const label = new Date(time).toLocaleDateString(uiLocale, { year: "numeric", month: "short", timeZone: "UTC" });
+    chart.append(svgText(label, { x: x(time), y: bottom + 18, "text-anchor": first === last ? "middle" : time === first ? "start" : time === last ? "end" : "middle" }));
   }
   series.forEach((item, index) => {
-    const color = index % 4;
+    const color = "legacy-color-" + index % 9;
     const coordinates = item.points.map((point) => [x(point.time), y(point.rating)]);
-    chart.append(svgElement("polyline", { class: "legacy-line legacy-color-" + color, points: coordinates.join(" "), fill: "none" }));
+    chart.append(svgElement("polyline", { class: "legacy-line " + color, "data-series": index, points: coordinates.join(" "), fill: "none" }));
     coordinates.forEach(([cx, cy], pointIndex) => {
-      const dot = svgElement("circle", { class: "legacy-dot legacy-color-" + color, cx, cy, r: 3.3 });
+      const dot = svgElement("circle", { class: "legacy-dot " + color, "data-series": index, cx, cy, r: 4 });
       const title = svgElement("title", {});
       const point = item.points[pointIndex];
       title.textContent = [item.name, point.date, format(point.rating, integer), point.event].filter(Boolean).join(" · ");
@@ -122,16 +123,24 @@ function renderLegacy(data) {
       .map((item) => ({ ...item, points: legacyPoints(item) })).filter((item) => item.points.length);
     if (!series.length) return [];
     const card = node("article", "legacy-card");
-    card.append(node("h3", "", scale.label), node("p", "", scale.description || ""), legacyChart(series, scale));
+    const chart = legacyChart(series, scale);
+    card.append(node("h3", "", scale.label), node("p", "", scale.description || ""), chart);
     const legend = node("div", "legacy-legend");
     series.forEach((item, index) => {
       const latest = item.points.at(-1);
-      const label = node("span", "legacy-master legacy-color-" + index % 4);
-      const initials = item.name.split(/\s+/).slice(0, 2).map((word) => word[0]).join("");
+      const label = node("button", "legacy-master legacy-color-" + index % 9);
+      label.type = "button";
+      label.setAttribute("aria-pressed", "false");
+      const swatch = svgElement("svg", { viewBox: "0 0 24 12", width: 24, height: 12, "aria-hidden": "true" });
+      swatch.append(svgElement("line", { x1: 1, x2: 23, y1: 6, y2: 6, class: "legacy-line" }));
       const identity = node("span");
       identity.append(node("strong", "", item.name), node("small", "", [item.country, latest.date, format(latest.rating, integer)].filter(Boolean).join(" · ")));
-      label.append(node("span", "master-mark", initials), identity);
-      setTip(label, t("Cote publiée par la compétition indiquée. Les autres systèmes utilisent leur propre échelle."));
+      label.append(swatch, identity);
+      label.addEventListener("click", () => {
+        const active = label.getAttribute("aria-pressed") === "true" ? null : index;
+        [...legend.children].forEach((button, position) => button.setAttribute("aria-pressed", String(position === active)));
+        for (const mark of chart.querySelectorAll("[data-series]")) mark.classList.toggle("legacy-dimmed", active !== null && Number(mark.dataset.series) !== active);
+      });
       legend.append(label);
     });
     card.append(legend);
@@ -168,8 +177,7 @@ function renderChronology(events) {
   const rows = events.map((event) => {
     const item = node("article", "study-row");
     const head = node("div", "study-heading");
-    const date = event.date_precision === "year" ? String(event.date).slice(0, 4) : event.date;
-    head.append(node("h3", "", event.title), node("span", "", date));
+    head.append(node("h3", "", event.title), node("span", "", historyDate(event)));
     item.append(head, node("p", "", event.description));
     const link = sourceLink(event.source, "Source");
     if (link) item.append(link);
@@ -177,6 +185,12 @@ function renderChronology(events) {
   });
   $("chronology-list").replaceChildren(...rows);
   $("chronology-panel").hidden = !rows.length;
+}
+
+function historyDate(event) {
+  if (event.date_precision === "year") return String(event.date).slice(0, 4);
+  const options = event.date_precision === "month" ? { year: "numeric", month: "long" } : { dateStyle: "medium" };
+  return new Date(event.date).toLocaleDateString(uiLocale, { ...options, timeZone: "UTC" });
 }
 
 async function loadChampionshipMap(results) {
@@ -205,10 +219,15 @@ async function loadChampionshipMap(results) {
     map.append(svgElement("polygon", { class: "map-land", points: coordinates.join(" ") }));
   }
   const markers = events.map((event, index) => {
-    const marker = svgElement("circle", { class: "map-marker", cx: x(event.lon), cy: y(event.lat), r: 5, role: "button", tabindex: "0", "aria-label": [event.city, event.date, event.winner].filter(Boolean).join(" · ") });
+    const marker = svgElement("g", { class: "map-marker", role: "button", tabindex: "0", "aria-label": [event.city, event.date, event.winner].filter(Boolean).join(" · ") });
     const title = svgElement("title", {});
     title.textContent = [event.city, event.date].filter(Boolean).join(" · ");
-    marker.append(title);
+    const point = { cx: x(event.lon), cy: y(event.lat) };
+    marker.append(title,
+      svgElement("circle", { ...point, class: "map-target", r: 13 }),
+      svgElement("circle", { ...point, class: "map-halo", r: 10 }),
+      svgElement("circle", { ...point, class: "map-dot", r: 5.3 }),
+    );
     const select = () => {
       slider.value = String(index);
       renderEvent();
@@ -223,22 +242,60 @@ async function loadChampionshipMap(results) {
     map.append(marker);
     return marker;
   });
+  const selected = svgElement("g", { class: "map-selected", "aria-hidden": "true" });
+  const selectedLabel = svgText("", { y: -14 });
+  selected.append(selectedLabel);
+  map.append(selected);
+  const stepButton = (direction, label) => {
+    const button = node("button", "button secondary geography-step", direction < 0 ? "←" : "→");
+    button.type = "button";
+    button.setAttribute("aria-label", t(label));
+    button.addEventListener("click", () => {
+      slider.value = String(Number(slider.value) + direction);
+      renderEvent();
+    });
+    return button;
+  };
+  const previous = stepButton(-1, "Finale précédente");
+  const next = stepButton(1, "Finale suivante");
+  const range = node("div", "geography-range");
+  const oldRange = slider.closest(".geography-range");
+  range.append(previous, slider, next);
+  oldRange?.remove();
+  const controls = panel.querySelector(".geography-controls");
+  const date = $("championship-date");
+  controls.insertBefore(range, date);
   function renderEvent() {
     const index = Number(slider.value);
     const event = events[index];
-    output("championship-date", event.date);
+    const date = historyDate(event);
+    output("championship-date", date);
+    slider.setAttribute("aria-valuetext", [event.city, date].filter(Boolean).join(" · "));
+    previous.disabled = index === 0;
+    next.disabled = index === events.length - 1;
     markers.forEach((marker, position) => marker.setAttribute("aria-pressed", String(index === position)));
+    const markerX = x(event.lon), markerY = y(event.lat);
+    selected.setAttribute("transform", `translate(${markerX} ${markerY})`);
+    selectedLabel.setAttribute("x", markerX < 90 ? 10 : markerX > 798 ? -10 : 0);
+    selectedLabel.setAttribute("text-anchor", markerX < 90 ? "start" : markerX > 798 ? "end" : "middle");
+    selectedLabel.textContent = event.city;
     const detail = $("geography-detail");
-    const place = node("div");
-    place.append(node("strong", "", event.event), node("p", "", [event.city, event.country, event.date].filter(Boolean).join(" · ")));
-    const result = node("div");
-    result.append(node("strong", "", [event.winner, event.runner_up].filter(Boolean).join(" × ")), node("p", "", event.series_score || ""));
+    const place = node("div", "geography-place");
+    place.append(node("strong", "", event.event), node("p", "", [event.city, event.country, date].filter(Boolean).join(" · ")));
+    const result = node("div", "geography-result");
+    for (const [label, name] of [["Vainqueur", event.winner], ["Finaliste", event.runner_up]]) {
+      if (!name) continue;
+      const row = node("div");
+      row.append(node("span", "", t(label)), node("strong", "", name));
+      result.append(row);
+    }
+    if (event.series_score) result.append(node("p", "", event.series_score));
     const source = sourceLink(event.source, "Source");
     if (source) result.append(source);
     detail.replaceChildren(place, result);
   }
   slider.max = String(events.length - 1);
-  slider.value = slider.max;
+  slider.value = panel.hidden ? slider.max : String(Math.min(Number(slider.value), events.length - 1));
   slider.oninput = renderEvent;
   $("championship-map").replaceChildren(map);
   renderEvent();

@@ -3,6 +3,8 @@ use postgres::Client;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
+pub const MAX_TURNS: usize = 1024;
+
 fn documents(bytes: &[u8]) -> Result<Vec<Value>> {
     let text = std::str::from_utf8(bytes)?
         .trim()
@@ -48,8 +50,8 @@ fn normalize(mut game: Value) -> Result<(String, Value)> {
         .as_array()
         .context("Journal de coups manquant.")?;
     ensure!(
-        !moves.is_empty() && moves.len() <= 200,
-        "Le journal doit contenir de 1 à 200 tours."
+        !moves.is_empty() && moves.len() <= MAX_TURNS,
+        "Le journal doit contenir de 1 à {MAX_TURNS} tours."
     );
     let turns = moves.len();
     let mut occupied = [false; 225];
@@ -110,10 +112,10 @@ fn normalize(mut game: Value) -> Result<(String, Value)> {
         Some(Value::Number(n)) => n.to_string(),
         _ => String::new(),
     };
-    let origin = if game["source"].as_str() == Some("android") {
-        "android"
-    } else {
-        "fichier"
+    let origin = match game["source"].as_str() {
+        Some("android") => "android",
+        Some("web") if game["schema"] == "lettrine.game.v1" => "web",
+        _ => "fichier",
     };
     game.as_object_mut().unwrap().remove("id");
     game["external_id"] = json!(external_id);
@@ -184,5 +186,17 @@ mod tests {
         assert_eq!(normalize(result.clone()).unwrap().0, key);
         result["moves"][0]["tiles"][1]["col"] = json!(7);
         assert!(normalize(result).is_err());
+    }
+
+    #[test]
+    fn long_replays_are_bounded_by_the_import_limit() {
+        let game_with_turns = |count| {
+            let moves = (1..=count)
+                .map(|turn| json!({"turn": turn, "player": turn % 2, "type": "pass", "score": 0, "tiles": []}))
+                .collect::<Vec<_>>();
+            json!({"scores": [0, 0], "moves": moves})
+        };
+        assert!(normalize(game_with_turns(MAX_TURNS)).is_ok());
+        assert!(normalize(game_with_turns(MAX_TURNS + 1)).is_err());
     }
 }

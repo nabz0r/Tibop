@@ -136,8 +136,13 @@ services:
       target: dashboard
     depends_on:
       api: {condition: service_healthy}
+    environment:
+      LETTRINE_LAN_IP: ${LETTRINE_LAN_IP:-127.0.0.1}
+      LETTRINE_LAN_PORT: ${LETTRINE_LAN_PORT:-8788}
+      NGINX_ENVSUBST_FILTER: '^LETTRINE_LAN_(IP|PORT)$'
     ports:
       - "127.0.0.1:${LETTRINE_PORT:-8787}:8080"
+      - "${LETTRINE_LAN_IP:-127.0.0.1}:${LETTRINE_LAN_PORT:-8788}:8081"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
       interval: 15s

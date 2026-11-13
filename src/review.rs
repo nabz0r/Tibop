@@ -2,7 +2,7 @@ use crate::engine::{Engine, Game, MoveKind, Tile};
 use anyhow::{Context, Result, anyhow, bail};
 use rand::{SeedableRng, seq::SliceRandom};
 use rand_xoshiro::Xoshiro256PlusPlus;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use wolges::{equity, game_state::GameState, movegen::Play};
 
 const SAMPLES: usize = 16;
@@ -30,6 +30,79 @@ pub struct Review {
     samples: usize,
     method: &'static str,
     alternatives: Vec<Alternative>,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum CommentaryAngle {
+    #[default]
+    Simulation,
+    ImmediateScore,
+    Rack,
+}
+
+impl Review {
+    pub fn commentary(&self, angle: CommentaryAngle, language: &str) -> String {
+        let english = language == "en";
+        let scores = if english {
+            format!(
+                "The move played scores {} points. The best immediate score is {} points.",
+                self.played_score, self.best_score
+            )
+        } else {
+            format!(
+                "Le coup joué marque {} points. Le meilleur score immédiat est de {} points.",
+                self.played_score, self.best_score
+            )
+        };
+        let Some(alternative) = self.alternatives.iter().find(|option| !option.played) else {
+            return scores;
+        };
+        let word = if alternative.word.is_empty() {
+            if english {
+                "The alternative"
+            } else {
+                "La variante"
+            }
+        } else {
+            &alternative.word
+        };
+        let played = self.alternatives.iter().find(|option| option.played);
+        let focus = match (angle, english) {
+            (CommentaryAngle::ImmediateScore, true) => {
+                format!("{word} scores {} immediate points.", alternative.score)
+            }
+            (CommentaryAngle::ImmediateScore, false) => {
+                format!("{word} marque {} points immédiatement.", alternative.score)
+            }
+            (CommentaryAngle::Rack, true) if !alternative.leave.is_empty() => {
+                format!("{word} keeps {} on the rack.", alternative.leave)
+            }
+            (CommentaryAngle::Rack, false) if !alternative.leave.is_empty() => {
+                format!("{word} conserve {} sur le chevalet.", alternative.leave)
+            }
+            _ => String::new(),
+        };
+        let comparison = played.map_or_else(String::new, |played| {
+            if english {
+                format!(
+                    "{word} has the highest mean simulated margin among the alternatives to the recorded move. Its margin is {:.1} points versus {:.1} for the recorded move, across three half-turns. These estimates vary with the sampled draws.",
+                    alternative.evaluation, played.evaluation
+                )
+            } else {
+                let margin = format!("{:.1}", alternative.evaluation).replace('.', ",");
+                let played_margin = format!("{:.1}", played.evaluation).replace('.', ",");
+                format!(
+                    "{word} a la meilleure marge moyenne simulée parmi les variantes au coup joué. Sa marge sur trois demi-coups est de {margin} points contre {played_margin} pour le coup joué. Ces estimations varient selon les tirages simulés."
+                )
+            }
+        });
+        [scores, focus, comparison]
+            .into_iter()
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
 }
 
 fn same_tiles(a: &[Tile], b: &[Tile]) -> bool {

@@ -5,6 +5,7 @@ Le studio tourne sur le Mac. Docker Compose héberge le tableau de bord, l’API
 ```mermaid
 flowchart LR
     U["Navigateur · 127.0.0.1:8787"] --> D["Dashboard · Nginx"]
+    J["Joueurs · réseau local :8788"] -->|Salons| D
     D --> A["API · Rust / Axum"]
     A --> P[("PostgreSQL 17 + pgvector")]
     A --> R[("Redis Streams")]
@@ -32,7 +33,7 @@ flowchart LR
 
 Les plafonds Compose totalisent 1 280 Mio et six cœurs logiques. Ils excluent Docker Desktop, Ollama natif et les commandes de simulation ou d’entraînement lancées directement sur le Mac. Redis plafonne ses données à 48 Mio et refuse les nouvelles écritures en cas de saturation. PostgreSQL est limité à 24 connexions. L’API accepte deux analyses et deux exports simultanés, ainsi qu’un commentaire Ollama à la fois. [Configuration Compose](../compose.yaml) · [API](../src/server.rs)
 
-Le navigateur accède à Nginx via `127.0.0.1`. Le réseau privé `data` relie PostgreSQL, Redis, l’API et les services de fond. Le réseau `edge` relie Nginx, l’API et le worker. Aucun port PostgreSQL, Redis ou Axum n’est publié sur le Mac. Le profil d’exploitation est mono-utilisateur local et l’API ne demande pas de compte. Le secret PostgreSQL peut être fourni par `LETTRINE_DB_PASSWORD` à l’initialisation du volume. [Configuration Compose](../compose.yaml) · [Configuration Nginx](../infra/dashboard.conf)
+Le studio de recherche écoute sur `127.0.0.1`. Pour les salons, un second port écoute sur l’IPv4 locale choisie par `tools/start.sh`. Il sert la page de jeu et l’API des salons. Le réseau privé `data` relie PostgreSQL, Redis, l’API et les services de fond. Le réseau `edge` relie Nginx, l’API et le worker. Aucun port PostgreSQL, Redis ou Axum n’est publié sur le Mac. Le secret PostgreSQL peut être fourni par `LETTRINE_DB_PASSWORD` à l’initialisation du volume. [Configuration Compose](../compose.yaml) · [Studio](../infra/dashboard.conf) · [Salons](../infra/rooms.conf.template)
 
 ## Démarrer et restaurer
 
@@ -45,6 +46,10 @@ curl -fsS http://127.0.0.1:8787/health
 ```
 
 Le port local se règle via `LETTRINE_PORT`. Les tests de santé confirment que les services répondent. La présence des parties et des vecteurs se vérifie séparément.
+
+Pour jouer depuis plusieurs appareils, `./tools/start.sh` utilise l’IPv4 locale du Mac. Le port de jeu se règle via `LETTRINE_LAN_PORT`. Avec `docker compose` directement, définir `LETTRINE_LAN_IP` sur l’adresse IPv4 locale à utiliser. Les joueurs ouvrent le lien d’invitation depuis ce réseau. Le navigateur récupère périodiquement l’état de la partie. Le serveur valide le tour et les mots, conserve le sac et calcule le score. Le lien identifie le salon. Un jeton individuel conservé par le navigateur donne accès à sa place et à ses lettres.
+
+Les places des bots sont réservées à la création de la table. Le serveur calcule leur coup avec le moteur de jeu, à partir du plateau, de leur propre chevalet et des informations publiques. Lorsqu’une partie est ouverte dans un navigateur, la consultation du salon fait avancer les tours des bots. La partie reprend au même tour après une fermeture de l’onglet ou un redémarrage.
 
 Sur un volume PostgreSQL neuf, restaurer la campagne incluse. La commande demande Python 3 et l’outil `zstd` sur le Mac.
 
@@ -61,6 +66,7 @@ La restauration charge les parties et les deux métadonnées dans une seule tran
 
 - **Simulations.** `lab_games` porte les identifiants, les graines, les niveaux, les scores et le journal complet en JSONB. `lab_meta` garde le manifeste de la campagne et ses statistiques. Le corpus de référence compte 100 000 duels dont 10 000 Expert × Expert.
 - **Archives historiques.** `data/expert/sample.json` conserve les parties humaines et les références sourcées, avec le dictionnaire d’époque. Le rejeu affiche les coups historiques documentés et les écarts de sources éventuels. Il garde ses statistiques indépendantes.
+- **Salons web.** `web_rooms` conserve la partie en cours et le journal des tours acceptés dans le même enregistrement. Le téléchargement d’une partie terminée exige le jeton d’un participant et contient les coups publics, les sièges et les scores. Les chevalets et le sac restent privés. Les parties dont des tours précèdent cette version conservent la reprise de jeu, avec un journal incomplet.
 - **Imports personnels.** `lab_imports` enregistre l’objet normalisé, un identifiant local, l’identifiant externe et une empreinte de dédoublonnage. L’import est atomique et valide la structure, les coordonnées, les types de coups et le nombre de joueurs. Il accepte les lettres Unicode sur 15 × 15 et ne recalcule pas la légalité lexicale ni les scores déclarés.
 - **Recherche.** `lab_vectors` contient les documents indexés, leur source et un vecteur de 1 024 dimensions. Cet index se reconstruit à partir des données et de la documentation. Les parties personnelles en sont exclues.
 
@@ -82,6 +88,7 @@ Les coordonnées des jetons sont des entiers de 0 à 14, ligne puis colonne. Les
 | `POST /api/import` | Corps brut JSON ou JSONL, jusqu’à 32 Mio, renvoie `imported` et `duplicates` |
 | `GET /api/imports` et `GET /api/imports/{id}` | Historique paginé des imports et détail d’une partie |
 | `GET /api/imports/export?format=json` | Export des imports au format JSON ou JSONL |
+| `GET /api/rooms/{code}/replay` | Journal JSON d’un salon terminé disposant de tous ses tours, accessible aux participants |
 | `GET /api/expert` | Archives historiques et références |
 | `GET /api/models` et `GET /api/profiles` | Résultats d’entraînement et profils de langues |
 | `GET /api/llm-benchmarks` | Duels pilotes par modèle Ollama, adversaire, taille et intervalle |
@@ -102,7 +109,7 @@ Le flux SSE affiche progressivement un duel calculé avant la diffusion. Il rest
 
 Le commentaire et l’indexation sont deux tâches de la même file Redis Stream, `lettrine:jobs`. Le groupe `lettrine:workers` lit les nouvelles entrées et reprend les messages en attente depuis trois minutes. Le worker écrit le résultat, acquitte puis retire le message dans une transaction Redis. Les résultats expirent après 15 minutes. En cas d’arrêt avant l’acquittement, le traitement peut recommencer. L’indexation utilise des identifiants stables et des mises à jour idempotentes.
 
-Beat réserve une fenêtre d’indexation avec un verrou Redis et propose une tâche au démarrage, puis toutes les 15 minutes par défaut. Le worker et beat renouvellent leurs signaux de vie toutes les cinq secondes, avec expiration à 30 secondes. Redis conserve sa file sur le volume `redis_data` par journalisation append-only et synchronisation disque chaque seconde. L’API attend le résultat d’un commentaire jusqu’à 87 secondes. Les erreurs de modèle donnent un retour explicite, avec une nouvelle demande possible. [Worker et planificateur](../infra/job_runner.py) · [Configuration Redis](../compose.yaml)
+Beat réserve une fenêtre d’indexation avec un verrou Redis et propose une tâche au démarrage, puis toutes les 15 minutes par défaut. Le worker et beat renouvellent leurs signaux de vie toutes les cinq secondes, avec expiration à 30 secondes. Redis conserve sa file sur le volume `redis_data` par journalisation append-only et synchronisation disque chaque seconde. L’API attend le résultat d’un commentaire jusqu’à 87 secondes. Si la réponse Ollama est indisponible ou invalide, le studio affiche le commentaire du moteur et indique la cause. [Worker et planificateur](../infra/job_runner.py) · [Configuration Redis](../compose.yaml)
 
 Ollama s’exécute sur macOS. Les conteneurs appellent `http://host.docker.internal:11434` par défaut. `LETTRINE_OLLAMA_MODEL` choisit le modèle de commentaire, `llama3.2:3b` par défaut. `LETTRINE_EMBED_MODEL` choisit le modèle d’index, `qwen3-embedding:0.6b` par défaut, avec une sortie de 1 024 valeurs. Après un changement de modèle, la réindexation doit se terminer avant de comparer les résultats. [Configuration Ollama](../compose.yaml) · [Schéma pgvector](../infra/vector.sql)
 
@@ -113,7 +120,7 @@ docker compose logs --tail=30 worker beat
 curl -fsS --get --data-urlencode 'q=jouer le joker' http://127.0.0.1:8787/api/search
 ```
 
-Le corpus de recherche comprend la documentation, les archives humaines et une sélection de positions de duels simulés Expert. Le commentaire linguistique résume les variantes et l’incertitude calculées par le moteur. Il peut ajouter des interprétations non étayées. Les résultats chiffrés de la revue restent la référence. Les scores, la validation des mots, les bots et le rejeu restent disponibles indépendamment d’Ollama.
+Le corpus de recherche comprend la documentation, les archives humaines et une sélection de positions de duels simulés Expert. Ollama choisit l’angle du commentaire parmi le score immédiat, le reliquat et la marge simulée. Le moteur vérifie ce choix puis rédige le commentaire à partir des scores, des lettres et des marges de la revue. Les scores, la validation des mots, les bots et le rejeu fonctionnent indépendamment d’Ollama.
 
 ## Rejouer et entraîner le laboratoire
 
@@ -124,9 +131,9 @@ LETTRINE_DB=results/reproduction-fr.sqlite cargo run --release --locked -- stats
 cargo run --release --locked -- train results/politique-test.json
 ```
 
-La simulation utilise des graines reproductibles et enregistre par lots le journal compressé et les compteurs dans SQLite. Une exécution relancée avec la même configuration reprend les identifiants manquants. Le manifeste fixe la graine, le profil et le SHA-256 du dictionnaire. L’Elo de la campagne est relatif aux quatre bots testés.
+La simulation utilise des graines reproductibles et enregistre par lots le journal compressé et les compteurs dans SQLite. Une exécution relancée avec la même configuration reprend les identifiants manquants. Le manifeste fixe la graine, le profil et le SHA-256 du dictionnaire. Les duels en direct à niveaux fixes rejouent les quatre politiques de la campagne. NAB à niveau réglable utilise la calibration du profil lorsqu’elle est disponible. La recherche avancée française se choisit dans son propre mode, avec l’Expert entraîné comme adversaire par défaut. Son évaluation repose sur des duels réservés, avec un résultat de match plutôt qu’une cote absolue.
 
-L’entraînement ajuste les poids de la politique Expert par autojeu, avec les deux sièges joués sur chaque graine. La sélection et le test utilisent des graines distinctes. Le duel à la demande utilise la politique sélectionnée si elle a été promue et correspond au dictionnaire. La revue de coups teste des variantes et leurs réponses sur trois demi-coups, à partir des jetons inconnus échantillonnés. Cette approche laisse la recherche complète à plus long horizon comme travail séparé. [Résultats](RESULTATS.md) · [Méthode](ENTRAINEMENT.md) · [Manifeste de la politique](../data/models/fr-bots-v1.json)
+L’entraînement ajuste les poids de la politique Expert par autojeu, avec les deux sièges joués sur chaque graine. La sélection et le test utilisent des graines distinctes. La revue de coups teste des variantes et leurs réponses sur trois demi-coups, à partir des jetons inconnus échantillonnés. [Résultats](RESULTATS.md) · [Méthode](ENTRAINEMENT.md) · [Manifeste de la politique](../data/models/fr-bots-v1.json)
 
 ## Android et versions de jeu
 

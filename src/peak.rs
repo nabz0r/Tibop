@@ -35,10 +35,19 @@ pub fn promoted_config(
     expert: ExpertPolicy,
     report: &serde_json::Value,
 ) -> Option<PeakConfig> {
+    promoted_config_for(&engine.profile.id, &engine.digest, expert, report)
+}
+
+pub fn promoted_config_for(
+    profile: &str,
+    digest: &str,
+    expert: ExpertPolicy,
+    report: &serde_json::Value,
+) -> Option<PeakConfig> {
     (report["schema"] == "lettrine.peak-benchmark.v1"
         && report["promoted"] == true
-        && report["profile"] == engine.profile.id
-        && report["lexicon_sha256"] == engine.digest
+        && report["profile"] == profile
+        && report["lexicon_sha256"] == digest
         && serde_json::from_value::<ExpertPolicy>(report["reference"].clone()).ok() == Some(expert))
     .then(|| serde_json::from_value::<PeakConfig>(report["config"].clone()).ok())
     .flatten()

@@ -1,6 +1,7 @@
 package fr.lettrine.game;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -13,10 +14,12 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.text.InputFilter;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -29,6 +32,8 @@ import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -52,6 +57,7 @@ public final class MainActivity extends Activity {
     private static final int BLUETOOTH_PERMISSION = 41;
     private static final int ENABLE_BLUETOOTH = 42;
     private static final int EXPORT_FILE = 43;
+    private static final int APP_SETTINGS = 44;
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
 
     private enum Screen { HOME, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME }
@@ -67,6 +73,7 @@ public final class MainActivity extends Activity {
     private FrenchGame game;
     private MatchCodec.State guestState;
     private Screen screen = Screen.HOME;
+    private OnBackInvokedCallback backCallback;
     private String mode = "";
     private String lexiconError;
     private int skin;
@@ -171,6 +178,9 @@ public final class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        if (Build.VERSION.SDK_INT >= 33 && backCallback != null) {
+            getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
+        }
         closeLink();
         if (music != null) music.release();
         main.removeCallbacksAndMessages(null);
@@ -178,11 +188,16 @@ public final class MainActivity extends Activity {
         super.onDestroy();
     }
 
+    @SuppressLint("GestureBackNavigation") // Android 13+ uses the callback registered by page().
     @Override public void onBackPressed() {
+        if (screen == Screen.HOME) super.onBackPressed();
+        else goBack();
+    }
+
+    private void goBack() {
         switch (screen) {
-            case HOME -> super.onBackPressed();
+            case HOME -> { }
             case DETAIL -> showHistory();
-            case GAME -> showHome();
             case BLUETOOTH -> {
                 if (link != null && state() == null) closeLink();
                 showHome();
@@ -195,6 +210,16 @@ public final class MainActivity extends Activity {
 
     private void page(Screen next, boolean navigation) {
         screen = next;
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (next == Screen.HOME && backCallback != null) {
+                getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
+                backCallback = null;
+            } else if (next != Screen.HOME && backCallback == null) {
+                backCallback = this::goBack;
+                getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                        OnBackInvokedDispatcher.PRIORITY_DEFAULT, backCallback);
+            }
+        }
         arena = null;
         frame = new FrameLayout(this);
         frame.setBackgroundColor(ui.palette.page());
@@ -290,7 +315,7 @@ public final class MainActivity extends Activity {
         ui.gap(content, 8);
         content.addView(ui.hero(), new LinearLayout.LayoutParams(-1, ui.dp(137)));
         MatchCodec.State ongoing = state();
-        if (ongoing != null && ongoing.end() == null) {
+        if (ongoing != null && ongoing.end() == null && (!mode.equals("bluetooth") || bluetoothReady)) {
             ui.gap(content, 13);
             content.addView(ui.button("Reprendre la partie", true, this::showGame));
         }
@@ -594,9 +619,9 @@ public final class MainActivity extends Activity {
                 privacy = false;
                 updateArena(-1);
             }));
-            arena.preview.setText("Passez l’appareil à " + current.names()[current.active()] + ".");
+            arena.preview.setText(getString(R.string.local_pass_device, current.names()[current.active()]));
         } else if (mode.equals("bluetooth") && !bluetoothReady) {
-            arena.preview.setText("La connexion Bluetooth est terminée.");
+            arena.preview.setText(R.string.bluetooth_disconnected);
         } else if (!myTurn(current)) {
             arena.preview.setText(waiting ? "Validation par l’hôte…"
                     : current.names()[current.active()] + (botThinking ? " réfléchit…" : " joue."));
@@ -896,13 +921,31 @@ public final class MainActivity extends Activity {
             return;
         }
         if (!bluetoothPermission()) {
-            content.addView(ui.button("Autoriser les appareils à proximité", true,
-                    () -> requestPermissions(new String[]{Manifest.permission.BLUETOOTH_CONNECT}, BLUETOOTH_PERMISSION)));
+            String permission = Manifest.permission.BLUETOOTH_CONNECT;
+            if (preferences.getBoolean("bluetooth_permission_requested", false)
+                    && !shouldShowRequestPermissionRationale(permission)) {
+                content.addView(ui.body("Autorisez les appareils à proximité dans les réglages de Lettrine."));
+                ui.gap(content, 8);
+                content.addView(ui.button("Ouvrir les réglages de Lettrine", true, () -> startActivityForResult(
+                        new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", getPackageName(), null)),
+                        APP_SETTINGS)));
+            } else {
+                content.addView(ui.button("Autoriser les appareils à proximité", true, () -> {
+                    preferences.edit().putBoolean("bluetooth_permission_requested", true).apply();
+                    requestPermissions(new String[]{permission}, BLUETOOTH_PERMISSION);
+                }));
+            }
             return;
         }
         if (!adapter.isEnabled()) {
-            content.addView(ui.button("Activer le Bluetooth", true,
-                    () -> startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), ENABLE_BLUETOOTH)));
+            content.addView(ui.button("Activer le Bluetooth", true, this::enableBluetooth));
+            return;
+        }
+        List<BluetoothDevice> devices;
+        try {
+            devices = new ArrayList<>(adapter.getBondedDevices());
+        } catch (SecurityException exception) {
+            content.addView(ui.body("L’autorisation Bluetooth n’est plus disponible."));
             return;
         }
         EditText name = input("Votre prénom", bluetoothName);
@@ -915,7 +958,6 @@ public final class MainActivity extends Activity {
         ui.gap(content, 15);
         content.addView(ui.micro("APPAREILS ASSOCIÉS", ui.palette.accent()));
         ui.gap(content, 8);
-        List<BluetoothDevice> devices = new ArrayList<>(adapter.getBondedDevices());
         devices.sort((left, right) -> deviceName(left).compareToIgnoreCase(deviceName(right)));
         if (devices.isEmpty()) content.addView(ui.body("Aucun appareil associé."));
         for (BluetoothDevice device : devices) {
@@ -934,13 +976,29 @@ public final class MainActivity extends Activity {
     }
 
     private String deviceName(BluetoothDevice device) {
-        String name = device.getName();
-        return name == null || name.isEmpty() ? "Appareil Bluetooth" : name;
+        try {
+            String name = device.getName();
+            if (name != null && !name.isEmpty()) return name;
+        } catch (SecurityException ignored) { }
+        return "Appareil Bluetooth";
+    }
+
+    private void enableBluetooth() {
+        try {
+            startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), ENABLE_BLUETOOTH);
+        } catch (SecurityException exception) {
+            toast("L’autorisation Bluetooth n’est plus disponible.");
+            showBluetooth();
+        }
     }
 
     @Override public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(request, permissions, results);
-        if (request == BLUETOOTH_PERMISSION && screen == Screen.BLUETOOTH) showBluetooth();
+        if (request != BLUETOOTH_PERMISSION) return;
+        if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
+            preferences.edit().remove("bluetooth_permission_requested").apply();
+        }
+        if (screen == Screen.BLUETOOTH) showBluetooth();
     }
 
     private void beginLink(BluetoothDevice peer, String name) {
@@ -1067,7 +1125,7 @@ public final class MainActivity extends Activity {
         heading("Réglages", "");
         LinearLayout settings = ui.card();
         Switch audio = new Switch(this);
-        audio.setText("Ambiance sonore");
+        audio.setText(R.string.ambient_sound);
         audio.setTextColor(ui.palette.ink());
         audio.setTextSize(15);
         audio.setMinimumHeight(ui.dp(43));
@@ -1219,7 +1277,7 @@ public final class MainActivity extends Activity {
             board.update(letters, blanks, List.of(), shown == null ? List.of() : shown.tiles(), -1);
             String word = shown == null ? "Départ" : shown.type().equals("play")
                     ? shown.word() + " +" + shown.score() : shown.type().equals("pass") ? "Passe" : "Échange";
-            label.setText(replayIndex + "/" + moves.size() + "  ·  " + word);
+            label.setText(getString(R.string.replay_position, replayIndex, moves.size(), word));
             ui.enabled(previous, replayIndex > 0);
             ui.enabled(next, replayIndex < moves.size());
         };
@@ -1243,7 +1301,7 @@ public final class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
-        if (request == ENABLE_BLUETOOTH && screen == Screen.BLUETOOTH) showBluetooth();
+        if ((request == ENABLE_BLUETOOTH || request == APP_SETTINGS) && screen == Screen.BLUETOOTH) showBluetooth();
         if (request != EXPORT_FILE) return;
         String body = export;
         export = null;

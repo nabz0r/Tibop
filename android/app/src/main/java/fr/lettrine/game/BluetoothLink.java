@@ -69,6 +69,8 @@ final class BluetoothLink implements Closeable {
                     input.readFully(bytes);
                     listener.received(this, new JSONObject(new String(bytes, StandardCharsets.UTF_8)));
                 }
+            } catch (SecurityException exception) {
+                fail("L’autorisation Bluetooth n’est plus disponible.");
             } catch (Exception exception) {
                 fail("La connexion Bluetooth a été interrompue.");
             }

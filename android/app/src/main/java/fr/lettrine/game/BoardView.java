@@ -1,5 +1,6 @@
 package fr.lettrine.game;
 
+import android.annotation.SuppressLint;
 import android.animation.ValueAnimator;
 import android.content.ClipDescription;
 import android.content.Context;
@@ -17,6 +18,7 @@ import android.view.animation.DecelerateInterpolator;
 
 import java.util.List;
 
+@SuppressLint("ViewConstructor") // Boards are created in code with a palette and optional interaction.
 final class BoardView extends View {
     interface Interaction {
         void tap(int position);
@@ -50,6 +52,7 @@ final class BoardView extends View {
         this.palette = palette;
         this.interaction = interaction;
         setFocusable(interaction != null);
+        setClickable(interaction != null);
         setContentDescription(interaction == null ? "Plateau de la partie" : "Plateau 15 sur 15. Pincez pour zoomer.");
         scaleDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
             @Override public boolean onScaleBegin(ScaleGestureDetector detector) {
@@ -68,8 +71,8 @@ final class BoardView extends View {
             @Override public boolean onSingleTapUp(MotionEvent event) {
                 int position = position(event.getX(), event.getY());
                 if (!endedScale && interaction != null && position >= 0) {
+                    focused = position;
                     performClick();
-                    interaction.tap(position);
                 }
                 return true;
             }
@@ -225,6 +228,7 @@ final class BoardView extends View {
                 ? row * FrenchGame.SIZE + col : -1;
     }
 
+    @SuppressLint("ClickableViewAccessibility") // The single-tap detector calls performClick().
     @Override public boolean onTouchEvent(MotionEvent event) {
         if (event.getActionMasked() == MotionEvent.ACTION_DOWN) endedScale = false;
         if (event.getPointerCount() > 1) endedScale = true;
@@ -236,7 +240,12 @@ final class BoardView extends View {
         return true;
     }
 
-    @Override public boolean performClick() { return super.performClick(); }
+    @Override public boolean performClick() {
+        boolean handled = super.performClick();
+        if (interaction == null) return handled;
+        interaction.tap(focused);
+        return true;
+    }
 
     @Override public boolean onDragEvent(DragEvent event) {
         if (interaction == null) return false;
@@ -261,8 +270,7 @@ final class BoardView extends View {
             case KeyEvent.KEYCODE_DPAD_LEFT -> { direction = 1; amount = -1; }
             case KeyEvent.KEYCODE_DPAD_RIGHT -> { direction = 1; amount = 1; }
             case KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                if (interaction != null) interaction.tap(focused);
-                return true;
+                return performClick();
             }
             default -> { return super.onKeyDown(keyCode, event); }
         }

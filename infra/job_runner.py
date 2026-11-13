@@ -84,11 +84,7 @@ def ollama(path, payload, timeout=90):
 
 def challenge(payload):
     model = payload["model"]
-    response = ollama(
-        "/api/chat",
-        {"model": model, "messages": payload["messages"], "options": payload.get("options", {}),
-         "stream": False, "think": payload.get("think", False), "keep_alive": payload.get("keep_alive", "2m")},
-    )
+    response = ollama("/api/chat", payload)
     commentary = response.get("message", {}).get("content", "").strip()
     if not commentary:
         raise RuntimeError("Ollama n’a renvoyé aucun commentaire.")

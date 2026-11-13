@@ -158,6 +158,7 @@ final class ViewKit {
     private final class Hero extends View {
         private final Paint brush = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final RectF rect = new RectF();
+        private final android.graphics.Path clip = new android.graphics.Path();
 
         Hero(Context context) {
             super(context);
@@ -172,7 +173,7 @@ final class ViewKit {
             brush.setColor(palette.deep());
             canvas.drawRoundRect(rect, dp(22), dp(22), brush);
             canvas.save();
-            android.graphics.Path clip = new android.graphics.Path();
+            clip.rewind();
             clip.addRoundRect(rect, dp(22), dp(22), android.graphics.Path.Direction.CW);
             canvas.clipPath(clip);
             float tileSize = dp(28);

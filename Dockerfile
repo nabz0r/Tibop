@@ -25,5 +25,7 @@ CMD ["serve"]
 FROM nginx:alpine AS dashboard
 RUN sed -i 's/^worker_processes .*;/worker_processes 1;/' /etc/nginx/nginx.conf
 COPY infra/dashboard.conf /etc/nginx/conf.d/default.conf
+COPY infra/rooms.conf.template /etc/nginx/templates/rooms.conf.template
+COPY infra/proxy.conf /etc/nginx/lettrine/proxy.conf
 COPY web/ /usr/share/nginx/html/
-EXPOSE 8080
+EXPOSE 8080 8081

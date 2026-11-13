@@ -3,6 +3,8 @@ mod engine;
 mod import;
 mod llm_benchmark;
 mod metrics;
+mod multiplayer;
+mod multiplayer_game;
 mod peak;
 mod pg;
 mod profiles;

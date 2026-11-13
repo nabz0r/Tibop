@@ -12,7 +12,7 @@ Avec Docker Desktop, Python 3 et `zstd` disponibles, lancer depuis ce dossier.
 ./tools/start.sh
 ```
 
-Le premier démarrage charge l’archive fournie dans PostgreSQL. Ouvrir [Lettrine Studio](http://127.0.0.1:8787). Le tableau de bord affiche les cotes, les confrontations, les mots fréquents et les archives. **Parties** permet de filtrer Expert × Expert, de rejouer coup par coup, de regarder un duel généré ou d’examiner les alternatives. **Administration** permet d’importer du JSON ou du JSONL, de télécharger les journaux et de récupérer l’APK.
+Le premier démarrage charge les campagnes fournies dans PostgreSQL. L’[accueil Lettrine](http://127.0.0.1:8787/) ouvre les salons de jeu. [Lettrine Studio](http://127.0.0.1:8787/index.html) affiche les cotes, les confrontations, les mots fréquents et les archives. **Parties** permet de filtrer Expert × Expert, de rejouer coup par coup, de regarder un duel généré ou d’examiner les alternatives. **Outils** permet d’importer du JSON ou du JSONL, de télécharger les journaux et de récupérer l’APK.
 
 Ollama tourne sur le Mac. Les deux modèles sont requis pour le commentaire de position et la recherche sémantique.
 
@@ -22,6 +22,16 @@ ollama pull qwen3-embedding:0.6b
 ```
 
 Gemma, Llama et Qwen ont été comparés sur des duels appariés. Les autres fonctions du studio restent disponibles si Ollama est arrêté. Le port Web se règle avec `LETTRINE_PORT`. Les ports PostgreSQL et Redis restent internes au projet Docker.
+
+## Jouer sur le web
+
+Ouvrir [Lettrine](http://127.0.0.1:8787/) depuis le Mac. Pour jouer en solo, choisir un bot et lancer la partie. Pour jouer entre amis, choisir une table de 2 à 4 places et ajouter des bots si souhaité. Partager le lien affiché avec les autres joueurs sur le même réseau Wi-Fi ou filaire. L’hôte peut lancer la partie quand toutes les places humaines sont occupées.
+
+Pour jouer, glisser une lettre sur le plateau ou sélectionner une lettre puis sa case. Le premier mot doit passer par l’étoile centrale. Avant de valider, l’aperçu affiche les mots formés et les points du coup, ou explique pourquoi le coup est refusé. **Indice** propose un mot, son score et les cases où poser les lettres. **Autre indice** fait défiler les autres mots trouvés. Le serveur vérifie les mots avec Grammalecte 7.7. Le bouton **Retrouver mon salon** ramène chaque joueur à sa place depuis le navigateur utilisé pour rejoindre la partie.
+
+`./tools/start.sh` détecte l’adresse réseau du Mac. Si le lien est uniquement accessible sur le Mac, relancer avec `LETTRINE_LAN_IP` défini sur son adresse IPv4 locale. Le port des salons est réglable avec `LETTRINE_LAN_PORT` (8788 par défaut). Le Mac doit rester allumé et Lettrine doit tourner pendant la partie.
+
+À la fin d’une partie jouée avec cette version, les participants peuvent télécharger le journal des coups en JSON. Dans le studio, ouvrez **Outils**, importez ce fichier, puis ouvrez **Parties → Parties importées** pour le rejeu. Les salons qui avaient déjà enregistré des coups avant cette mise à jour restent jouables et leur journal antérieur est indisponible.
 
 ## Prototype Android
 
@@ -37,11 +47,12 @@ Le prototype conserve le jeu hors ligne à deux, trois ou quatre sur un appareil
 | Expert × Expert | 10 000 |
 | Elo relatifs Découverte / Initié / Stratège / Expert | 748 / 1 016 / 1 409 / 1 627 |
 | Expert entraîné contre Expert de référence sur 12 000 duels réservés | 51,93 % des points de match · +13 Elo |
+| Réplication sur un second lot de 100 000 duels réservés | 52,08 % des points de match |
 | Recherche avancée face à l’Expert entraîné | 55,58 % des points sur 2 000 duels réservés |
 | Calibration adaptative FR et EN | 24 000 duels par langue |
 | Cotes humaines historiques sourcées | 44 relevés, échelles fédérales distinctes |
 
-L’analyse de position énumère les placements légaux puis compare les principales options sur trois demi-coups, en échantillonnant le sac et le chevalet adverse. Llama intervient dans le commentaire. Le banc d’essai séparé compare Llama et Qwen quand ils choisissent parmi des coups légaux fournis par le moteur. La recherche sémantique indexe les documents et une sélection de positions dans pgvector.
+L’analyse de position énumère les placements légaux puis compare les principales options sur trois demi-coups, en échantillonnant le sac et le chevalet adverse. Ollama choisit l’angle du commentaire et le moteur en fournit les chiffres. Le banc d’essai compare des modèles qui choisissent parmi des coups légaux fournis par le moteur. La recherche sémantique indexe les documents et une sélection de positions dans pgvector.
 
 ```sh
 cargo test --release

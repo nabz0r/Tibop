@@ -5,7 +5,7 @@ const links = Array.from(document.querySelectorAll("[data-view]"));
 const defaultProfile = "fr-classic-v1";
 const profileNames = { fr: "Français", en: "English", de: "Deutsch", ru: "Русский", "ja-JP": "日本語" };
 const levelNames = ["Découverte", "Initié", "Stratège", "Expert"];
-const matchModes = { solo: "Solo", local: "Multijoueur local", bluetooth: "Bluetooth" };
+const matchModes = { solo: "Solo", local: "Multijoueur local", bluetooth: "Bluetooth", online: "Salon multijoueur" };
 const defaultChallengeModel = "llama3.2:3b";
 const pageSize = 20;
 let number, integer, percent, precisePercent, signed;
@@ -96,6 +96,8 @@ function chooseProfile(id) {
   localizeProfile();
   $("profile-select").value = id;
   $("trained-panel").hidden = true;
+  $("peak-panel").hidden = true;
+  $("trained-unavailable").hidden = true;
   $("commentary-tests").hidden = true;
   $("llm-benchmarks").replaceChildren();
   $("llm-elo-placeholder").hidden = false;
@@ -199,9 +201,17 @@ function bar(ratio) {
   return track;
 }
 
+function chartScale(maximum, unit) {
+  const scale = node("div", "chart-scale");
+  const ticks = node("div", "chart-ticks");
+  for (const value of [0, maximum / 2, maximum]) ticks.append(node("span", "", format(value, integer)));
+  scale.append(ticks, node("span", "chart-unit", t(unit)));
+  return scale;
+}
+
 function renderLevels(levels) {
   const ordered = levels.slice().sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
-  const maxRating = Math.max(1800, ...ordered.map((level) => Number(level.rating) || 0));
+  const maxRating = Math.max(1800, Math.ceil(Math.max(0, ...ordered.map((level) => Number(level.rating) || 0)) / 200) * 200);
   const highlights = ordered.map((level) => {
     const row = node("a", "level-row");
     row.href = "#parties?level=" + encodeURIComponent(level.id);
@@ -211,6 +221,7 @@ function renderLevels(levels) {
     row.append(levelLabel(level.id), bar((level.rating ?? 0) / maxRating), node("span", "level-rating", format(level.rating, integer)));
     return row;
   });
+  if (highlights.length) highlights.push(chartScale(maxRating, "Points Elo"));
   replaceRows($("overview-levels"), highlights, t("En attente des premiers résultats."));
 
   const table = $("meta-levels");
@@ -233,13 +244,17 @@ function renderLevels(levels) {
 }
 
 function renderWords(words) {
-  const maxCount = Math.max(1, ...words.map((word) => Number(word.count) || 0));
-  const rows = words.slice(0, 12).map(({ word, count, mean_score: meanScore }) => {
+  const shown = words.slice(0, 12);
+  const maximum = Math.max(1, ...shown.map((word) => Number(word.count) || 0));
+  const step = 10 ** Math.floor(Math.log10(maximum));
+  const maxCount = Math.ceil(maximum / (step / 2)) * step / 2;
+  const rows = shown.map(({ word, count, mean_score: meanScore }) => {
     const row = node("div", "word-row with-score");
     row.append(node("span", "word", word), bar(count / maxCount), node("span", "word-count", format(count, integer)));
     row.append(node("span", "word-score", format(meanScore) + " pts"));
     return row;
   });
+  if (rows.length) rows.push(chartScale(maxCount, "Occurrences"));
   replaceRows($("meta-words"), rows, t("En attente des premiers résultats."));
 }
 
@@ -247,25 +262,29 @@ function renderMatchups(pairs) {
   const rows = pairs.map(({ a, b, games, a_wins: aWins, b_wins: bWins, draws, confidence_interval_95: interval }) => {
     const row = node("article", "matchup-row");
     const labels = node("div", "matchup-labels");
-    labels.append(levelLabel(a), levelLabel(b));
+    for (const [seat, level, wins] of [[0, a, aWins], [1, b, bWins]]) {
+      const label = node("div", "matchup-side");
+      label.dataset.side = String(seat);
+      label.append(levelLabel(level), node("strong", "", format(wins / games, percent)));
+      if (a === b) label.append(node("small", "", t(seat === 0 ? "Premier joueur" : "Second joueur")));
+      labels.append(label);
+    }
     const stack = node("div", "matchup-bar");
     stack.setAttribute("aria-hidden", "true");
-    for (const [level, count] of [[a, aWins], ["nuls", draws], [b, bWins]]) {
+    for (const [side, count] of [["0", aWins], ["draw", draws], ["1", bWins]]) {
       const segment = node("span", "matchup-segment");
-      segment.dataset.level = String(level);
+      segment.dataset.side = side;
       segment.style.width = (games > 0 ? 100 * (count ?? 0) / games : 0) + "%";
       stack.append(segment);
     }
     const summary = node("div", "matchup-stats");
     summary.append(
       node("span", "", format(aWins, integer) + t(" victoires")),
-      node("span", "", format(draws, integer) + t(" nuls · ") + format(games, integer) + t(" parties")),
+      node("span", "matchup-draws", format(draws, integer) + t(" nuls · ") + format(games, integer) + t(" parties")),
       node("span", "", format(bWins, integer) + t(" victoires")),
     );
-    const detail = node("p", "matchup-evidence", "n = " + format(games, integer) + " · " + t("Victoires par côté") + " " + format(aWins / games, percent) + " / " + format(bWins / games, percent));
-    if (Array.isArray(interval)) detail.append(document.createTextNode(" · " + t("Intervalle à 95 % · ") + interval.map((value) => format(value, precisePercent)).join(t(" à "))));
-    setTip(detail, t("Les deux côtés et les nulles sont comptés sur le même ensemble de duels."));
-    row.append(labels, stack, summary, detail);
+    row.append(labels, stack, summary);
+    if (Array.isArray(interval)) row.append(node("p", "matchup-evidence", t("Intervalle à 95 % · ") + interval.map((value) => format(value, precisePercent)).join(t(" à "))));
     return row;
   });
   replaceRows($("meta-matchups"), rows, t("En attente des premières confrontations."));
@@ -313,15 +332,16 @@ function renderStats(stats) {
   output("admin-lexicon", stats.lexicon || "—");
   output("admin-lexicon-count", format(stats.lexicon_words, integer));
   output("sidebar-lexicon", stats.lexicon || t("Scrabble francophone"));
-  output("local-model", stats.ollama_model || t("Llama local"));
+  output("local-model", stats.ollama_model || t("Modèle local indisponible"));
   setChallengeModels(stats);
   const levels = completed ? stats.levels ?? [] : [];
   const maxElo = Math.max(700, ...levels.map((level) => Number(level.rating) || 0));
-  $("live-target").min = String(stats.adaptive?.min ?? 700);
-  $("policy-elo").min = $("live-target").min;
-  if (maxElo > 700) {
-    $("live-target").max = String(stats.adaptive?.max ?? maxElo);
-    $("policy-elo").max = $("live-target").max;
+  const peakOption = $("live-peak");
+  peakOption.hidden = peakOption.disabled = stats.peak_available !== true;
+  if (peakOption.disabled && $("live-mode").value === "peak") $("live-mode").value = "adaptive";
+  for (const slider of [$("live-target"), $("policy-elo")]) {
+    slider.min = String(stats.adaptive?.min ?? 700);
+    slider.max = String(stats.adaptive?.max ?? (maxElo > 700 ? maxElo : 1630));
   }
   output("policy-elo-value", format($("policy-elo").value, integer));
   refreshLiveForm();
@@ -388,12 +408,24 @@ async function loadModel() {
   const profile = state.profile;
   try {
     const model = await get(profileUrl("/api/models"));
-    if (profile !== state.profile || !model.holdout) return;
+    if (profile !== state.profile) return;
     state.model = model;
-    output("trained-elo", format(model.holdout.elo_delta, signed) + " Elo");
-    output("trained-match-rate", format(model.holdout.match_score_rate, precisePercent));
-    output("trained-games", format(model.holdout.games, integer) + t(" duels de test"));
-    $("trained-track").replaceChildren(bar(model.holdout.match_score_rate));
+    const holdout = model.reference_holdout?.result ?? model.holdout;
+    $("trained-unavailable").hidden = !!holdout;
+    if (model.peak?.promoted) {
+      output("peak-match-rate", format(model.peak.match_score_rate, precisePercent));
+      output("peak-games", format(model.peak.games, integer) + t(" duels de test"));
+      $("peak-panel").hidden = false;
+    }
+    if (!holdout) return;
+    output("trained-elo", format(holdout.elo_delta, signed) + " Elo");
+    output("trained-match-rate", format(holdout.match_score_rate, precisePercent));
+    output("trained-games", format(holdout.games, integer) + t(" duels de test"));
+    const track = bar(holdout.match_score_rate);
+    track.classList.add("parity-bar");
+    const range = node("div", "chart-range");
+    for (const value of [0, .5, 1]) range.append(node("span", "", format(value, percent)));
+    $("trained-track").replaceChildren(track, range);
     $("trained-panel").hidden = false;
   } catch {
     // The dashboard still works with a campaign that predates policy training.
@@ -512,7 +544,10 @@ function scoreLabel(game) {
 }
 
 function originLabel(game) {
-  return game.source === "android" || game.origin === "android" ? "Android" : t("Fichier");
+  const origin = game.origin ?? game.source;
+  if (origin === "android") return "Android";
+  if (origin === "web") return "Lettrine Web";
+  return t("Fichier");
 }
 
 function importMetadata(game) {
@@ -619,7 +654,7 @@ async function loadImports() {
     if (request !== state.importRequest) return;
     const games = result.items ?? [];
     if (games.length) $("imports-rows").replaceChildren(...games.map((game) => gameRow(game, true)));
-    else emptyTable($("imports-rows"), 6, t("Les parties ajoutées dans Administration apparaîtront ici."));
+    else emptyTable($("imports-rows"), 6, t("Les parties ajoutées dans Outils apparaîtront ici."));
     updatePages("imports", state.importOffset, Number(result.total) || 0, games.length);
   } catch {
     if (request !== state.importRequest) return;
@@ -679,17 +714,7 @@ function setView() {
   if (changed) window.scrollTo(0, 0);
 }
 
-const premiums = new Map();
-const premiumPositions = {
-  tw: [[0, 0], [0, 7], [0, 14], [7, 0], [7, 14], [14, 0], [14, 7], [14, 14]],
-  dw: [[1, 1], [2, 2], [3, 3], [4, 4], [7, 7], [10, 10], [11, 11], [12, 12], [13, 13], [1, 13], [2, 12], [3, 11], [4, 10], [10, 4], [11, 3], [12, 2], [13, 1]],
-  tl: [[1, 5], [1, 9], [5, 1], [5, 5], [5, 9], [5, 13], [9, 1], [9, 5], [9, 9], [9, 13], [13, 5], [13, 9]],
-  dl: [[0, 3], [0, 11], [2, 6], [2, 8], [3, 0], [3, 7], [3, 14], [6, 2], [6, 6], [6, 8], [6, 12], [7, 3], [7, 11], [8, 2], [8, 6], [8, 8], [8, 12], [11, 0], [11, 7], [11, 14], [12, 6], [12, 8], [14, 3], [14, 11]],
-};
-for (const [type, positions] of Object.entries(premiumPositions)) {
-  for (const [row, col] of positions) premiums.set(row * 15 + col, type);
-}
-const tilePoints = { A: 1, B: 3, C: 3, D: 2, E: 1, F: 4, G: 2, H: 4, I: 1, J: 8, K: 10, L: 1, M: 2, N: 1, O: 1, P: 3, Q: 8, R: 1, S: 1, T: 1, U: 1, V: 4, W: 10, X: 10, Y: 10, Z: 10 };
+const { premiums, tilePoints } = lettrineBoard;
 const cells = Array.from({ length: 225 }, (_, index) => node("div", "board-cell" + (premiums.has(index) ? " " + premiums.get(index) : "")));
 $("board").append(...cells);
 
@@ -899,12 +924,13 @@ function renderChallenge() {
   const active = pending?.detail === state.detail;
   select.disabled = !model;
   $("challenge-run").disabled = !state.move || !model || active;
-  $("challenge-run").textContent = data?.commentary ? t("Relancer l’analyse") : t("Challenger le coup");
+  $("challenge-run").textContent = data?.commentary ? t("Relancer l’analyse") : t("Demander un commentaire");
   const status = active ? t("Analyse en cours avec ") + pending.model + "…" : data?.error || (!model ? t("Aucun modèle d’analyse configuré.") : "");
   $("challenge-status").hidden = !status;
   output("challenge-status", status || "");
   $("challenge-result").hidden = !data?.commentary;
-  output("challenge-model", data?.model || model);
+  const source = data?.fallback ? t("Analyse du moteur") + " · " + t(data.fallback) : data?.model || model;
+  output("challenge-model", source);
   output("challenge-commentary", data?.commentary || "");
 }
 
@@ -1026,40 +1052,50 @@ function svgElement(name, attributes) {
   return element;
 }
 
-function renderPlot(target, rows, turns, current, bounds, label, values, tip, tickFormat) {
+function svgText(text, attributes) {
+  const label = svgElement("text", attributes);
+  label.textContent = text;
+  return label;
+}
+
+function renderPlot(target, rows, turns, current, ticks, label, values, tip, tickFormat) {
   const holder = $(target);
   const focused = holder.contains(document.activeElement);
-  const chart = svgElement("svg", { viewBox: "0 0 252 76", role: "group", "aria-label": label, tabindex: "0" });
+  const width = 326, height = 152;
+  const left = 39, right = 312, top = 14, bottom = 110;
+  const chart = svgElement("svg", {
+    viewBox: `0 0 ${width} ${height}`, role: "slider", "aria-label": label, tabindex: "0",
+    "aria-valuemin": 0, "aria-valuemax": turns, "aria-valuenow": current,
+    "aria-valuetext": current ? t("Coup") + " " + format(current, integer) : t("Départ"),
+  });
   const explanation = svgElement("title", {});
   explanation.textContent = tip;
   chart.append(explanation);
   chart.addEventListener("click", (event) => {
-    const { left, width } = chart.getBoundingClientRect();
-    jumpToMove(Math.round(((event.clientX - left) / width * 252 - 32) / 214 * turns));
+    const bounds = chart.getBoundingClientRect();
+    const offset = (event.clientX - bounds.left) / bounds.width * width;
+    jumpToMove(Math.round((offset - left) / (right - left) * turns));
   });
   chart.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      event.preventDefault();
-      jumpToMove(state.move + (event.key === "ArrowLeft" ? -1 : 1));
-    }
+    const next = { ArrowLeft: current - 1, ArrowDown: current - 1, ArrowRight: current + 1, ArrowUp: current + 1, Home: 0, End: turns }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    jumpToMove(next);
   });
-  const [min, max] = bounds;
-  const x = (turn) => 32 + 214 * turn / Math.max(turns, 1);
-  const y = (value) => 63 - 56 * (Math.min(max, Math.max(min, value)) - min) / Math.max(max - min, 1);
-  for (const value of [min, (min + max) / 2, max]) {
+  const min = ticks[0], max = ticks.at(-1);
+  const x = (turn) => left + (right - left) * turn / Math.max(turns, 1);
+  const y = (value) => bottom - (bottom - top) * (Math.min(max, Math.max(min, value)) - min) / (max - min);
+  for (const value of ticks) {
     const line = y(value);
-    chart.append(svgElement("line", { class: "plot-grid", x1: 32, x2: 246, y1: line, y2: line }));
-    const tick = svgElement("text", { x: 28, y: line + 2, "text-anchor": "end" });
-    tick.textContent = tickFormat(value);
-    chart.append(tick);
+    chart.append(svgElement("line", { class: "plot-grid", x1: left, x2: right, y1: line, y2: line }));
+    chart.append(svgText(tickFormat(value), { x: left - 7, y: line + 3, "text-anchor": "end" }));
   }
-  for (const turn of [0, turns]) {
-    const tick = svgElement("text", { x: x(turn), y: 74, "text-anchor": turn ? "end" : "start" });
-    tick.textContent = format(turn, integer);
-    chart.append(tick);
+  for (const turn of new Set([0, Math.round(turns / 2), turns])) {
+    chart.append(svgText(format(turn, integer), { x: x(turn), y: bottom + 16, "text-anchor": turn === 0 ? "start" : turn === turns ? "end" : "middle" }));
   }
+  chart.append(svgText(t("Tours"), { class: "plot-unit", x: (left + right) / 2, y: height - 6, "text-anchor": "middle" }));
   const cursor = x(current);
-  chart.append(svgElement("line", { class: "plot-cursor", x1: cursor, x2: cursor, y1: 7, y2: 63 }));
+  chart.append(svgElement("line", { class: "plot-cursor", x1: cursor, x2: cursor, y1: top, y2: bottom }));
   for (const seat of [0, 1]) {
     const points = rows.flatMap((row) => {
       const value = asNumber(values(row)?.[seat]);
@@ -1067,7 +1103,7 @@ function renderPlot(target, rows, turns, current, bounds, label, values, tip, ti
     });
     if (points.length) chart.append(svgElement("polyline", { class: "plot-player-" + seat, points: points.join(" "), fill: "none" }));
     const selected = asNumber(values(rows[current] ?? {})?.[seat]);
-    if (selected !== null) chart.append(svgElement("circle", { class: "plot-dot-" + seat, cx: cursor, cy: y(selected), r: 3 }));
+    if (selected !== null) chart.append(svgElement("circle", { class: "plot-dot-" + seat, cx: cursor, cy: y(selected), r: 4.2 }));
   }
   holder.replaceChildren(chart);
   if (focused) chart.focus({ preventScroll: true });
@@ -1094,7 +1130,7 @@ function renderTimeline(moves) {
   const legend = [0, 1].map((seat) => {
     const item = node("span", "timeline-player plot-key-" + seat);
     const probability = asNumber(current.probability?.[seat]);
-    item.append(node("strong", "", playerName(game, seat)), node("span", "", format(current.scores[seat], integer) + " pts" + (probability === null ? "" : " · " + format(probability, percent))));
+    item.append(node("strong", "", playerName(game, seat)), node("span", "timeline-value", format(current.scores[seat], integer) + " pts" + (probability === null ? "" : " · " + format(probability, percent))));
     if (seat === 0 && game.targetElo) {
       const tier = eloTier(game.targetElo);
       const badge = node("span", "elo-tier", t(tier.label));
@@ -1104,8 +1140,15 @@ function renderTimeline(moves) {
     return item;
   });
   $("timeline-legend").replaceChildren(...legend);
-  renderPlot("score-chart", rows, turns, state.move, [Math.min(0, ...scores), Math.max(1, ...scores)], t("Score cumulé"), (row) => row.scores, t("Score de chaque joueur après chaque tour. Cliquez ou utilisez les flèches pour parcourir la partie."), (value) => format(value, integer));
-  if (chances) renderPlot("chance-chart", rows, turns, state.move, [0, 1], t("Chances de victoire"), (row) => row.probability, t("Estimation du moteur après chaque coup. Cliquez ou utilisez les flèches pour parcourir la partie."), (value) => Math.round(value * 100) + "%");
+  const minimum = Math.min(0, ...scores);
+  const maximum = Math.max(1, ...scores);
+  const magnitude = 10 ** Math.floor(Math.log10(maximum - minimum));
+  const step = Math.max(1, Math.ceil((maximum - minimum) / (magnitude * 2)) * magnitude / 2);
+  const bottom = Math.floor(minimum / step) * step;
+  const top = Math.ceil(maximum / step) * step;
+  const scoreTicks = Array.from({ length: Math.round((top - bottom) / step) + 1 }, (_, index) => bottom + index * step);
+  renderPlot("score-chart", rows, turns, state.move, scoreTicks, t("Score cumulé"), (row) => row.scores, t("Score de chaque joueur après chaque tour. Cliquez ou utilisez les flèches pour parcourir la partie."), (value) => format(value, integer));
+  if (chances) renderPlot("chance-chart", rows, turns, state.move, [0, .25, .5, .75, 1], t("Chances de victoire"), (row) => row.probability, t("Estimation du moteur après chaque coup. Cliquez ou utilisez les flèches pour parcourir la partie."), (value) => format(value, percent));
   const method = typeof game.timelineMethod === "string" ? game.timelineMethod : game.timelineMethod?.win;
   output("timeline-method", chances ? t(method || "Probabilités estimées à chaque coup.") : "");
 }
@@ -1123,12 +1166,12 @@ function replayAt(step) {
   $("replay-prev").disabled = state.move <= 0;
   $("replay-next").disabled = state.move >= moves.length;
   updateReplayCaption();
-  Array.from($("move-list").querySelectorAll("button")).forEach((button, index) => {
+  const list = $("move-list");
+  Array.from(list.querySelectorAll("button")).forEach((button, index) => {
     if (index + 1 === state.move) {
       button.setAttribute("aria-current", "step");
-      const list = $("move-list");
-      if (button.offsetTop < list.scrollTop + list.offsetTop || button.offsetTop + button.offsetHeight > list.scrollTop + list.offsetTop + list.clientHeight) {
-        list.scrollTop = button.offsetTop - list.offsetTop - list.clientHeight / 2;
+      if (button.offsetTop < list.scrollTop || button.offsetTop + button.offsetHeight > list.scrollTop + list.clientHeight) {
+        list.scrollTop = button.offsetTop - (list.clientHeight - button.offsetHeight) / 2;
       }
     } else {
       button.removeAttribute("aria-current");
@@ -1268,10 +1311,11 @@ function renderCorpusResult(item) {
   }
   if (item.source?.startsWith("/#parties?")) {
     const link = node("a", "text-link", t("Ouvrir la position →"));
-    link.href = state.profile === defaultProfile ? item.source.slice(1) : "/?profile=" + defaultProfile + item.source.slice(1);
+    link.href = state.profile === defaultProfile ? item.source.slice(1) : "/index.html?profile=" + defaultProfile + item.source.slice(1);
     article.append(link);
   } else if (item.source?.startsWith("https://")) {
-    article.append(sourceLink(item.source, "Source"));
+    const link = sourceLink(item.source, "Source");
+    if (link) article.append(link);
   } else if (item.source) {
     article.append(node("small", "corpus-source", item.source));
   }
@@ -1348,17 +1392,19 @@ function openExpert(archiveGame) {
     return { ...turn, turn: turn.index, type: turn.action, tiles: tiles ?? [] };
   });
   const adjustments = (archiveGame.end_adjustments ?? []).reduce((scores, move) => {
-    if (move.player === 0 || move.player === 1) scores[move.player] += Number(move.score) || 0;
+    if (move.player === 0 || move.player === 1) scores[move.player] += (Number(move.score) || 0) - (Number(move.penalty) || 0);
     return scores;
   }, [0, 0]);
   const game = { ...archiveGame, archive: true, moves, adjustments, scores: archiveGame.final_scores ?? archiveGame.archive_score_totals };
   state.detail = game;
   output("game-title", game.title);
-  const result = scoreLabel(game) + (archiveGame.final_scores ? " (officiel)" : " (relevé)");
+  const officialScore = archiveGame.final_scores && archiveGame.final_scores_source && archiveGame.final_scores_source !== archiveGame.source;
+  const result = scoreLabel(game) + (officialScore ? " (officiel)" : " (relevé)");
   output("game-subtitle", [game.players.join(" × "), result, game.dictionary].filter(Boolean).join(" · "));
   const source = $("game-source");
-  const links = [sourceLink(game.source, "Relevé d’origine"), sourceLink(game.final_scores_source, "Résultat officiel")].filter(Boolean);
-  const notes = [game.score_discrepancy ? "Le total du relevé diffère du résultat officiel." : "", valid ? "" : "Reconstitution partielle du plateau."].filter(Boolean);
+  const links = [sourceLink(game.source, "Relevé d’origine"), officialScore && sourceLink(game.final_scores_source, "Résultat officiel")].filter(Boolean);
+  const archiveScore = game.score_discrepancy ? "Total du relevé : " + scoreLabel({ scores: game.archive_score_totals }) + "." : "";
+  const notes = [archiveScore, valid ? "" : "Reconstitution partielle du plateau."].filter(Boolean);
   source.replaceChildren(...links, ...notes.map((note) => node("span", "", note)));
   source.hidden = !source.childNodes.length;
   if (!$("game-dialog").open) $("game-dialog").showModal();
@@ -1443,9 +1489,9 @@ function showLiveStatus(message) {
 }
 
 function refreshLiveForm() {
-  const adaptive = $("live-mode").value === "adaptive";
-  $("live-a-wrap").hidden = adaptive;
-  $("live-target-wrap").hidden = !adaptive;
+  const mode = $("live-mode").value;
+  $("live-a-wrap").hidden = mode !== "fixed";
+  $("live-target-wrap").hidden = mode !== "adaptive";
   output("live-target-value", format($("live-target").value, integer));
   const tier = eloTier(Number($("live-target").value));
   $("live-tier").dataset.tier = tier.id;
@@ -1478,8 +1524,13 @@ function renderLive(data) {
   const game = state.detail;
   if (data.type === "start") {
     const labels = data.levels.map(levelName);
-    if (data.target_elo != null) labels[data.adaptive_seat ?? 0] = "NAB · " + format(data.target_elo, integer);
-    state.detail = { live: true, seed: data.seed, levels: data.levels, labels, targetElo: data.target_elo, timelineMethod: data.method, scores: [0, 0], moves: [] };
+    if (data.policy === "peak") {
+      labels[0] = t("NAB, recherche avancée");
+      if (data.levels[1] === 3) labels[1] = t("Expert entraîné");
+    } else if (data.target_elo != null) {
+      labels[data.adaptive_seat ?? 0] = "NAB · " + format(data.target_elo, integer);
+    }
+    state.detail = { live: true, seed: data.seed, levels: data.levels, labels, policy: data.policy, targetElo: data.target_elo, timelineMethod: data.method, scores: [0, 0], moves: [] };
     output("game-subtitle", labels.join(" × ") + " · " + t("Graine ") + data.seed);
     showLiveStatus("En direct · 0 / " + data.turns);
     state.detail.turns = data.turns;
@@ -1494,11 +1545,11 @@ function renderLive(data) {
     state.liveStream?.close();
     state.liveStream = null;
     const finished = data.game;
-    state.detail = { ...finished, live: true, labels: game.labels, targetElo: game.targetElo, timelineMethod: game.timelineMethod, timeline: new Map(game.moves.map((move) => [move.turn, move])) };
+    state.detail = { ...finished, live: true, labels: game.labels, policy: game.policy, targetElo: game.targetElo, timelineMethod: game.timelineMethod, timeline: new Map(game.moves.map((move) => [move.turn, move])) };
     output("game-subtitle", game.labels.join(" × ") + " · " + t("Graine ") + finished.seed + " · " + scoreLabel(finished));
     showLiveStatus(t("Duel terminé · ") + (finished.winner === null ? t("Égalité") : t("Joueur ") + (finished.winner + 1) + t(" gagne")));
-    const externalId = ["live", state.profile, finished.seed, ...finished.levels, game.targetElo ?? "fixed"].join("-");
-    const file = { ...finished, profile: state.profile, target_elo: game.targetElo, external_id: externalId };
+    const externalId = ["live", state.profile, finished.seed, ...finished.levels, game.policy, game.targetElo ?? ""].join("-");
+    const file = { ...finished, profile: state.profile, labels: game.labels, policy: game.policy, target_elo: game.targetElo, external_id: externalId };
     state.liveFile = URL.createObjectURL(new Blob([JSON.stringify(file)], { type: "application/json" }));
     const link = $("live-export");
     link.href = state.liveFile;
@@ -1526,7 +1577,9 @@ function openLive(event) {
   const dialog = $("game-dialog");
   if (!dialog.open) dialog.showModal();
   const query = new URLSearchParams({ a: $("live-a").value, b: $("live-b").value });
-  if ($("live-mode").value === "adaptive") query.set("elo", $("live-target").value);
+  const mode = $("live-mode").value;
+  if (mode === "adaptive") query.set("elo", $("live-target").value);
+  if (mode === "peak") query.set("peak", "1");
   if ($("live-seed").value !== "") query.set("seed", $("live-seed").value);
   const stream = new EventSource(profileUrl("/api/live", query));
   state.liveStream = stream;
@@ -1655,6 +1708,10 @@ $("policy-elo").addEventListener("change", () => {
 });
 $("policy-run").addEventListener("click", previewPolicy);
 $("refresh").addEventListener("click", refreshStats);
+document.querySelector(".skip-link").addEventListener("click", (event) => {
+  event.preventDefault();
+  $("content").focus();
+});
 window.addEventListener("hashchange", setView);
 localizeProfile();
 setView();

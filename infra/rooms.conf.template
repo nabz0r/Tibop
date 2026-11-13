@@ -1,0 +1,39 @@
+map $http_host $lettrine_rooms_host {
+    default 0;
+    "${LETTRINE_LAN_IP}:${LETTRINE_LAN_PORT}" 1;
+}
+
+map "${LETTRINE_LAN_IP}" $lettrine_rooms_origin {
+    127.0.0.1 "";
+    default "http://${LETTRINE_LAN_IP}:${LETTRINE_LAN_PORT}";
+}
+
+server {
+    listen 8081;
+    server_tokens off;
+    root /usr/share/nginx/html;
+    charset utf-8;
+    client_max_body_size 16k;
+    client_body_timeout 10s;
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    if ($lettrine_rooms_host = 0) { return 421; }
+
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy no-referrer always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    location = / {
+        rewrite ^ /salons.html last;
+    }
+    location ~ ^/(salons\.(html|css|js)|board-rules\.js|assets/(lettrine-mark\.png|lettrine-table\.webp|(bricolage-grotesque|inter)-latin-wght-normal\.woff2))$ {
+        expires -1;
+        try_files $uri =404;
+    }
+    location ~ ^/api/rooms(?:/|$) {
+        include /etc/nginx/lettrine/proxy.conf;
+    }
+    location / {
+        return 404;
+    }
+}

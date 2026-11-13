@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5efe4">
+  <meta name="description" content="Jouez au Scrabble en français dans votre navigateur, contre un bot ou avec vos amis.">
+  <title>Jouer au Scrabble · Lettrine</title>
+  <link rel="icon" href="/assets/lettrine-mark.png" type="image/png">
+  <link rel="stylesheet" href="/salons.css">
+  <script src="/board-rules.js" defer></script>
+  <script src="/salons.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Aller au contenu</a>
+  <header class="site-head">
+    <div class="frame head-inner">
+      <a class="brand" href="/salons.html" aria-label="Lettrine, accueil des salons">
+        <img src="/assets/lettrine-mark.png" width="36" height="36" alt="">
+        <span>Lettrine</span>
+      </a>
+      <a class="head-link" id="studio-link" href="/index.html#vue" hidden>Retour au studio <span aria-hidden="true">↗</span></a>
+      <a class="head-link" id="rooms-link" href="/salons.html" hidden><span aria-hidden="true">←</span> Accueil des salons</a>
+    </div>
+  </header>
+  <main class="frame" id="main">
+    <p class="notice error" id="error" role="alert" hidden></p>
+    <p class="notice" id="loading" role="status" hidden></p>
+
+    <section id="welcome" aria-labelledby="welcome-title" hidden>
+      <div class="welcome-head">
+        <div class="welcome-copy">
+          <h1 id="welcome-title">Jouer au Scrabble</h1>
+          <p>Une partie en français contre un bot ou avec vos amis, chacun dans son navigateur.</p>
+        </div>
+        <div class="welcome-art" aria-hidden="true">
+          <div class="art-board">
+            <span class="art-square art-square-red"></span>
+            <span class="art-square art-square-gold"></span>
+            <span class="art-square art-square-green"></span>
+            <span class="art-square art-square-pale"></span>
+            <span class="game-tile art-j">J<small>8</small></span>
+            <span class="game-tile art-u">U<small>1</small></span>
+            <div class="art-word">
+              <span class="game-tile">L<small>1</small></span>
+              <span class="game-tile">E<small>1</small></span>
+              <span class="game-tile">T<small>1</small></span>
+              <span class="game-tile">T<small>1</small></span>
+              <span class="game-tile">R<small>1</small></span>
+              <span class="game-tile">E<small>1</small></span>
+              <span class="game-tile">S<small>1</small></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="resume notice" id="resume" hidden>
+        <span>Une partie vous attend.</span>
+        <a class="button secondary" id="resume-link" href="/salons.html">Retrouver mon salon</a>
+      </div>
+      <div class="welcome-grid">
+        <form class="panel form" id="create-form">
+          <h2>Nouvelle partie</h2>
+          <fieldset class="setup-mode">
+            <legend>Avec qui voulez-vous jouer ?</legend>
+            <div>
+              <label><input type="radio" name="opponent" value="solo" checked><span>Contre un bot</span></label>
+              <label><input type="radio" name="opponent" value="friends"><span>Avec des amis</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="setup-options" id="solo-options">
+            <label for="solo-level">Niveau du bot</label>
+            <select id="solo-level" name="solo-level" aria-describedby="bot-help"></select>
+            <p class="muted field-help" id="bot-help"></p>
+          </fieldset>
+          <fieldset class="setup-options" id="friends-options" hidden disabled>
+            <p class="muted field-help">Invitez vos amis sur le même Wi-Fi. Vous pouvez ajouter des bots aux places restantes.</p>
+            <fieldset class="capacity">
+              <legend>Nombre total de places, vous compris</legend>
+              <div>
+                <label><input type="radio" name="capacity" value="2" checked><span>2 places</span></label>
+                <label><input type="radio" name="capacity" value="3"><span>3 places</span></label>
+                <label><input type="radio" name="capacity" value="4"><span>4 places</span></label>
+              </div>
+            </fieldset>
+            <div class="bot-setup" id="bot-setup" hidden>
+              <label for="bots-count">Ajouter des bots</label>
+              <select id="bots-count" name="bots-count"></select>
+              <div class="bot-levels" id="bot-levels"></div>
+            </div>
+            <p class="muted field-help" id="friend-seats" aria-live="polite"></p>
+          </fieldset>
+          <label for="create-name" id="create-name-label">Votre prénom ou pseudo <span>(facultatif)</span></label>
+          <input id="create-name" name="name" maxlength="24" autocomplete="nickname">
+          <button class="button primary form-action" type="submit"><span id="create-label">Jouer contre un bot</span> <span aria-hidden="true">→</span></button>
+        </form>
+        <form class="panel form" id="join-form">
+          <h2>Rejoindre un salon</h2>
+          <p class="muted">Ouvrez le lien reçu de votre ami ou saisissez son code.</p>
+          <label for="join-code">Code du salon</label>
+          <input id="join-code" name="code" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
+          <label for="join-name">Votre prénom ou pseudo</label>
+          <input id="join-name" name="name" maxlength="24" autocomplete="nickname" required>
+          <button class="button secondary form-action" type="submit">Rejoindre le salon <span aria-hidden="true">→</span></button>
+        </form>
+      </div>
+    </section>
+
+    <section id="invited" aria-labelledby="invited-title" hidden>
+      <div class="welcome-head">
+        <div class="welcome-copy">
+          <h1 id="invited-title">Vous êtes invité à jouer</h1>
+          <p>Entrez votre prénom ou un pseudo pour retrouver vos amis dans le salon.</p>
+        </div>
+      </div>
+      <form class="panel form invite-form" id="invite-form">
+        <label for="invite-name">Votre prénom ou pseudo</label>
+        <input id="invite-name" name="name" maxlength="24" autocomplete="nickname" required>
+        <button class="button primary form-action" type="submit">Rejoindre le salon <span aria-hidden="true">→</span></button>
+      </form>
+    </section>
+
+    <section id="room" aria-labelledby="room-title" hidden>
+      <div class="room-head">
+        <div>
+          <h1 id="room-title">Votre salon</h1>
+          <p class="muted" id="room-subtitle"></p>
+        </div>
+        <span class="room-label" id="room-label"></span>
+      </div>
+      <p class="notice" id="connection" role="status" hidden></p>
+
+      <div class="lobby-grid" id="lobby" hidden>
+        <section class="panel lobby-panel" id="invite-panel" aria-labelledby="invite-title">
+          <h2 id="invite-title">Inviter vos amis</h2>
+          <p id="invite-help">Envoyez ce lien aux personnes avec qui vous voulez jouer.</p>
+          <label for="invite-url">Lien d’invitation</label>
+          <div class="copy-row">
+            <input id="invite-url" readonly>
+            <button class="button secondary" id="copy-link" type="button">Copier le lien</button>
+          </div>
+          <p class="code-panel"><span>Code du salon</span> <strong class="room-code" id="room-code"></strong></p>
+          <p class="copy-feedback" id="copy-feedback" role="status" hidden></p>
+        </section>
+        <section class="panel lobby-panel" aria-labelledby="players-title">
+          <h2 id="players-title">Joueurs</h2>
+          <ul class="lobby-players" id="lobby-players"></ul>
+          <p class="muted" id="lobby-status" role="status"></p>
+          <button class="button primary" id="start-game" type="button" hidden>Démarrer la partie</button>
+        </section>
+      </div>
+
+      <div id="game" hidden>
+        <div class="turn-banner" id="turn-banner" role="status">
+          <strong id="turn-title"></strong>
+          <span id="turn-help"></span>
+        </div>
+        <div class="game-layout">
+          <div class="game-workspace">
+            <section class="table-panel" aria-label="Plateau de jeu">
+              <div class="board" id="game-board" role="group" aria-label="Plateau de Scrabble, utilisez les flèches pour changer de case"></div>
+            </section>
+            <section class="hand" aria-labelledby="hand-title">
+              <div class="hand-head">
+                <h2 id="hand-title">Vos lettres</h2>
+                <div class="hand-tools">
+                  <button class="button hint-button" id="hint-button" type="button" aria-controls="hint-result" aria-expanded="false" hidden><span aria-hidden="true">✦</span> Indice</button>
+                  <button class="button shuffle-rack" id="shuffle-rack" type="button"><span class="shuffle-icon" aria-hidden="true">⇄</span> Mélanger</button>
+                </div>
+              </div>
+              <div class="rack" id="rack" role="group" aria-label="Vos lettres"></div>
+              <p class="sr-only" id="rack-announcement" aria-live="polite"></p>
+              <p class="hand-tip" id="hand-tip"></p>
+              <p class="notice error" id="play-error" role="alert" hidden></p>
+              <div class="hint-result" id="hint-result" hidden>
+                <div class="hint-copy" role="status" aria-live="polite" aria-atomic="true">
+                  <div class="hint-head"><strong id="hint-word"></strong><span id="hint-score" hidden></span></div>
+                  <p id="hint-detail"></p>
+                </div>
+                <div class="hint-actions">
+                  <button class="button hint-button" id="apply-hint" type="button" hidden>Poser les lettres</button>
+                  <div class="hint-nav" id="hint-nav" hidden>
+                    <button class="button secondary" id="next-hint" type="button">Autre indice <span aria-hidden="true">→</span></button>
+                    <span id="hint-count" role="status" aria-live="polite"></span>
+                  </div>
+                  <button class="button secondary" id="dismiss-hint" type="button">Fermer</button>
+                </div>
+              </div>
+              <div class="move-preview" id="move-preview" role="status" aria-live="polite" aria-atomic="true" hidden>
+                <span class="preview-mark" id="move-preview-mark" aria-hidden="true"></span>
+                <div class="preview-copy">
+                  <strong id="move-preview-label"></strong>
+                  <span id="move-preview-detail"></span>
+                </div>
+                <strong class="preview-score" id="move-preview-score" hidden></strong>
+              </div>
+              <div class="play-actions" id="play-actions">
+                <button class="button primary" id="play-move" type="button">Jouer ce mot</button>
+                <button class="button secondary" id="clear-move" type="button">Reprendre les lettres</button>
+                <button class="button text" id="swap-mode" type="button">Échanger des lettres</button>
+                <button class="button text" id="pass-mode" type="button">Passer mon tour</button>
+              </div>
+              <div class="play-actions" id="other-actions" hidden>
+                <button class="button primary" id="confirm-action" type="button"></button>
+                <button class="button secondary" id="cancel-action" type="button">Annuler</button>
+              </div>
+            </section>
+          </div>
+          <aside class="game-aside" aria-label="Suivi de la partie">
+            <section class="score-panel" aria-labelledby="scores-title">
+              <div class="score-head">
+                <h2 id="scores-title">Scores</h2>
+                <p class="bag" id="bag"></p>
+              </div>
+              <ul class="scores" id="scores"></ul>
+              <div class="recent-turn">
+                <h3 id="last-title">Dernier tour</h3>
+                <p class="last-turn" id="last-turn"></p>
+              </div>
+              <div class="recent-turn" id="replay-export" hidden>
+                <button class="button secondary" id="download-replay" type="button" hidden>Télécharger le rejeu</button>
+                <p class="last-turn" id="replay-export-status" role="status"></p>
+              </div>
+            </section>
+            <details class="rules">
+              <summary>Règles et cases bonus</summary>
+              <ul class="legend" aria-label="Cases bonus">
+                <li><span class="tw">M3</span> Mot triple</li>
+                <li><span class="dw">M2</span> Mot double</li>
+                <li><span class="tl">L3</span> Lettre triple</li>
+                <li><span class="dl">L2</span> Lettre double</li>
+              </ul>
+              <p>Le premier mot traverse l’étoile. Les suivants se rattachent aux lettres déjà posées. Posez vos lettres sur une même ligne ou colonne.</p>
+              <p>Glissez vos lettres ou sélectionnez une lettre puis une case. Au clavier, utilisez Alt + ← ou → pour réordonner vos lettres. Un joker représente la lettre de votre choix et vaut zéro point.</p>
+            </details>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+  <dialog id="blank-dialog" aria-labelledby="blank-title">
+    <h2 id="blank-title">Quelle lettre pour ce joker ?</h2>
+    <div class="blank-letters" id="blank-letters"></div>
+    <form method="dialog"><button class="button secondary" type="submit">Annuler</button></form>
+  </dialog>
+  <noscript><p class="frame">Activez JavaScript dans votre navigateur pour jouer.</p></noscript>
+</body>
+</html>

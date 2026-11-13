@@ -22,4 +22,10 @@ Installer le SDK Android 36, les outils de compilation Android, Java 17 et Pytho
 
 Sur un poste avec les dépendances en cache, `LETTRINE_GRADLE_OFFLINE=1` active le mode hors ligne. Pour tester un autre lexique autorisé, définir `LETTRINE_WORDS` avec un chemin de fichier UTF-8 contenant un mot par ligne et `LETTRINE_WORDS_LABEL` avec le nom de l’édition. Les poids entraînés s’activent uniquement si leur empreinte correspond au lexique de l’APK.
 
-Installation et jeu vérifiés sur Android 8 et Android 16. L’appairage et la synchronisation de coups Bluetooth ont été vérifiés entre deux émulateurs Android 16. Le test sur deux téléphones physiques reste à faire.
+## Vérification du 13 novembre 2026
+
+- Android 8 et 16 sur émulateur. Installation, navigation retour, reprise après arrêt du processus, historique et relecture vérifiés. Sur Android 8, la mise à jour depuis l’APK précédent a conservé l’historique et la partie en cours.
+- Android 16. Coup du bot adaptatif, recalcul de l’Elo local en fin de partie et export JSON par le sélecteur de fichiers Android vérifiés.
+- Bluetooth entre deux émulateurs Android 16. Refus puis autorisation depuis les réglages, appairage, création de partie, synchronisation d’un placement et d’une passe, puis gestion d’une coupure vérifiés. Le test sur deux téléphones physiques reste à faire.
+
+L’APK joue en français avec le moteur embarqué. Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.

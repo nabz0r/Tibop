@@ -38,6 +38,20 @@ Face à l’Expert de référence, sur des tirages réservés.|Against the refer
 Score de match|Match score
 Données JSON|JSON data
 Llama local|Local Llama
+Modèle local indisponible|Local model unavailable
+NAB, recherche avancée|NAB, advanced search
+Face à l’Expert entraîné.|Against the trained Expert.
+Résultats des bots|Bot results
+Duels sur des tirages réservés.|Matches on held-out deals.
+Face à l’Expert de référence.|Against the reference Expert.
+Analyse du moteur|Engine analysis
+Réponse du modèle illisible.|The model returned an invalid response.
+Le commentaire du modèle est indisponible.|Model commentary is unavailable.
+Le commentaire du modèle a dépassé le délai de réponse.|Model commentary timed out.
+La demande de commentaire n’a pas pu être déposée.|The commentary request could not be queued.
+Ollama n’a renvoyé aucun commentaire.|Ollama returned no commentary.
+Le service Ollama local est injoignable.|The local Ollama service cannot be reached.
+Ollama n’a pas pu charger le modèle configuré.|Ollama could not load the configured model.
 Commente les coups et leurs variantes.|Comments on moves and their alternatives.
 Elo en jeu non mesuré.|Playing Elo has yet to be measured.
 Commentaires de position|Position commentary
@@ -194,6 +208,7 @@ Partie |Game\x20
 Égalité|Draw
 Joueur |Player\x20
 Multijoueur local|Local multiplayer
+Salon multijoueur|Multiplayer room
 Fichier|File
 Graine |Seed\x20
 Rejouer la partie |Replay game\x20
@@ -379,6 +394,100 @@ Elo des niveaux de référence|Reference-level Elo
 Étudier les coups|Study the moves
 Étudier les coups de |Study the moves of\x20
 Meilleur coup publié|Best published play
+Jouer entre amis|Play with friends
+Jouer au Scrabble|Play Scrabble
+Lettrine Studio · Comprendre le jeu|Lettrine Studio · Explore the game
+Accueil de Lettrine Studio|Lettrine Studio home
+Rejouez des parties de Scrabble, comparez les stratégies et explorez les archives de compétition.|Replay Scrabble games, compare strategies and explore competition archives.
+Langue des parties|Game language
+Les parties à la loupe|A closer look at the game
+Rejouez les meilleurs coups et découvrez ce qui fait la différence sur le plateau.|Replay the best moves and discover what makes a difference on the board.
+Voir un duel|Watch a duel
+Parties simulées|Simulated games
+La force des joueurs|Playing strength
+Le classement Elo compare les résultats des quatre niveaux de jeu.|Elo ratings compare the results of the four playing levels.
+Voir le classement|See the rankings
+Le bot Expert à l’essai|Putting the Expert bot to the test
+Comparez la version entraînée au bot Expert de départ.|Compare the trained Expert bot with the original version.
+Les deux versions jouent sur des tirages gardés pour le test.|Both versions play on deals reserved for testing.
+Les résultats du bot Expert sont disponibles dans le profil français.|Expert bot results are available for the French profile.
+Tests des modèles d’analyse|Commentary model tests
+Le test vérifie les scores annoncés et le choix du meilleur coup selon la simulation.|The test checks the reported scores and whether the model picks the best move in the simulation.
+Format valide|Valid format
+Réponses exactes|Accurate answers
+Temps médian|Median time
+Temps p95|95th-percentile time
+95 % des réponses arrivent avant ce délai.|95% of responses arrive within this time.
+Carnet de recherche|Research notebook
+Simulations, entraînements et résultats des tests.|Simulations, training and test results.
+Découvrir les champions|Meet the champions
+Stratégie|Strategy
+Comparez les joueurs, leurs mots préférés et les cases qu’ils utilisent.|Compare players, their favourite words and the squares they use.
+Qui gagne face à qui ?|Who beats whom?
+Résultats des duels entre niveaux, parties nulles comprises.|Match results between playing levels, including draws.
+Mots les plus joués|Most played words
+Nombre d’apparitions et score moyen des coups.|Frequency and average move score.
+Les cases bonus|Bonus squares
+Combien de fois servent-elles et combien rapportent les coups qui les utilisent ?|How often are they used and how much do those moves score?
+Où joue-t-on ?|Where do players place tiles?
+Sélectionnez une case pour voir ses chiffres.|Select a square to see its stats.
+Lettres posées|Tiles placed
+Lettres échangées|Exchanged tiles
+Le classement en détail|Rankings in detail
+Scores, victoires et classement Elo par niveau.|Scores, wins and Elo by playing level.
+Rechercher une idée de jeu|Search for a playing idea
+Trouvez des exemples dans les parties, les archives et les analyses.|Find examples in games, archives and analyses.
+Parties à rejouer|Games to replay
+Choisissez une partie et avancez à votre rythme, un coup à la fois.|Choose a game and go at your own pace, one move at a time.
+Numéro de partie ou de tirage|Game number or deal seed
+Entre deux experts|Between two Experts
+Meilleurs classements|Highest rankings
+Meilleurs scores individuels|Highest individual scores
+Meilleurs scores cumulés|Highest combined scores
+Réglez le niveau des deux joueurs et regardez-les jouer.|Set both playing levels and watch them play.
+NAB, niveau réglable|NAB, adjustable level
+Choisir un niveau fixe|Choose a fixed level
+Niveau de NAB (Elo)|NAB level (Elo)
+Lancer le duel|Start the duel
+Reproduire un tirage|Repeat a deal
+Numéro du tirage|Deal seed
+Championnats|Championships
+Remontez le fil des finales et découvrez les joueurs qui ont marqué la compétition.|Explore past finals and meet the players who shaped the competition.
+Les grands joueurs|Great players
+Suivez leur classement au fil des ans, selon les règles de chaque compétition.|Follow their ratings over the years in each competition's ranking system.
+Les finales sur la carte|Finals on the map
+Choisissez un lieu ou parcourez les années pour retrouver les résultats.|Choose a location or browse the years to see the results.
+Outils|Tools
+Retrouvez vos fichiers de parties et téléchargez Lettrine pour Android.|Find your game files and download Lettrine for Android.
+Télécharger des parties|Download games
+Utilisez le format CSV pour ouvrir les résultats dans un tableur.|Use CSV to open results in a spreadsheet.
+Lettrine pour Android|Lettrine for Android
+Version de test à installer sur un appareil Android.|Test version for Android devices.
+Télécharger l’APK|Download APK
+État de la simulation et du service|Simulation and service status
+État du service|Service status
+Comment la partie évolue|How the game develops
+Chances de victoire estimées|Estimated win chances
+Demander un commentaire|Request commentary
+Les parties ajoutées dans Outils apparaîtront ici.|Games imported in Tools will appear here.
+Points Elo|Elo points
+Occurrences|Occurrences
+Départ|Start
+Coup|Turn
+Cotes publiées|Published ratings
+Tous les joueurs|All players
+Points par coup|Points per move
+Case sélectionnée|Selected square
+Aucune pose|No tiles placed
+Plus fréquente|More frequent
+Moins fréquente|Less frequent
+Coup moins élevé|Lower-scoring move
+Coup plus élevé|Higher-scoring move
+Finale précédente|Previous final
+Finale suivante|Next final
+Vainqueur|Winner
+Finaliste|Runner-up
+Match nul|Draw
 `.trim().split("\n").map((line) => line.split("|")));
 
 let uiLocale = "fr";
@@ -390,8 +499,8 @@ while (walker.nextNode()) {
   const text = textNode.data.trim();
   if (englishCopy.has(text)) pageCopy.push([textNode, "data", textNode.data, text]);
 }
-for (const element of document.querySelectorAll("[aria-label], [placeholder], meta[name=description]")) {
-  for (const attr of ["aria-label", "placeholder", "content"]) {
+for (const element of document.querySelectorAll("[aria-label], [placeholder], [title], meta[name=description]")) {
+  for (const attr of ["aria-label", "placeholder", "title", "content"]) {
     const value = element.getAttribute(attr);
     if (value && englishCopy.has(value)) pageCopy.push([element, attr, value, value]);
   }

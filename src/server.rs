@@ -148,23 +148,29 @@ fn calibration(profile: &profiles::Profile) -> Option<Calibration> {
     )))
     .ok()
 }
-fn ratings(stats: &Value) -> [i32; 4] {
-    let fallback = [750, 1010, 1410, 1630];
-    std::array::from_fn(|i| {
-        stats["levels"][i]["rating"]
-            .as_i64()
-            .map(|x| x as i32)
-            .unwrap_or(fallback[i])
-    })
+fn active_calibration(
+    profile: &profiles::Profile,
+    digest: &str,
+    expert: ExpertPolicy,
+) -> Option<Calibration> {
+    calibration(profile)
+        .filter(|report| report.compatible(&profile.id, digest, expert))
+        .filter(|report| report.measured_bounds().is_some())
 }
-fn strength(engine: &Engine, stats: &Value) -> Result<(StrengthScale, Option<Calibration>)> {
+fn ratings(stats: &Value) -> [i32; 4] {
+    store::elo_anchors(stats)
+}
+pub(crate) fn strength(
+    engine: &Engine,
+    stats: &Value,
+) -> Result<(StrengthScale, Option<Calibration>)> {
     let expert = model_policy(&engine.digest);
-    if let Some(calibration) = calibration(&engine.profile)
-        .filter(|c| c.compatible(engine, &c.scale) && c.scale.expert == expert)
-    {
+    if let Some(calibration) = active_calibration(&engine.profile, &engine.digest, expert) {
         return Ok((calibration.scale, Some(calibration)));
     }
-    let scale = StrengthScale::new(ratings(stats), expert)?;
+    let anchors = ratings(stats);
+    let scale = StrengthScale::new(anchors, expert)
+        .or_else(|_| StrengthScale::new(ratings(&Value::Null), expert))?;
     Ok((
         if scale.anchors[0] > 700 {
             scale.with_experimental_floor(700)?
@@ -201,10 +207,23 @@ async fn stats(State(app): State<App>, Query(q): Query<ProfileQuery>) -> ApiResu
         stats["language"]=json!(p.language);
         stats["storage"]=json!(if env::var_os("LETTRINE_PG_HOST").is_some()||env::var_os("LETTRINE_DATABASE_URL").is_some() {"postgresql"} else {"sqlite"});
         stats["ollama_model"]=json!(app.ollama.as_ref().map(|(_,m)|m));
-        stats["ollama_models"]=json!(&*app.models);
-        if let Some(cal)=calibration(p) {
-            let max=cal.measurements.iter().map(|m|m.measured_elo).fold(700.0_f64,f64::max);
-            stats["adaptive"]=json!({"min":700,"max":max.round(),"games":cal.measurements.iter().map(|m|m.games).sum::<u32>()});
+        stats["ollama_models"]=if app.ollama.is_some() {json!(&*app.models)} else {json!([])};
+        let digest = if id == app.engine.profile.id {
+            Some(app.engine.digest.clone())
+        } else {
+            meta(&app,"campaign",&id)?.and_then(|campaign| campaign["lexicon_sha256"].as_str().map(str::to_owned))
+        };
+        if let Some(digest) = digest {
+            let expert = model_policy(&digest);
+            if let Some(cal)=active_calibration(p, &digest, expert)
+                && let Some((min,max))=cal.measured_bounds()
+            {
+                stats["adaptive"]=json!({"min":min.ceil().max(700.0),"max":max.floor(),
+                    "games":cal.measurements.iter().map(|m|m.games).sum::<u32>()});
+            }
+            stats["peak_available"] = json!(crate::peak::promoted_config_for(
+                &id, &digest, expert, &read_value("data/models/peak-fr-v1.json")
+            ).is_some());
         }
         Ok(Json(stats))
     }).await
@@ -315,21 +334,49 @@ async fn challenge(
     let _permit = app.model_slot.clone().try_acquire_owned().map_err(|_| {
         ApiError(
             StatusCode::TOO_MANY_REQUESTS,
-            "Un commentaire Llama est déjà en cours.".into(),
+            "Un commentaire est déjà en cours.".into(),
         )
     })?;
     let review = position(app.clone(), id, q.turn, id_profile).await?;
     let facts = serde_json::to_value(&review).map_err(anyhow::Error::from)?;
-    let instruction = format!(
-        "Analyze this word-board move. Reply in language {language}, two short paragraphs. Use only the supplied facts. Contrast immediate points with simulated mean margin on three half-turns, account for uncertainty, and explain the strongest legal alternative only when the data supports it."
-    );
     let request = json!({
-        "model":model, "stream":false, "think":false, "keep_alive":"2m", "options":{"temperature":0.15,"num_predict":240,"num_ctx":4096},
+        "model":model, "stream":false, "think":false, "keep_alive":"2m",
+        "format":{"type":"object","properties":{"angle":{"type":"string","enum":["simulation","immediate_score","rack"]}},
+            "required":["angle"],"additionalProperties":false},
+        "options":{"temperature":0,"num_predict":32,"num_ctx":4096},
         "messages":[
-            {"role":"system","content":instruction},
+            {"role":"system","content":"Choose the most useful explanation for the highest-margin alternative to the recorded move. Use immediate_score if its score matters most, rack if its retained tiles matter most, or simulation for the comparison of simulated margins. Return only the requested JSON."},
             {"role":"user","content": facts.to_string()}
         ]
     });
+    let (answer, error) = match generate_commentary(app, &base, &request).await {
+        Ok(answer) => (answer, None),
+        Err(error) => (Value::Null, Some(error.1)),
+    };
+    let selection = answer["commentary"]
+        .as_str()
+        .and_then(|content| serde_json::from_str::<CommentarySelection>(content).ok());
+    let fallback = if selection.is_some() {
+        None
+    } else {
+        Some(error.unwrap_or_else(|| "Réponse du modèle illisible.".into()))
+    };
+    let angle = selection.map_or_else(review::CommentaryAngle::default, |answer| answer.angle);
+    Ok(Json(json!({
+        "model":model,
+        "commentary":review.commentary(angle, &language),
+        "fallback":fallback,
+        "usage":answer["usage"],
+    })))
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CommentarySelection {
+    angle: review::CommentaryAngle,
+}
+
+async fn generate_commentary(app: App, base: &str, request: &Value) -> ApiResult<Value> {
     if let Some(queue) = app.queue {
         let job_id = format!("{:032x}", rand::random::<u128>());
         let result_key = format!("lettrine:job:{job_id}");
@@ -348,30 +395,30 @@ async fn challenge(
             .arg(request.to_string())
             .query_async(&mut connection)
             .await
-            .map_err(|_| unavailable("La tâche Llama n’a pas pu être déposée."))?;
+            .map_err(|_| unavailable("La demande de commentaire n’a pas pu être déposée."))?;
         let started = tokio::time::Instant::now();
         loop {
             let state: Option<String> = redis::cmd("GET")
                 .arg(&result_key)
                 .query_async(&mut connection)
                 .await
-                .map_err(|_| unavailable("Le résultat Llama est indisponible."))?;
+                .map_err(|_| unavailable("Le commentaire du modèle est indisponible."))?;
             if let Some(state) = state {
                 let parsed: Value = serde_json::from_str(&state).map_err(anyhow::Error::from)?;
                 if parsed["state"] == "done" {
-                    return Ok(Json(parsed));
+                    return Ok(parsed);
                 }
                 if parsed["state"] == "error" {
                     return Err(unavailable(
                         parsed["error"]
                             .as_str()
-                            .unwrap_or("Le worker Llama a échoué."),
+                            .unwrap_or("Le traitement du commentaire a échoué."),
                     ));
                 }
             }
             if started.elapsed() >= Duration::from_secs(87) {
                 return Err(unavailable(
-                    "Le worker Llama a dépassé le délai de réponse.",
+                    "Le commentaire du modèle a dépassé le délai de réponse.",
                 ));
             }
             tokio::time::sleep(Duration::from_millis(350)).await;
@@ -380,7 +427,7 @@ async fn challenge(
     let result = app
         .http
         .post(format!("{}/api/chat", base.trim_end_matches('/')))
-        .json(&request)
+        .json(request)
         .send()
         .await
         .map_err(|_| unavailable("Le service Ollama local est injoignable."))?;
@@ -398,7 +445,7 @@ async fn challenge(
         .as_str()
         .filter(|s| !s.trim().is_empty())
         .ok_or_else(|| unavailable("Ollama n’a renvoyé aucun commentaire."))?;
-    Ok(Json(json!({"model":model,"commentary":commentary})))
+    Ok(json!({"commentary":commentary}))
 }
 
 async fn import_games(bytes: Bytes) -> ApiResult<Json<Value>> {
@@ -596,14 +643,23 @@ struct Live {
 }
 async fn live(State(app): State<App>, Query(q): Query<Live>) -> ApiResult<Response> {
     let id = profile(&app, q.profile.as_deref())?;
-    let levels = [q.a.unwrap_or(3), q.b.unwrap_or(3)];
+    let mut levels = [q.a.unwrap_or(3), q.b.unwrap_or(3)];
     if levels.iter().any(|&x| x > 3) {
         return Err(bad_request("Choisissez deux références entre 0 et 3."));
+    }
+    let peak_requested = q.peak == Some(1);
+    if peak_requested && q.elo.is_some() {
+        return Err(bad_request(
+            "Choisissez un niveau réglable ou la recherche avancée.",
+        ));
     }
     if q.elo
         .is_some_and(|e| !e.is_finite() || !(600.0..=3000.0).contains(&e))
     {
         return Err(bad_request("Elo cible invalide."));
+    }
+    if peak_requested || q.elo.is_some() {
+        levels[0] = 3;
     }
     let permit = app.live_slots.clone().try_acquire_owned().map_err(|_| {
         ApiError(
@@ -612,7 +668,7 @@ async fn live(State(app): State<App>, Query(q): Query<Live>) -> ApiResult<Respon
         )
     })?;
     let seed = q.seed.unwrap_or_else(rand::random::<u32>);
-    let (game, points, target_elo, mode) = blocking(move || {
+    let (game, points, target_elo, mode, method) = blocking(move || {
         use rand::SeedableRng;
         let engine = engine(&app, &id)?;
         let stats = meta(&app, "public", &id)?.unwrap_or_default();
@@ -628,23 +684,13 @@ async fn live(State(app): State<App>, Query(q): Query<Live>) -> ApiResult<Respon
         let mut rng = rand_xoshiro::Xoshiro256PlusPlus::seed_from_u64(u64::from(seed) ^ 0x807c);
         let mut generator = engine.generator();
         let mut state = wolges::game_state::GameState::new(&engine.config);
-        let peak_report = read_value("data/models/peak-fr-v1.json");
-        let peak_config = crate::peak::promoted_config(&engine, expert, &peak_report);
-        let peak_threshold = calibration
-            .as_ref()
-            .and_then(|c| {
-                c.measurements
-                    .iter()
-                    .map(|m| m.measured_elo)
-                    .reduce(f64::max)
-            })
-            .unwrap_or(f64::from(scale.anchors[3]));
-        let use_peak =
-            q.peak == Some(1) || target.is_some_and(|t| t.applied_elo >= peak_threshold - 1.0);
-        let mut peak = if use_peak {
-            peak_config
-                .map(|config| crate::peak::PeakSearch::new(&engine, expert, config))
-                .transpose()?
+        let mut peak = if peak_requested {
+            let report = read_value("data/models/peak-fr-v1.json");
+            let config =
+                crate::peak::promoted_config(&engine, expert, &report).ok_or_else(|| {
+                    unavailable("La recherche avancée est indisponible pour ce profil.")
+                })?;
+            Some(crate::peak::PeakSearch::new(&engine, expert, config)?)
         } else {
             None
         };
@@ -673,7 +719,8 @@ async fn live(State(app): State<App>, Query(q): Query<Live>) -> ApiResult<Respon
                         return Ok(target.choose_move(engine, generator, state, &mut rng));
                     }
                 }
-                Ok(engine.choose_level(generator, state, levels[seat], expert, play_rng))
+                let opponent_policy = if peak_requested { expert } else { BASE_EXPERT };
+                Ok(engine.choose_level(generator, state, levels[seat], opponent_policy, play_rng))
             },
         )?;
         let ratings = ratings(&stats);
@@ -683,17 +730,21 @@ async fn live(State(app): State<App>, Query(q): Query<Live>) -> ApiResult<Respon
         ];
         let fitted = read_value("data/models/win-model.json")["profiles"][&id].clone();
         let points = timeline::points(&engine, &game, estimates, &fitted);
-        Ok((game, points, target.map(|t| t.applied_elo), mode))
+        let method = timeline::method(&fitted)["win"].clone();
+        Ok((game, points, target.map(|t| t.applied_elo), mode, method))
     })
     .await?;
     let mut labels = levels.map(|i| LEVELS[i as usize].to_string());
     if mode == "peak" {
         labels[0] = "N A B · Recherche avancée".into();
+        if levels[1] == 3 {
+            labels[1] = "Expert entraîné".into();
+        }
     } else if let Some(elo) = target_elo {
         labels[0] = format!("N A B · {elo:.0}");
     }
     let mut events = vec![
-        json!({"type":"start","seed":seed,"levels":levels,"labels":labels,"turns":game.turns,"target_elo":target_elo,"adaptive_seat":target_elo.map(|_|0),"policy":mode}),
+        json!({"type":"start","seed":seed,"levels":levels,"labels":labels,"turns":game.turns,"target_elo":target_elo,"adaptive_seat":target_elo.map(|_|0),"policy":mode,"method":method}),
     ];
     for (m, p) in game.moves.iter().zip(&points) {
         let mut event = serde_json::to_value(p).map_err(anyhow::Error::from)?;
@@ -702,6 +753,12 @@ async fn live(State(app): State<App>, Query(q): Query<Live>) -> ApiResult<Respon
         event["word"] = json!(m.word);
         event["tiles"] = json!(m.tiles);
         event["bag_before"] = json!(m.bag_before);
+        if peak_requested {
+            event
+                .as_object_mut()
+                .expect("point du duel")
+                .remove("win_probability");
+        }
         events.push(event);
     }
     events.push(json!({"type":"done","game":game}));
@@ -781,7 +838,27 @@ pub async fn serve(app_db: PathBuf, engine: Engine, address: String, web: PathBu
             .build()?,
     };
     let apk = env::var("LETTRINE_APK").unwrap_or_else(|_| "android/artifacts/lettrine.apk".into());
+    let room_engine = if app.engine.profile.id == pg::FRENCH {
+        Some(app.engine.clone())
+    } else if let Some(profile) = app.profiles.get(pg::FRENCH)
+        && let Some(path) = &profile.lexicon.path
+    {
+        Some(Arc::new(Engine::load(
+            path,
+            profile.lexicon.name.clone(),
+            profile.clone(),
+        )?))
+    } else {
+        None
+    };
+    let rooms = if let Some(engine) = room_engine {
+        crate::multiplayer::routes(app.db.clone(), engine).await?
+    } else {
+        Router::new()
+    };
     let router = Router::new()
+        .merge(rooms)
+        .route_service("/", ServeFile::new(web.join("salons.html")))
         .route("/api/telemetry", get(crate::telemetry::snapshot))
         .route("/api/legacy", get(|| file_json("data/expert/legacy.json")))
         .route("/api/studies", get(studies).post(add_study))

@@ -215,11 +215,18 @@ pub struct Measurement {
 }
 
 impl Calibration {
-    pub fn compatible(&self, engine: &Engine, scale: &StrengthScale) -> bool {
+    pub fn compatible(&self, profile: &str, digest: &str, expert: ExpertPolicy) -> bool {
         self.schema == "lettrine.adaptive-calibration.v1"
-            && self.profile == engine.profile.id
-            && self.lexicon_sha256 == engine.digest
-            && self.scale == *scale
+            && self.profile == profile
+            && self.lexicon_sha256 == digest
+            && self.scale.expert == expert
+    }
+
+    pub fn measured_bounds(&self) -> Option<(f64, f64)> {
+        let curve = self.monotonic_curve();
+        let min = curve.first()?.1;
+        let max = curve.last()?.1;
+        (min < max).then_some((min, max))
     }
 
     fn monotonic_curve(&self) -> Vec<(f64, f64)> {

@@ -1,6 +1,6 @@
 # Choisir un modèle Ollama pour Lettrine
 
-Le modèle peut remplir deux rôles. Dans le studio, il formule un commentaire en français à partir de variantes déjà calculées. Dans le banc de jeu, il choisit un placement par son indice parmi les coups que le moteur a déclarés légaux. La validation, les points, la gestion du sac et les échanges relèvent du moteur de jeu. La recherche documentaire utilise son propre modèle, `qwen3-embedding:0.6b`.
+Dans le studio, le modèle choisit l’angle du commentaire dans une réponse JSON. Le moteur valide ce choix et produit le texte à partir de la revue de position. En cas d’erreur, il utilise la marge simulée et le studio indique le repli. Dans le banc de jeu, Ollama choisit un placement par son indice parmi les coups que le moteur a déclarés légaux. La validation, les points, la gestion du sac et les échanges relèvent du moteur de jeu. La recherche documentaire utilise `qwen3-embedding:0.6b`.
 
 ## Candidats pour le Mac M2 Max
 
@@ -42,7 +42,7 @@ Le dernier argument fixe le rapport JSON. Les résultats de modèles différents
 
 Dans les duels de sélection, les modèles ne choisissent que parmi des placements légaux. Le tableau de bord affiche le nombre de parties, le score, l’intervalle et l’écart Elo régularisé par langue. Les pilotes couvrent français, anglais, allemand et russe. Gemma 4 marque 4/12 en français, 5/12 en anglais, 2/6 en allemand et 3/6 en russe face à l’Expert de chaque profil. Llama 3.2 3B marque 0/12 en français et en anglais. Les échantillons sont petits et ne démontrent pas un niveau humain. [Données des duels](../data/models/llm-benchmarks.json)
 
-Sur huit commentaires français avec sortie structurée, Gemma 4 reproduit correctement les scores et choisit une variante de marge maximale dans six cas. Llama 3.2 le fait dans un cas et Qwen 0.6B ne produit aucune réponse valide dans ce protocole. Les latences médianes observées parmi les réponses valides sont 2,07 s pour Gemma 4 et 1,20 s pour Llama 3.2. [Données du test de commentaire](../data/models/commentary-benchmarks.json)
+Le banc historique de huit commentaires français mesurait la capacité à recopier les scores et à choisir une variante de marge maximale. Gemma 4 réussit dans six cas et Llama 3.2 dans un cas. Qwen 0.6B ne produit aucune réponse valide dans ce protocole. Les latences médianes des réponses valides sont de 2,07 s pour Gemma 4 et de 1,20 s pour Llama 3.2. Le commentaire du studio confie désormais les chiffres au moteur. [Données du test de commentaire](../data/models/commentary-benchmarks.json)
 
 ## Modèle embarqué à étudier
 
