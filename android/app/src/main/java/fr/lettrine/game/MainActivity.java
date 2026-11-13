@@ -69,7 +69,7 @@ public final class MainActivity extends Activity {
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
 
     private enum Screen { HOME, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW, PRACTICE,
-        SOCIAL, SOCIAL_DUEL, PROFILE }
+        SOCIAL, SOCIAL_DUEL, PROFILE, COLLECTION, TOURNAMENT, TOURNAMENT_ROUND, HELP }
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -81,6 +81,7 @@ public final class MainActivity extends Activity {
     private ViewKit ui;
     private GameStore store;
     private DailyProgress dailyProgress;
+    private SkinStore skinStore;
     private ProfileStore profileStore;
     private ProfilePanel profilePanel;
     private SocialClient socialClient;
@@ -134,10 +135,11 @@ public final class MainActivity extends Activity {
         super.onCreate(state);
         preferences = getSharedPreferences("preferences", MODE_PRIVATE);
         dailyProgress = new DailyProgress(this);
+        skinStore = new SkinStore(this);
         profileStore = new ProfileStore(this);
         socialClient = new SocialClient(this, this::socialBaseUrl, profileStore::nickname);
         skin = Math.max(0, Math.min(Palette.THEMES.length - 1, preferences.getInt("skin", 0)));
-        ui = new ViewKit(this, Palette.THEMES[skin]);
+        updateAppearance();
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         getWindow().setNavigationBarColor(Color.TRANSPARENT);
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
@@ -178,11 +180,11 @@ public final class MainActivity extends Activity {
                     lexicon = loaded;
                     notice = sourceNotice;
                     if (game != null && game.end != null) archiveIfFinished();
-                    if (screen == Screen.HOME) {
+                    if (screen == Screen.HOME || screen == Screen.HELP) {
                         Runnable requested = pendingChallenge;
                         pendingChallenge = null;
                         if (requested != null) requested.run();
-                        else showHome();
+                        else if (screen == Screen.HOME) showHome();
                     }
                 });
             } catch (Exception exception) {
@@ -283,6 +285,9 @@ public final class MainActivity extends Activity {
             case REVIEW -> reviewBack.run();
             case PRACTICE -> leavePractice();
             case SOCIAL_DUEL -> showSocial();
+            case TOURNAMENT -> showSocial();
+            case TOURNAMENT_ROUND -> showTournament();
+            case COLLECTION -> showProfile();
             case SETTINGS -> showProfile();
             case BLUETOOTH -> {
                 if (link != null && state() == null) closeLink();
@@ -345,7 +350,8 @@ public final class MainActivity extends Activity {
         FrameLayout centered = new FrameLayout(this);
         scroll.addView(centered, new ScrollView.LayoutParams(-1, -2));
         content = ui.column();
-        content.setPadding(ui.dp(17), ui.dp(7), ui.dp(17), ui.dp(16));
+        int margin = next == Screen.PRACTICE || next == Screen.TOURNAMENT_ROUND || next == Screen.SOCIAL_DUEL ? 10 : 17;
+        content.setPadding(ui.dp(margin), ui.dp(7), ui.dp(margin), ui.dp(16));
         centered.addView(content, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_HORIZONTAL));
         LinearLayout capturedContent = content;
         centered.addOnLayoutChangeListener((view, left, top, right, bottom, a, b, c, d) -> {
@@ -410,6 +416,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showHome() {
+        skinStore.refresh(store, dailyProgress);
         page(Screen.HOME, true);
         homeDate = LocalDate.now();
         TextView rating = ui.text("Elo " + currentRating(), 12, ui.palette.accent(), ui.medium);
@@ -430,7 +437,7 @@ public final class MainActivity extends Activity {
         }
         ui.gap(content, 10);
         content.addView(ui.option("✦", getString(R.string.practice_first), getString(R.string.practice_first_home),
-                () -> openChallenge(this::openFirstChallenge)));
+                () -> openChallenge(() -> openFirstChallenge(this::showHome, false))));
         ui.gap(content, 19);
         content.addView(ui.micro("NOUVELLE PARTIE", ui.palette.accent()));
         ui.gap(content, 8);
@@ -445,6 +452,8 @@ public final class MainActivity extends Activity {
         content.addView(ui.option("↔", "Bluetooth", "Deux appareils déjà associés", () -> {
             if (ready()) showBluetooth();
         }));
+        ui.gap(content, 8);
+        content.addView(ui.option("?", getString(R.string.help_title), getString(R.string.help_entry), this::showHelp));
         if (lexicon == null) {
             ui.gap(content, 11);
             content.addView(ui.body(lexiconError == null ? "Chargement du lexique…" : lexiconError));
@@ -468,14 +477,22 @@ public final class MainActivity extends Activity {
         if (ready()) action.run();
     }
 
-    private void openFirstChallenge() {
+    private void openFirstChallenge(Runnable back, boolean tutorial) {
         PracticePosition position = PracticePosition.first(lexicon);
         if (position == null) {
             toast(getString(R.string.practice_first_unavailable));
             return;
         }
-        showPractice(getString(R.string.practice_first), getString(R.string.practice_first_goal),
-                position, true, this::showHome);
+        showPractice(getString(tutorial ? R.string.help_tutorial_intro : R.string.practice_first),
+                getString(tutorial ? R.string.help_tutorial_copy : R.string.practice_first_goal),
+                position, true, tutorial, back);
+    }
+
+    private void showHelp() {
+        page(Screen.HELP, false);
+        top("Lettrine", this::showHome, null);
+        heading(getString(R.string.help_title), "");
+        content.addView(new HelpPanel(ui, () -> openChallenge(() -> openFirstChallenge(this::showHelp, true))).view());
     }
 
     private void openDailyChallenge(ChallengeLink invitation) {
@@ -511,7 +528,7 @@ public final class MainActivity extends Activity {
         FrameLayout reviewFrame = frame;
         LinearLayout reviewContent = content;
         showPractice(getString(R.string.practice_retry_title, turn.index() + 1),
-                getString(R.string.practice_retry_goal), position, false, () -> {
+                getString(R.string.practice_retry_goal), position, false, false, () -> {
                     screen = Screen.REVIEW;
                     frame = reviewFrame;
                     content = reviewContent;
@@ -520,12 +537,13 @@ public final class MainActivity extends Activity {
                 });
     }
 
-    private void showPractice(String title, String goal, PracticePosition position, boolean first, Runnable back) {
+    private void showPractice(String title, String goal, PracticePosition position, boolean first,
+                              boolean tutorial, Runnable back) {
         page(Screen.PRACTICE, false);
         practiceBack = back;
         top(first ? "Lettrine" : getString(R.string.match_review), this::leavePractice, null);
         heading(title, goal);
-        content.addView(new PracticePanel(ui, position, lexicon, first).view());
+        content.addView(new PracticePanel(ui, position, lexicon, first, tutorial).view());
     }
 
     private void leavePractice() {
@@ -689,6 +707,7 @@ public final class MainActivity extends Activity {
             MatchCodec.put(archived, "lexicon_sha256", lexicon.hash);
             if (assisted) MatchCodec.put(archived, "assisted", true);
             store.archive(archived);
+            skinStore.refresh(store, dailyProgress);
             if (!mode.equals("bluetooth")) store.clearCurrent();
         } catch (Exception exception) {
             toast("L’historique n’a pas pu être enregistré.");
@@ -792,7 +811,7 @@ public final class MainActivity extends Activity {
             MatchCodec.State current = state();
             if (current != null) explainMove(current.history(), current.history().size() - 1);
         });
-        final BoardView board = new BoardView(MainActivity.this, ui.palette, new BoardView.Interaction() {
+        final BoardView board = new BoardView(ui, new BoardView.Interaction() {
             @Override public void tap(int position) { boardTap(position); }
             @Override public void drop(int position, int rackIndex) { place(position, rackIndex); }
         });
@@ -916,14 +935,13 @@ public final class MainActivity extends Activity {
             LinearLayout token = ui.column();
             token.setGravity(Gravity.CENTER);
             token.setMinimumHeight(ui.dp(49));
-            token.setBackground(ui.touch(index == selected ? ui.palette.fresh() : ui.palette.tile(),
-                    9, index == selected ? ui.palette.accent() : ui.palette.tileEdge()));
+            token.setBackground(ui.rackTile(index == selected));
             TextView glyph = ui.text(occupied[index] ? " " : String.valueOf(letter),
-                    22, ui.palette.ink(), ui.medium);
+                    22, ui.tileInk(), ui.medium);
             glyph.setGravity(Gravity.CENTER);
             token.addView(glyph);
             if (!occupied[index]) {
-                TextView value = ui.text(Integer.toString(FrenchGame.value(letter)), 10, ui.palette.muted(), ui.medium);
+                TextView value = ui.text(Integer.toString(FrenchGame.value(letter)), 10, ui.tileInk(), ui.medium);
                 value.setGravity(Gravity.CENTER);
                 token.addView(value);
                 token.setContentDescription(letter == '?' ? "Joker" : "Lettre " + letter);
@@ -1407,7 +1425,7 @@ public final class MainActivity extends Activity {
             content.addView(ui.option(skin == i ? "✓" : "✦", Palette.THEMES[i].name(), "", () -> {
                 skin = theme;
                 preferences.edit().putInt("skin", skin).apply();
-                ui = new ViewKit(this, Palette.THEMES[skin]);
+                updateAppearance();
                 showSettings();
             }));
             ui.gap(content, 8);
@@ -1425,8 +1443,20 @@ public final class MainActivity extends Activity {
         page(Screen.PROFILE, true);
         top("Lettrine", null, ui.textButton("Réglages", this::showSettings));
         heading(getString(R.string.profile_title), "");
+        content.addView(ui.option("◇", getString(R.string.skins_title), getString(R.string.collection_profile_detail), this::showCollection));
+        ui.gap(content, 10);
         profilePanel = new ProfilePanel(ui, profileStore, store, dailyProgress, this::chooseProfilePhoto);
         content.addView(profilePanel.view());
+    }
+
+    private void updateAppearance() {
+        ui = new ViewKit(this, Palette.THEMES[skin], skinStore.selection());
+    }
+
+    private void showCollection() {
+        page(Screen.COLLECTION, false);
+        top("Lettrine", this::showProfile, null);
+        content.addView(new SkinPanel(ui, skinStore, store, dailyProgress, this::updateAppearance).view());
     }
 
     private void chooseProfilePhoto() {
@@ -1480,7 +1510,21 @@ public final class MainActivity extends Activity {
         heading(getString(R.string.social_navigation_friends), "");
         String invite = pendingSocialInvite;
         if (socialClient.configured()) pendingSocialInvite = null;
-        content.addView(new SocialPanel(ui, socialClient, this::showSocialDuel, invite, this::connectGoogle).view());
+        content.addView(new SocialPanel(ui, socialClient, this::showSocialDuel, invite, this::connectGoogle,
+                this::showTournament).view());
+    }
+
+    private void showTournament() {
+        page(Screen.TOURNAMENT, false);
+        top("Lettrine", this::showSocial, null);
+        content.addView(new TournamentPanel(ui, socialClient, this::showTournamentRound).view());
+    }
+
+    private void showTournamentRound(JSONObject round) {
+        if (!ready()) return;
+        page(Screen.TOURNAMENT_ROUND, false);
+        top(getString(R.string.tournament_title), this::showTournament, null);
+        content.addView(new TournamentRoundPanel(ui, socialClient, round, lexicon, this::showTournament).view());
     }
 
     private void showSocialDuel(JSONObject duel) {
@@ -1689,7 +1733,7 @@ public final class MainActivity extends Activity {
             }));
             ui.gap(content, 9);
         }
-        BoardView board = new BoardView(this, ui.palette, null);
+        BoardView board = new BoardView(ui, null);
         content.addView(board, new LinearLayout.LayoutParams(-1, -2));
         LinearLayout controls = ui.row();
         TextView label = ui.body("");

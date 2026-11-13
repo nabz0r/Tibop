@@ -5,7 +5,7 @@
     <string name="practice_first_unavailable">Ce défi demande un lexique qui accepte CHAT, CHATS et CHATONS.</string>
     <string name="practice_retry_title">Rejouer le coup %1$d</string>
     <string name="practice_retry_goal">Retrouvez le plateau et votre chevalet d’origine. Cherchez un meilleur placement.</string>
-    <string name="practice_guide">Touchez une lettre, puis une case.</string>
+    <string name="practice_guide">Glissez une tuile ou touchez une lettre puis une case.</string>
     <string name="practice_ready">Valider le coup</string>
     <string name="practice_clear">Effacer</string>
     <string name="practice_reveal">Voir le coup de NAB</string>
@@ -30,6 +30,11 @@
     <string name="practice_board_tile">%1$c en %2$c%3$d</string>
     <string name="practice_board_blank">Joker %1$c en %2$c%3$d</string>
     <string name="practice_zoom">Agrandir le plateau</string>
+    <string name="practice_zoom_out">Réduire le plateau</string>
+    <string name="practice_zoom_percent">%1$d %%</string>
+    <string name="practice_status_valid">✓ Coup valide</string>
+    <string name="practice_status_invalid">Coup à corriger</string>
+    <string name="practice_status_empty">Votre placement</string>
     <string name="practice_zoom_reset">Réinitialiser le zoom</string>
     <plurals name="practice_points">
         <item quantity="one">%d point</item>

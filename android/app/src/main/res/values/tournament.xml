@@ -1,0 +1,30 @@
+<resources>
+    <string name="tournament_title">Tournoi du week-end</string>
+    <string name="tournament_summary">Trois coups pour se mesurer entre amis.</string>
+    <string name="tournament_entry_detail">3 défis · Classement entre amis</string>
+    <string name="tournament_round">Défi %1$d</string>
+    <string name="tournament_open">Clôture %1$s</string>
+    <string name="tournament_closed">Tournoi terminé</string>
+    <string name="tournament_next">Prochain tournoi %1$s</string>
+    <string name="tournament_upcoming">Ouverture %1$s</string>
+    <plurals name="tournament_progress">
+        <item quantity="one">%1$d défi joué sur 3</item>
+        <item quantity="other">%1$d défis joués sur 3</item>
+    </plurals>
+    <string name="tournament_loading">Chargement du tournoi…</string>
+    <string name="tournament_response_error">Impossible de lire ce tournoi. Actualisez pour réessayer.</string>
+    <string name="tournament_round_action">Jouer le défi %1$d</string>
+    <string name="tournament_round_done">Coup validé</string>
+    <string name="tournament_round_upcoming">À venir</string>
+    <string name="tournament_round_missed">Défi non joué</string>
+    <string name="tournament_ranking">Classement entre amis</string>
+    <string name="tournament_ranking_empty">Le classement affiche les joueurs qui ont terminé les trois défis.</string>
+    <string name="tournament_ranking_you">%1$s · vous</string>
+    <string name="tournament_ranking_place">%1$d. %2$s</string>
+    <string name="tournament_round_intro">Vous disposez d’un coup sur ce plateau. Il compte pour le classement du week-end.</string>
+    <string name="tournament_confirm">Envoyer ce coup ?</string>
+    <string name="tournament_confirm_copy">Après l’envoi, votre score pour ce défi est définitif.</string>
+    <string name="tournament_continue">Retour au tournoi</string>
+    <string name="tournament_result">Défi validé</string>
+    <string name="tournament_total">Total · %1$s</string>
+</resources>

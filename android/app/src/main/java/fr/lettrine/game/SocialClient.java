@@ -114,6 +114,16 @@ final class SocialClient {
     }
 
     void play(String duel, List<FrenchGame.Tile> tiles, Callback callback) {
+        request("POST", "/duels/" + segment(duel) + "/play", placement(tiles), callback);
+    }
+
+    void tournament(Callback callback) { request("GET", "/tournament", null, callback); }
+
+    void playTournament(long tournament, int round, List<FrenchGame.Tile> tiles, Callback callback) {
+        request("POST", "/tournament/" + tournament + "/slots/" + round + "/play", placement(tiles), callback);
+    }
+
+    private static JSONObject placement(List<FrenchGame.Tile> tiles) {
         JSONArray played = new JSONArray();
         for (FrenchGame.Tile tile : tiles) {
             JSONObject letter = json("position", tile.position());
@@ -121,7 +131,7 @@ final class SocialClient {
             add(letter, "letter", String.valueOf(tile.letter()));
             played.put(letter);
         }
-        request("POST", "/duels/" + segment(duel) + "/play", json("tiles", played), callback);
+        return json("tiles", played);
     }
 
     void removeFriend(String friend, Callback callback) {

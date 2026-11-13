@@ -19,6 +19,8 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+mod tournament;
+
 const LEXICON: &str = "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a";
 const INVITE_SECONDS: i64 = 2 * 24 * 60 * 60;
 const NONCE_SECONDS: i64 = 5 * 60;
@@ -132,6 +134,8 @@ struct Social {
     db: Mutex<Connection>,
     engine: Engine,
     puzzles: Vec<Puzzle>,
+    #[cfg(test)]
+    tournament_time: std::sync::atomic::AtomicI64,
 }
 
 impl Social {
@@ -169,14 +173,21 @@ impl Social {
                 })
             })
             .collect::<Result<Vec<_>>>()?;
+        ensure!(
+            puzzles.len() >= tournament::CATALOG_SIZE,
+            "catalogue social incomplet"
+        );
         let conn = Connection::open(db)?;
         conn.busy_timeout(Duration::from_secs(5))?;
         conn.execute_batch("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;")?;
         conn.execute_batch(SCHEMA)?;
+        conn.execute_batch(tournament::SCHEMA)?;
         Ok(Self {
             db: Mutex::new(conn),
             engine,
             puzzles,
+            #[cfg(test)]
+            tournament_time: std::sync::atomic::AtomicI64::new(0),
         })
     }
 }
@@ -207,6 +218,11 @@ fn router(app: Arc<Social>) -> Router {
         .route("/api/social/duels/{id}/rematch", post(rematch))
         .route("/api/social/google/challenge", post(google_challenge))
         .route("/api/social/google", post(google_link))
+        .route("/api/social/tournament", get(tournament::get_weekend))
+        .route(
+            "/api/social/tournament/{id}/slots/{number}/play",
+            post(tournament::play_slot),
+        )
         .layer(DefaultBodyLimit::max(12 * 1024))
         .with_state(app)
 }
@@ -764,23 +780,49 @@ struct MoveTile {
     letter: char,
 }
 
+impl MoveRequest {
+    fn prepare(mut self) -> Api<Self> {
+        if !(1..=7).contains(&self.tiles.len())
+            || self.tiles.iter().any(|tile| {
+                tile.position >= 225 || tile.rack_index >= 7 || !tile.letter.is_ascii_uppercase()
+            })
+        {
+            return Err(invalid("Placement invalide."));
+        }
+        self.tiles.sort_unstable_by_key(|tile| tile.position);
+        Ok(self)
+    }
+
+    fn canonical(&self) -> String {
+        serde_json::to_string(&self.tiles).expect("tuiles JSON")
+    }
+
+    fn score(&self, app: &Social, puzzle: &Puzzle) -> Api<i32> {
+        let placements: Vec<_> = self
+            .tiles
+            .iter()
+            .map(|tile| (tile.position, tile.rack_index, tile.letter))
+            .collect();
+        Game::score_position(
+            &app.engine,
+            &puzzle.board_codes,
+            &puzzle.rack_codes,
+            &placements,
+        )
+        .map_err(|message| invalid(&message))
+    }
+}
+
 async fn play(
     State(app): State<Arc<Social>>,
     headers: HeaderMap,
     Path(duel_id): Path<String>,
     body: std::result::Result<Json<MoveRequest>, JsonRejection>,
 ) -> Api<Json<Value>> {
-    let Json(mut body) = body.map_err(json_error)?;
+    let Json(body) = body.map_err(json_error)?;
     let session = auth(headers)?;
-    if !(1..=7).contains(&body.tiles.len())
-        || body.tiles.iter().any(|tile| {
-            tile.position >= 225 || tile.rack_index >= 7 || !tile.letter.is_ascii_uppercase()
-        })
-    {
-        return Err(invalid("Placement invalide."));
-    }
-    body.tiles.sort_unstable_by_key(|tile| tile.position);
-    let canonical = serde_json::to_string(&body.tiles).expect("tuiles JSON");
+    let body = body.prepare()?;
+    let canonical = body.canonical();
     write(app, move |app, db| {
         let user = user_id(db, &session)?;
         let previous = duel(db, &duel_id, &user)?;
@@ -799,18 +841,7 @@ async fn play(
             }
         } else {
             let puzzle = &app.puzzles[previous.puzzle];
-            let placements: Vec<_> = body
-                .tiles
-                .iter()
-                .map(|tile| (tile.position, tile.rack_index, tile.letter))
-                .collect();
-            let score = Game::score_position(
-                &app.engine,
-                &puzzle.board_codes,
-                &puzzle.rack_codes,
-                &placements,
-            )
-            .map_err(|message| invalid(&message))?;
+            let score = body.score(app, puzzle)?;
             let update = if seat_a {
                 "UPDATE social_duels SET score_a=?1,move_a=?2 WHERE id=?3"
             } else {
@@ -1025,6 +1056,7 @@ fn attach_google(db: &Connection, session: &str, user: &str, sub: &str) -> Api<S
         "SELECT
         EXISTS(SELECT 1 FROM social_friends WHERE a=?1 OR b=?1)
         OR EXISTS(SELECT 1 FROM social_duels WHERE a=?1 OR b=?1)
+        OR EXISTS(SELECT 1 FROM social_tournament_scores WHERE user_id=?1)
         OR EXISTS(SELECT 1 FROM social_blocks WHERE owner=?1 OR other=?1)",
         [user],
         |row| row.get::<_, bool>(0),
@@ -1047,7 +1079,7 @@ mod tests {
     use axum::http::Method;
     use tokio::task::JoinHandle;
 
-    fn engine() -> Engine {
+    pub(super) fn engine() -> Engine {
         let path = FilePath::new("data/fr/words.txt");
         Engine::load(
             path,
@@ -1057,7 +1089,7 @@ mod tests {
         .unwrap()
     }
 
-    async fn server(app: Arc<Social>) -> (String, JoinHandle<()>) {
+    pub(super) async fn server(app: Arc<Social>) -> (String, JoinHandle<()>) {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = format!("http://{}", listener.local_addr().unwrap());
         let handle = tokio::spawn(async move {
@@ -1066,7 +1098,7 @@ mod tests {
         (address, handle)
     }
 
-    async fn request(
+    pub(super) async fn request(
         base: &str,
         method: Method,
         path: &str,

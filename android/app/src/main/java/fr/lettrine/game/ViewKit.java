@@ -2,6 +2,7 @@ package fr.lettrine.game;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -15,13 +16,30 @@ import android.widget.TextView;
 final class ViewKit {
     final Context context;
     final Palette palette;
+    final SkinStore.Selection skins;
     final Typeface serif = Typeface.create("serif", Typeface.NORMAL);
     final Typeface medium = Typeface.create("sans-serif-medium", Typeface.NORMAL);
     final Typeface regular = Typeface.create("sans-serif", Typeface.NORMAL);
 
-    ViewKit(Context context, Palette palette) {
+    ViewKit(Context context, Palette palette, SkinStore.Selection skins) {
         this.context = context;
         this.palette = palette;
+        this.skins = skins;
+    }
+
+    int tileInk() { return skins.tiles() == null ? palette.ink() : skins.tiles().ink(); }
+
+    Drawable rackTile(boolean active) {
+        SkinStore.TileSkin tile = skins.tiles();
+        int color = tile == null ? (active ? palette.fresh() : palette.tile()) : (active ? tile.fresh() : tile.face());
+        int rim = active ? (skins.board() == null ? palette.accent() : skins.board().focus())
+                : tile == null ? palette.tileEdge() : tile.edge();
+        int light = Color.rgb((3 * Color.red(color) + 255) / 4,
+                (3 * Color.green(color) + 255) / 4, (3 * Color.blue(color) + 255) / 4);
+        GradientDrawable face = shape(color, 9, rim);
+        face.setOrientation(GradientDrawable.Orientation.TOP_BOTTOM);
+        face.setColors(new int[]{light, color});
+        return new RippleDrawable(ColorStateList.valueOf(0x26346149), face, null);
     }
 
     int dp(float value) { return Math.round(value * context.getResources().getDisplayMetrics().density); }

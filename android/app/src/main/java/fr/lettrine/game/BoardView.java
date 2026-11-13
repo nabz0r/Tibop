@@ -20,15 +20,24 @@ import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 @SuppressLint("ViewConstructor") // Boards are created in code with a palette and optional interaction.
 final class BoardView extends View {
     interface Interaction {
         void tap(int position);
         void drop(int position, int rackIndex);
+        default boolean dragTile(int position) { return false; }
+        default void moveTile(int from, int to) { }
     }
 
-    private final Palette palette;
+    private final int frame;
+    private final int coordinates;
+    private final int cellInk;
+    private final int focus;
+    private final int tileFace;
+    private final int freshFace;
+    private final int tileInk;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rectangle = new RectF();
     private final Path frameClip = new Path();
@@ -47,25 +56,43 @@ final class BoardView extends View {
     private LinearGradient frameShading;
     private float side;
     private float zoom = 1;
+    private Consumer<Float> zoomListener;
     private float offsetX;
     private float offsetY;
     private int animated = -1;
     private int focused = FrenchGame.CENTER;
+    private int guided = -1;
     private float animation = 1;
     private ValueAnimator animator;
     private boolean endedScale;
+    private int movingTile = -1;
+    private boolean tileDragged;
+    private float touchX;
+    private float touchY;
+    private final int touchSlop;
 
-    BoardView(Context context, Palette palette, Interaction interaction) {
-        super(context);
-        this.palette = palette;
+    BoardView(ViewKit ui, Interaction interaction) {
+        super(ui.context);
+        touchSlop = android.view.ViewConfiguration.get(ui.context).getScaledTouchSlop();
+        Palette palette = ui.palette;
+        SkinStore.BoardSkin boardSkin = ui.skins.board();
+        SkinStore.TileSkin tileSkin = ui.skins.tiles();
         this.interaction = interaction;
-        for (int i = 0; i < cellColors.length; i++) cellColors[i] = palette.bonus(i);
-        tileRim = blend(palette.tile(), palette.tileEdge(), 0.56f);
-        freshRim = blend(palette.fresh(), palette.accent(), 0.64f);
+        frame = boardSkin == null ? palette.deep() : boardSkin.frame();
+        coordinates = boardSkin == null ? palette.heroInk() : boardSkin.coordinates();
+        cellInk = boardSkin == null ? palette.ink() : boardSkin.cellInk();
+        focus = boardSkin == null ? palette.accent() : boardSkin.focus();
+        tileFace = tileSkin == null ? palette.tile() : tileSkin.face();
+        freshFace = tileSkin == null ? palette.fresh() : tileSkin.fresh();
+        tileInk = ui.tileInk();
+        int edge = tileSkin == null ? palette.tileEdge() : tileSkin.edge();
+        tileRim = blend(tileFace, edge, 0.56f);
+        freshRim = blend(freshFace, tileSkin == null ? palette.accent() : edge, 0.64f);
+        for (int i = 0; i < cellColors.length; i++) cellColors[i] = boardSkin == null ? palette.bonus(i) : bonus(boardSkin, i);
         setFocusable(interaction != null);
         setClickable(interaction != null);
         setContentDescription(interaction == null ? "Plateau de la partie" : "Plateau 15 sur 15. Pincez pour zoomer.");
-        scaleDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        scaleDetector = new ScaleGestureDetector(ui.context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
             @Override public boolean onScaleBegin(ScaleGestureDetector detector) {
                 endedScale = true;
                 return true;
@@ -76,7 +103,7 @@ final class BoardView extends View {
             }
         });
         scaleDetector.setQuickScaleEnabled(false);
-        gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
+        gestureDetector = new GestureDetector(ui.context, new GestureDetector.SimpleOnGestureListener() {
             @Override public boolean onDown(MotionEvent event) { return true; }
 
             @Override public boolean onSingleTapUp(MotionEvent event) {
@@ -97,6 +124,14 @@ final class BoardView extends View {
                 return true;
             }
         });
+    }
+
+    private static int bonus(SkinStore.BoardSkin skin, int position) {
+        if (FrenchGame.WORD_MULTIPLIER[position] == 3) return skin.tripleWord();
+        if (FrenchGame.WORD_MULTIPLIER[position] == 2) return skin.doubleWord();
+        if (FrenchGame.LETTER_MULTIPLIER[position] == 3) return skin.tripleLetter();
+        if (FrenchGame.LETTER_MULTIPLIER[position] == 2) return skin.doubleLetter();
+        return skin.ordinary();
     }
 
     void update(char[] letters, boolean[] usedBlanks, List<FrenchGame.Tile> staged,
@@ -122,7 +157,23 @@ final class BoardView extends View {
         invalidate();
     }
 
-    void zoomBy(float multiplier) { zoomAt(zoom * multiplier, side * 0.5f, side * 0.5f); }
+    void zoomBy(float multiplier) {
+        if (zoom == 1 && multiplier > 1 && guided >= 0) {
+            float x = gridStart() + (guided % FrenchGame.SIZE + 0.5f) * unit();
+            float y = gridStart() + (guided / FrenchGame.SIZE + 0.5f) * unit();
+            zoomAt(zoom * multiplier, x, y);
+        } else zoomAt(zoom * multiplier, side * 0.5f, side * 0.5f);
+    }
+
+    void guide(int square) {
+        guided = square;
+        invalidate();
+    }
+
+    void onZoom(Consumer<Float> listener) {
+        zoomListener = listener;
+        listener.accept(zoom);
+    }
 
     void resetZoom() { zoomAt(1, side * 0.5f, side * 0.5f); }
 
@@ -134,6 +185,7 @@ final class BoardView extends View {
         zoom = next;
         clamp();
         invalidate();
+        if (zoomListener != null) zoomListener.accept(zoom);
     }
 
     private void clamp() {
@@ -159,8 +211,8 @@ final class BoardView extends View {
             frameClip.rewind();
             frameClip.addRoundRect(rectangle, corner, corner, Path.Direction.CW);
             frameShading = new LinearGradient(0, 0, side, side,
-                    blend(palette.deep(), palette.heroInk(), 0.13f),
-                    blend(palette.deep(), 0xff000000, 0.28f), Shader.TileMode.CLAMP);
+                    blend(frame, coordinates, 0.13f),
+                    blend(frame, 0xff000000, 0.28f), Shader.TileMode.CLAMP);
         }
         clamp();
     }
@@ -173,8 +225,8 @@ final class BoardView extends View {
         super.onDraw(canvas);
         float unit = unit();
         float start = gridStart();
-        float inset = unit * 0.062f;
-        float rounding = unit * 0.13f;
+        float inset = unit * 0.051f;
+        float rounding = unit * 0.17f;
         canvas.save();
         canvas.clipPath(frameClip);
         paint.setShader(frameShading);
@@ -182,11 +234,12 @@ final class BoardView extends View {
         paint.setShader(null);
         canvas.translate(offsetX, offsetY);
         canvas.scale(zoom, zoom);
+        int target = tileDragged ? position(touchX, touchY) : -1;
         for (int i = 0; i < FrenchGame.SIZE; i++) {
             label(canvas, String.valueOf(i + 1), start + (i + 0.5f) * unit, start * 0.53f,
-                    unit * 0.36f, palette.heroInk(), regular);
+                    unit * 0.36f, coordinates, regular);
             label(canvas, String.valueOf((char) ('A' + i)), start * 0.45f, start + (i + 0.5f) * unit,
-                    unit * 0.36f, palette.heroInk(), regular);
+                    unit * 0.36f, coordinates, regular);
         }
         for (int i = 0; i < FrenchGame.CELLS; i++) {
             float x = start + i % FrenchGame.SIZE * unit;
@@ -202,7 +255,7 @@ final class BoardView extends View {
                 paint.setColor(fresh ? freshRim : tileRim);
                 canvas.drawRoundRect(rectangle, rounding, rounding, paint);
                 rectangle.bottom -= unit * 0.11f;
-                paint.setColor(fresh ? palette.fresh() : palette.tile());
+                paint.setColor(fresh ? freshFace : tileFace);
                 canvas.drawRoundRect(rectangle, rounding, rounding, paint);
                 paint.setColor(0x65ffffff);
                 canvas.drawRoundRect(rectangle.left + unit * 0.11f, rectangle.top + unit * 0.037f,
@@ -212,11 +265,11 @@ final class BoardView extends View {
                 char letter = tile != null ? tile.letter() : board[i];
                 boolean blank = tile != null ? tile.blank() : blanks[i];
                 label(canvas, String.valueOf(letter), x + unit * 0.46f, y + unit * 0.43f,
-                        unit * 0.55f, palette.ink(), bold);
+                        unit * 0.55f, tileInk, bold);
                 label(canvas, String.valueOf(blank ? 0 : FrenchGame.value(letter)), x + unit * 0.76f,
-                        y + unit * 0.70f, unit * 0.25f, palette.ink(), bold);
+                        y + unit * 0.70f, unit * 0.25f, tileInk, bold);
                 if (blank) {
-                    paint.setColor(palette.accent());
+                    paint.setColor(tileInk);
                     canvas.drawCircle(x + unit * 0.22f, y + unit * 0.72f, unit * 0.048f, paint);
                 }
             } else {
@@ -227,23 +280,34 @@ final class BoardView extends View {
                         : FrenchGame.LETTER_MULTIPLIER[i] > 1 ? "L" + FrenchGame.LETTER_MULTIPLIER[i] : "";
                 if (!mark.isEmpty()) {
                     label(canvas, mark, x + unit * 0.5f, y + unit * 0.5f,
-                            unit * (i == FrenchGame.CENTER ? 0.57f : 0.33f), palette.ink(), bold);
+                            unit * (i == FrenchGame.CENTER ? 0.57f : 0.33f), cellInk, bold);
                 }
             }
-            if (isFocused() && focused == i) {
+            if ((isFocused() && focused == i) || (guided == i && tile == null) || (target == i && board[i] == 0)) {
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeWidth(unit * 0.10f);
-                paint.setColor(palette.heroInk());
+                paint.setColor(coordinates);
                 canvas.drawRoundRect(rectangle, rounding, rounding, paint);
                 rectangle.inset(unit * 0.09f, unit * 0.09f);
                 paint.setStrokeWidth(unit * 0.066f);
-                paint.setColor(palette.ink());
+                paint.setColor(focus);
                 canvas.drawRoundRect(rectangle, rounding, rounding, paint);
                 paint.setStyle(Paint.Style.FILL);
             }
             if (i == animated && animation < 1) canvas.restore();
         }
         canvas.restore();
+        if (tileDragged && pending[movingTile] != null) {
+            float half = unit * 0.65f;
+            paint.setColor(freshRim);
+            canvas.drawRoundRect(touchX - half, touchY - half + half * 0.16f,
+                    touchX + half, touchY + half, half * 0.25f, half * 0.25f, paint);
+            paint.setColor(freshFace);
+            canvas.drawRoundRect(touchX - half, touchY - half, touchX + half, touchY + half * 0.86f,
+                    half * 0.25f, half * 0.25f, paint);
+            label(canvas, String.valueOf(pending[movingTile].letter()), touchX, touchY - half * 0.06f,
+                    half * 1.13f, tileInk, bold);
+        }
     }
 
     private static int blend(int first, int second, float weight) {
@@ -271,9 +335,41 @@ final class BoardView extends View {
 
     @SuppressLint("ClickableViewAccessibility") // The single-tap detector calls performClick().
     @Override public boolean onTouchEvent(MotionEvent event) {
-        if (event.getActionMasked() == MotionEvent.ACTION_DOWN) endedScale = false;
-        if (event.getPointerCount() > 1) endedScale = true;
-        if (event.getActionMasked() == MotionEvent.ACTION_MOVE && (zoom > 1 || endedScale)) {
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN) {
+            endedScale = false;
+            touchX = event.getX();
+            touchY = event.getY();
+            int square = position(touchX, touchY);
+            movingTile = square >= 0 && interaction != null && interaction.dragTile(square) ? square : -1;
+            if (movingTile >= 0) getParent().requestDisallowInterceptTouchEvent(true);
+        }
+        if (event.getPointerCount() > 1) {
+            movingTile = -1;
+            tileDragged = false;
+            endedScale = true;
+        }
+        if (movingTile >= 0) {
+            if (action == MotionEvent.ACTION_MOVE && (tileDragged
+                    || Math.hypot(event.getX() - touchX, event.getY() - touchY) > touchSlop)) {
+                tileDragged = true;
+                touchX = event.getX();
+                touchY = event.getY();
+                invalidate();
+                return true;
+            }
+            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                int from = movingTile;
+                movingTile = -1;
+                if (tileDragged) {
+                    tileDragged = false;
+                    if (action == MotionEvent.ACTION_UP) interaction.moveTile(from, position(event.getX(), event.getY()));
+                    invalidate();
+                    return true;
+                }
+            }
+        }
+        if (action == MotionEvent.ACTION_MOVE && (zoom > 1 || endedScale)) {
             getParent().requestDisallowInterceptTouchEvent(true);
         }
         scaleDetector.onTouchEvent(event);

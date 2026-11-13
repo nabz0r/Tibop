@@ -32,6 +32,7 @@ final class SocialPanel {
     private final SocialClient client;
     private final Consumer<JSONObject> openDuel;
     private final Consumer<String> connectGoogle;
+    private final Runnable openTournament;
     private final LinearLayout root;
     private final TextView notice;
     private final LinearLayout body;
@@ -42,18 +43,21 @@ final class SocialPanel {
     private boolean deleted;
 
     SocialPanel(ViewKit ui, SocialClient client, Consumer<JSONObject> openDuel, String invitation,
-                Consumer<String> connectGoogle) {
+                Consumer<String> connectGoogle, Runnable openTournament) {
         this.ui = ui;
         this.client = client;
         this.openDuel = openDuel;
         this.invitation = invitation;
         this.connectGoogle = connectGoogle;
+        this.openTournament = openTournament;
 
         root = ui.column();
         notice = ui.body("");
         notice.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         notice.setVisibility(View.GONE);
         root.addView(notice);
+        root.addView(TournamentPanel.entry(ui, this.openTournament));
+        ui.gap(root, 14);
         body = ui.column();
         root.addView(body);
         if (client.configured()) load();

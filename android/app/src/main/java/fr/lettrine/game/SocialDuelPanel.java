@@ -32,7 +32,7 @@ final class SocialDuelPanel {
         root.addView(notice);
 
         JSONObject puzzle = duel.optJSONObject("puzzle");
-        DailyChallenge challenge = compatibleChallenge(duel, puzzle, lexicon);
+        DailyChallenge challenge = compatibleChallenge(puzzle, duel.optString("date"), lexicon);
         if (challenge == null) {
             notice.setText(R.string.social_duel_incompatible);
             notice.setVisibility(View.VISIBLE);
@@ -52,10 +52,10 @@ final class SocialDuelPanel {
 
     View view() { return root; }
 
-    private static DailyChallenge compatibleChallenge(JSONObject duel, JSONObject puzzle, Lexicon lexicon) {
+    static DailyChallenge compatibleChallenge(JSONObject puzzle, String fallbackDate, Lexicon lexicon) {
         if (puzzle == null || lexicon == null) return null;
         try {
-            LocalDate date = LocalDate.parse(puzzle.optString("date", duel.optString("date")));
+            LocalDate date = LocalDate.parse(puzzle.optString("date", fallbackDate));
             DailyChallenge challenge = DailyChallenge.forDate(date, lexicon);
             if (challenge == null) return null;
             String identity = ChallengeLink.create(challenge, lexicon, 0).identity();

@@ -1,0 +1,32 @@
+<resources>
+    <string name="skins_title">Collection</string>
+    <string name="skins_intro">Personnalisez le plateau et les tuiles. Jouez pour enrichir votre collection.</string>
+    <string name="skins_boards">Plateaux</string>
+    <string name="skins_tiles">Tuiles</string>
+    <string name="skins_classic">Classique</string>
+    <string name="skins_tide">Marée</string>
+    <string name="skins_slate">Ardoise</string>
+    <string name="skins_porcelain">Porcelaine</string>
+    <string name="skins_amber">Ambre</string>
+    <string name="skins_board_classic">Les couleurs de votre thème.</string>
+    <string name="skins_board_tide">Bleu profond et cases aux reflets de verre.</string>
+    <string name="skins_board_slate">Cadre graphite et cases aux nuances minérales.</string>
+    <string name="skins_tile_classic">Les tuiles de votre thème.</string>
+    <string name="skins_tile_porcelain">Ivoire bleuté et tranche satinée.</string>
+    <string name="skins_tile_amber">Miel doré et gravure brun chaud.</string>
+    <string name="skins_available">%1$d sur %2$d disponibles</string>
+    <string name="skins_active">Équipé</string>
+    <string name="skins_equip">Équiper</string>
+    <string name="skins_equip_named">Équiper %1$s</string>
+    <string name="skins_equipped_notice">%1$s équipé.</string>
+    <string name="skins_save_error">Impossible d’enregistrer ce style.</string>
+    <string name="skins_progress">%1$d / %2$d</string>
+    <plurals name="skins_daily_requirement">
+        <item quantity="one">Terminez le défi du jour.</item>
+        <item quantity="other">Terminez le défi quotidien %d jours différents.</item>
+    </plurals>
+    <plurals name="skins_solo_requirement">
+        <item quantity="one">Terminez une partie solo.</item>
+        <item quantity="other">Terminez %d parties solo.</item>
+    </plurals>
+</resources>

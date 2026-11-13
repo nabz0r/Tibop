@@ -81,7 +81,7 @@ final class MatchReviewPanel {
         panel.addView(modes);
         ui.gap(panel, 7);
 
-        board = new BoardView(ui.context, ui.palette, null);
+        board = new BoardView(ui, null);
         panel.addView(board, new LinearLayout.LayoutParams(-1, -2));
         LinearLayout actions = ui.row();
         explainButton = ui.button(label(R.string.match_review_explain), false, () -> {

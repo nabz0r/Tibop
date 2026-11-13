@@ -1,0 +1,25 @@
+<resources>
+    <string name="help_title">Comment jouer</string>
+    <string name="help_entry">Règles, tutoriel et IA locale</string>
+    <string name="help_tutorial">Tutoriel</string>
+    <string name="help_rules_tab">Jeu et IA locale</string>
+    <string name="help_tutorial_intro">Votre premier coup</string>
+    <string name="help_tutorial_copy">Vous allez transformer CHAT en CHATS et marquer 11 points.</string>
+    <string name="help_tutorial_select">Choisissez la lettre S</string>
+    <string name="help_tutorial_select_copy">Touchez le S dans le chevalet sous le plateau.</string>
+    <string name="help_tutorial_place">Posez le S en H12</string>
+    <string name="help_tutorial_place_copy">C’est la case juste à droite de CHAT. La case L2 double la valeur du S.</string>
+    <string name="help_tutorial_validate">Validez les 11 points</string>
+    <string name="help_tutorial_validate_copy">Le score apparaît avant l’envoi. Touchez Valider le coup pour voir le résultat.</string>
+    <string name="help_tutorial_action">Essayer sur le plateau</string>
+    <string name="help_tutorial_clear">Effacez votre essai, puis posez seulement le S en H12.</string>
+    <string name="help_tutorial_done">Coup réussi. La case L2 a doublé la valeur du S.</string>
+    <string name="help_rules">Former un mot</string>
+    <string name="help_rules_copy">Le premier mot traverse l’étoile centrale. Ensuite, raccordez votre coup à une lettre déjà posée. Les nouvelles lettres d’un coup forment une seule ligne ou colonne. Tous les mots créés doivent figurer dans le lexique français intégré.</string>
+    <string name="help_scoring">Compter les points</string>
+    <string name="help_scoring_copy">Additionnez la valeur des lettres des mots créés. L2 et L3 multiplient une lettre. M2 et M3 multiplient le mot. Ces bonus s’appliquent quand vous recouvrez la case pour la première fois. Un joker vaut zéro. Poser les sept lettres du chevalet rapporte 50 points de plus.</string>
+    <string name="help_local_bot">NAB joue sur votre téléphone</string>
+    <string name="help_local_bot_copy">NAB est votre adversaire en solo. Son moteur cherche des placements légaux dans le lexique embarqué. Le niveau adaptatif tient compte de votre Elo local et de l’écart de score pendant la partie.</string>
+    <string name="help_local_model">L’IA locale explique les coups</string>
+    <string name="help_local_model_copy">Le moteur vérifie le mot et son score. Le modèle embarqué SmolLM2 s’appuie sur ces faits pour expliquer une case bonus, un mot croisé ou un autre détail du coup. NAB et les explications fonctionnent en mode avion.</string>
+</resources>
