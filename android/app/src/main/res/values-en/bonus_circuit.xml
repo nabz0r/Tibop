@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bonus_home_title">Bonus Circuit</string>
+    <string name="bonus_home_detail">Three new puzzles and refillable tickets.</string>
+    <string name="bonus_rules">Play three Two Moves Ahead puzzles in a row. One ticket covers the whole circuit. Your first entry is free.</string>
+    <string name="bonus_wallet">My tickets and coins</string>
+    <string name="bonus_balance">Coins %1$d · Tickets %2$d/%3$d · Bonus %4$d</string>
+    <string name="bonus_refill_full">Free tickets refill every 2 hours.</string>
+    <string name="bonus_refill_hours">Next ticket in %1$d h %2$02d</string>
+    <string name="bonus_refill_minutes">Next ticket in %1$d min</string>
+    <string name="bonus_start_free">Play the free first circuit</string>
+    <string name="bonus_start_ticket">Play the circuit · 1 ticket</string>
+    <string name="bonus_resume">Resume circuit</string>
+    <string name="bonus_exchange">Exchange %1$d coins for 1 ticket</string>
+    <string name="bonus_watch_video">Watch a video · +1 ticket</string>
+    <string name="bonus_video_unavailable">Video unavailable in this build</string>
+    <string name="bonus_video_claimed">Video ticket claimed for today</string>
+    <string name="bonus_referral_copy">Refer a new friend. Finish your first duel together and you’ll each get a bonus ticket.</string>
+    <string name="bonus_invite">Invite from Friends</string>
+    <string name="bonus_round">Puzzle %1$d of 3</string>
+    <string name="bonus_round_score">%1$d · %2$s · %3$d pts</string>
+    <string name="bonus_in_progress">Circuit in progress · puzzle %1$d</string>
+    <string name="bonus_complete">Circuit complete · %1$d pts</string>
+    <string name="bonus_next_round">Next puzzle</string>
+    <string name="bonus_see_results">See circuit results</string>
+    <string name="bonus_unavailable">These three puzzles require the built-in dictionary.</string>
+    <string name="bonus_save_error">Couldn’t save your progress. Try again.</string>
+    <string name="bonus_start_error">Couldn’t start the circuit. Check your tickets and try again.</string>
+</resources>

@@ -170,6 +170,7 @@ final class SocialPanel {
         ui.gap(body, 10);
         LinearLayout invite = ui.card();
         invite.addView(ui.body(label(R.string.social_invite_ready)));
+        invite.addView(ui.body(label(R.string.referral_invite_info)));
         addAction(invite, R.string.social_accept_invite, true, () -> accept(invitation));
         body.addView(invite);
     }

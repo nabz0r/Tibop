@@ -39,6 +39,8 @@ Pour jouer, glisser une lettre sur le plateau ou sélectionner une lettre puis s
 
 **Deux coups d’avance** propose douze défis hors ligne par langue. Placez deux mots avec le même chevalet, puis rejouez une séquence guidée par NAB sur le plateau. Le bouton **EN / FR** sur l’accueil change l’interface, le lexique et les défis. Chaque langue conserve ses parties, son Elo et ses records.
 
+**Circuit bonus** enchaîne trois nouvelles positions par langue. La première entrée est offerte. Les tickets se rechargent toutes les deux heures, et les pièces gagnées en jouant peuvent débloquer des thèmes ou un ticket supplémentaire.
+
 WordRivet propose un défi par jour hors ligne et une série de jours joués. **Bats mon score** crée une carte et un lien pour inviter un ami à jouer le même défi. L’application permet de jouer en solo, à deux, trois ou quatre sur un appareil ou en duel Bluetooth. Le bilan de NAB permet de retenter un coup manqué avec son chevalet d’origine. SmolLM2 aide à expliquer les coups et les comparaisons hors ligne. L’historique affiche la progression de l’Elo et exporte les parties en JSON.
 
 **Amis** propose les duels asynchrones, les notifications de tour et un tournoi du week-end sur trois défis avec classement. Le lien HTTPS de bêta ouvre Android et propose le serveur du groupe. La bêta anglaise utilise son propre espace sur le serveur. **Profil → Collection** permet de débloquer des plateaux, tuiles et fonds de carte en jouant. [Rejoindre la bêta Android](android/README.md#amis-et-duels-en-bêta)

@@ -69,7 +69,7 @@ public final class MainActivity extends Activity {
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
 
     private enum Screen { HOME, GAMES, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW, PRACTICE,
-        SOCIAL, SOCIAL_DUEL, PROFILE, COLLECTION, TOURNAMENT, TOURNAMENT_ROUND, HELP, TWO_MOVES }
+        SOCIAL, SOCIAL_DUEL, PROFILE, COLLECTION, TOURNAMENT, TOURNAMENT_ROUND, HELP, TWO_MOVES, BONUS_CIRCUIT }
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -85,6 +85,8 @@ public final class MainActivity extends Activity {
     private ProfileStore profileStore;
     private ProfilePanel profilePanel;
     private TwoMoveChallengeScreen twoMoveScreen;
+    private BonusCircuitScreen bonusCircuit;
+    private BonusEconomy economy;
     private SocialClient socialClient;
     private CancellationSignal googleSignIn;
     private String pendingSocialInvite;
@@ -133,7 +135,10 @@ public final class MainActivity extends Activity {
     private Screen setupBack = Screen.HOME;
     private LocalDate homeDate;
     private final BroadcastReceiver calendarChanges = new BroadcastReceiver() {
-        @Override public void onReceive(Context context, Intent intent) { refreshDailyHome(); }
+        @Override public void onReceive(Context context, Intent intent) {
+            refreshDailyHome();
+            if (bonusCircuit != null) bonusCircuit.refresh();
+        }
     };
 
     @Override protected void attachBaseContext(Context base) {
@@ -149,10 +154,12 @@ public final class MainActivity extends Activity {
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         soloSelection = Math.max(1, Math.min(Bot.ADAPTIVE, preferences.getInt("solo_level", 1)));
         rewarded = new RewardedPractice(this);
+        economy = new BonusEconomy(this);
         dailyProgress = new DailyProgress(this, gameLanguage);
         skinStore = new SkinStore(this);
         profileStore = new ProfileStore(this);
-        socialClient = new SocialClient(this, gameLanguage, this::socialBaseUrl, profileStore::nickname);
+        socialClient = new SocialClient(this, gameLanguage, this::socialBaseUrl, profileStore::nickname,
+                this::receiveReferralBalance);
         skin = Math.max(0, Math.min(Palette.THEMES.length - 1, preferences.getInt("skin", 0)));
         updateAppearance();
         getWindow().setStatusBarColor(Color.TRANSPARENT);
@@ -169,7 +176,7 @@ public final class MainActivity extends Activity {
         }
         showHome();
         receiveNavigation(getIntent());
-        rewarded.refreshConsent(this::refreshRewardSettings);
+        rewarded.refreshConsent(this::refreshRewardViews);
         worker.submit(() -> {
             try {
                 Lexicon loaded = Lexicon.load(this, gameLanguage);
@@ -327,6 +334,7 @@ public final class MainActivity extends Activity {
         audio.foreground(true);
         refreshDailyHome();
         refreshTurnNotifications();
+        if (bonusCircuit != null) bonusCircuit.refresh();
     }
 
     @Override protected void onPause() {
@@ -370,6 +378,7 @@ public final class MainActivity extends Activity {
             case REVIEW -> reviewBack.run();
             case PRACTICE -> leavePractice();
             case TWO_MOVES -> leaveTwoMoves();
+            case BONUS_CIRCUIT -> leaveBonusCircuit();
             case SOCIAL_DUEL -> showSocial();
             case TOURNAMENT -> showSocial();
             case TOURNAMENT_ROUND -> showTournament();
@@ -401,6 +410,7 @@ public final class MainActivity extends Activity {
         if (next != Screen.HOME) pendingChallenge = null;
         if (next != Screen.PROFILE) profilePanel = null;
         if (next != Screen.TWO_MOVES) twoMoveScreen = null;
+        if (next != Screen.BONUS_CIRCUIT) bonusCircuit = null;
         if (next != Screen.SOCIAL && googleSignIn != null) {
             googleSignIn.cancel();
             googleSignIn = null;
@@ -441,7 +451,7 @@ public final class MainActivity extends Activity {
         scroll.addView(centered, new ScrollView.LayoutParams(-1, -2));
         content = ui.column();
         int margin = next == Screen.PRACTICE || next == Screen.TOURNAMENT_ROUND
-                || next == Screen.SOCIAL_DUEL || next == Screen.TWO_MOVES ? 10 : 17;
+                || next == Screen.SOCIAL_DUEL || next == Screen.TWO_MOVES || next == Screen.BONUS_CIRCUIT ? 10 : 17;
         content.setPadding(ui.dp(margin), ui.dp(7), ui.dp(margin), ui.dp(16));
         centered.addView(content, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_HORIZONTAL));
         LinearLayout capturedContent = content;
@@ -529,6 +539,9 @@ public final class MainActivity extends Activity {
         top(getString(R.string.app_name), null, rating, language);
         ui.gap(content, 8);
         content.addView(TwoMoveHomeCard.create(ui, () -> openChallenge(this::openTwoMoves)));
+        ui.gap(content, 9);
+        content.addView(ui.option("◇", getString(R.string.bonus_home_title), getString(R.string.bonus_home_detail),
+                () -> openChallenge(this::openBonusCircuit)));
         ui.gap(content, 10);
         DailyProgress.Snapshot today = dailyProgress.snapshot(homeDate);
         boolean completed = today.bestScore() != null;
@@ -597,12 +610,24 @@ public final class MainActivity extends Activity {
     private void openTwoMoves() {
         page(Screen.TWO_MOVES, false);
         top(getString(R.string.app_name), this::leaveTwoMoves, null);
-        twoMoveScreen = new TwoMoveChallengeScreen(ui, lexicon);
+        twoMoveScreen = new TwoMoveChallengeScreen(ui, lexicon, id -> economy.puzzle(gameLanguage, id));
         content.addView(twoMoveScreen.view());
     }
 
     private void leaveTwoMoves() {
         if (twoMoveScreen == null || !twoMoveScreen.goBack()) showHome();
+    }
+
+    private void openBonusCircuit() {
+        page(Screen.BONUS_CIRCUIT, false);
+        top(getString(R.string.app_name), this::leaveBonusCircuit, null);
+        bonusCircuit = new BonusCircuitScreen(ui, lexicon, economy, rewarded::available, this::requestBonusVideo,
+                this::showSocial);
+        content.addView(bonusCircuit.view());
+    }
+
+    private void leaveBonusCircuit() {
+        if (bonusCircuit == null || !bonusCircuit.goBack()) showHome();
     }
 
     private void openFirstChallenge(Runnable back, boolean tutorial) {
@@ -646,7 +671,9 @@ public final class MainActivity extends Activity {
         content.addView(DailyChallengeCard.heading(ui, title, DailyResult.dateLabel(ui, date), goal));
         ui.gap(content, 11);
         DailyResult dailyResult = new DailyResult(ui, date.equals(today) ? dailyProgress : null,
-                challenge, lexicon, invitation);
+                challenge, lexicon, invitation, () -> {
+                    if (economy.daily(gameLanguage, date)) toast(getString(R.string.daily_coins_earned));
+                });
         content.addView(new PracticePanel(ui, challenge.position(), lexicon, false, dailyResult).view());
     }
 
@@ -1753,20 +1780,10 @@ public final class MainActivity extends Activity {
         settings.addView(soundSwitch(R.string.tile_sounds, "effects"));
         content.addView(settings);
         ui.gap(content, 12);
-        if (rewarded.available()) {
-            LocalDate date = LocalDate.now();
-            if (date.toString().equals(preferences.getString("rewarded_date", ""))) {
-                content.addView(ui.option("✦", getString(R.string.rewarded_play), "", () -> openBonus(date)));
-            } else {
-                content.addView(ui.option("✦", getString(R.string.rewarded_title),
-                        getString(R.string.rewarded_details), () -> confirmBonus(date)));
-            }
+        if (rewarded.hasPrivacyOptions()) {
+            content.addView(ui.option("○", getString(R.string.rewarded_privacy), "",
+                    () -> rewarded.privacyOptions(this::refreshRewardViews)));
             ui.gap(content, 8);
-            if (rewarded.hasPrivacyOptions()) {
-                content.addView(ui.option("○", getString(R.string.rewarded_privacy), "",
-                        () -> rewarded.privacyOptions(this::refreshRewardSettings)));
-                ui.gap(content, 8);
-            }
         }
         content.addView(ui.option("↗", getString(R.string.social_navigation_endpoint),
                 socialBaseUrl().isEmpty() ? "" : Uri.parse(socialBaseUrl()).getHost(), this::editSocialEndpoint));
@@ -1779,12 +1796,12 @@ public final class MainActivity extends Activity {
         ui.gap(content, 8);
         for (int i = 0; i < Palette.THEMES.length; i++) {
             int theme = i;
-            content.addView(ui.option(skin == i ? "✓" : "✦", getString(Palette.THEMES[i].name()), "", () -> {
-                skin = theme;
-                preferences.edit().putInt("skin", skin).apply();
-                updateAppearance();
-                showSettings();
-            }));
+            String unlock = Palette.unlockId(i);
+            boolean locked = !unlock.isEmpty() && !economy.themeUnlocked(unlock);
+            String name = getString(Palette.THEMES[i].name());
+            String cost = locked ? getString(R.string.bonus_theme_cost, BonusEconomy.themeCost(unlock)) : "";
+            content.addView(ui.option(skin == i ? "✓" : "✦", name, cost,
+                    () -> { if (locked) confirmTheme(theme, unlock, name, cost); else equipTheme(theme); }));
             ui.gap(content, 8);
         }
         if (lexicon != null) {
@@ -1794,6 +1811,21 @@ public final class MainActivity extends Activity {
                     (notice == null || notice.trim().isEmpty() ? getString(R.string.app_dictionary_bundled) : notice)
                             + "\n\n" + getString(R.string.app_dictionary_hash, lexicon.hash)).setPositiveButton(getString(R.string.move_explanation_close), null).show()));
         }
+    }
+
+    private void confirmTheme(int theme, String unlock, String name, String cost) {
+        dialog(name, cost).setNegativeButton(R.string.social_cancel, null)
+                .setPositiveButton(R.string.bonus_theme_unlock, (ignored, action) -> {
+                    if (economy.unlockTheme(unlock)) equipTheme(theme);
+                    else toast(getString(R.string.bonus_theme_insufficient));
+                }).show();
+    }
+
+    private void equipTheme(int theme) {
+        skin = theme;
+        preferences.edit().putInt("skin", skin).apply();
+        updateAppearance();
+        showSettings();
     }
 
     private void selectLanguage(GameLanguage language) {
@@ -1871,34 +1903,33 @@ public final class MainActivity extends Activity {
         return toggle;
     }
 
-    private void confirmBonus(LocalDate date) {
-        if (!ready()) return;
-        FrameLayout origin = frame;
+    private void requestBonusVideo(LocalDate date) {
+        BonusCircuitScreen origin = bonusCircuit;
+        if (origin == null || !rewarded.available() || !economy.videoAvailable(date)) return;
         dialog(getString(R.string.rewarded_title), getString(R.string.rewarded_confirm))
                 .setNegativeButton(getString(R.string.social_cancel), null)
                 .setPositiveButton(R.string.rewarded_watch, (ignored, which) -> rewarded.request(
-                        () -> screen == Screen.SETTINGS && frame == origin,
-                        () -> preferences.edit().putString("rewarded_date", date.toString()).apply(),
-                        this::refreshRewardSettings))
+                        () -> bonusCircuit == origin && LocalDate.now().equals(date) && economy.videoAvailable(date),
+                        () -> {
+                            if (economy.video(date)) toast(getString(R.string.rewarded_ticket_earned));
+                            refreshRewardViews();
+                        }, this::refreshRewardViews))
                 .show();
     }
 
-    private void refreshRewardSettings() {
+    private void refreshRewardViews() {
         if (screen == Screen.SETTINGS) showSettings();
+        if (bonusCircuit != null) bonusCircuit.refresh();
     }
 
-    private void openBonus(LocalDate date) {
-        if (!ready()) return;
-        DailyChallenge challenge = DailyChallenge.forDate(date.minusWeeks(5), lexicon);
-        if (challenge == null) {
-            toast(getString(R.string.daily_unavailable));
-            return;
+    private void receiveReferralBalance(JSONObject referral) {
+        String id = referral.optString("wallet_id");
+        int count = referral.optInt("tickets_earned", -1);
+        if (count <= 0 || !id.matches("[0-9a-f]{32}")) return;
+        if (economy.referrals(gameLanguage, "wordrivet-social-v1", id, count)) {
+            toast(getString(R.string.referral_ticket_earned));
+            if (bonusCircuit != null) bonusCircuit.refresh();
         }
-        page(Screen.PRACTICE, false);
-        practiceBack = this::showSettings;
-        top(getString(R.string.app_name), this::leavePractice, null);
-        heading(getString(R.string.rewarded_title), getString(R.string.daily_goal, challenge.openingWord()));
-        content.addView(new PracticePanel(ui, challenge.position(), lexicon, false, false).view());
     }
 
     private void showProfile() {
@@ -1980,14 +2011,22 @@ public final class MainActivity extends Activity {
     private void showTournament() {
         page(Screen.TOURNAMENT, false);
         top(getString(R.string.app_name), this::showSocial, null);
-        content.addView(new TournamentPanel(ui, socialClient, this::showTournamentRound).view());
+        content.addView(new TournamentPanel(ui, socialClient, this::showTournamentRound, this::awardTournamentCoins).view());
     }
 
     private void showTournamentRound(JSONObject round) {
         if (!ready()) return;
         page(Screen.TOURNAMENT_ROUND, false);
         top(getString(R.string.tournament_title), this::showTournament, null);
-        content.addView(new TournamentRoundPanel(ui, socialClient, round, lexicon, this::showTournament).view());
+        content.addView(new TournamentRoundPanel(ui, socialClient, round, lexicon, this::showTournament,
+                this::awardTournamentCoins).view());
+    }
+
+    private void awardTournamentCoins(JSONObject event) {
+        long id = event.optLong("id", -1);
+        if (id >= 0 && event.optInt("completed") == 3 && economy.tournament(gameLanguage, Long.toString(id))) {
+            toast(getString(R.string.tournament_coins_earned));
+        }
     }
 
     private void showSocialDuel(JSONObject duel) {

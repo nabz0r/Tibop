@@ -29,16 +29,18 @@ final class TournamentPanel {
     private final SocialClient client;
     private final CardStyleStore cardStyles;
     private final Consumer<JSONObject> openRound;
+    private final Consumer<JSONObject> completedEvent;
     private final LinearLayout root;
     private final TextView notice;
     private final TextView refresh;
     private final LinearLayout body;
 
-    TournamentPanel(ViewKit ui, SocialClient client, Consumer<JSONObject> openRound) {
+    TournamentPanel(ViewKit ui, SocialClient client, Consumer<JSONObject> openRound, Consumer<JSONObject> completedEvent) {
         this.ui = ui;
         this.client = client;
         cardStyles = new CardStyleStore(ui.context);
         this.openRound = openRound;
+        this.completedEvent = completedEvent;
         root = ui.column();
         root.addView(hero(ui));
         ui.gap(root, 14);
@@ -157,6 +159,7 @@ final class TournamentPanel {
                 || (!upcoming && (slots == null || slots.length() != 3))) return false;
 
         cardStyles.recordTournament(event);
+        completedEvent.accept(event);
         body.removeAllViews();
         LinearLayout scorecard = ui.card();
         String deadline = open ? label(R.string.tournament_open, time(ends)) : upcoming

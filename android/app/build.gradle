@@ -26,8 +26,8 @@ android {
         applicationId 'fr.lettrine.game'
         minSdk 26
         targetSdk 36
-        versionCode 14
-        versionName '0.13.0'
+        versionCode 15
+        versionName '0.14.0'
         buildConfigField 'String', 'SOCIAL_BASE_URL', '"' + socialUrl + '"'
         manifestPlaceholders.admobAppId = ads ? adApp : 'disabled'
         if (ads) {
@@ -39,6 +39,16 @@ android {
 
     bundle.language.enableSplit = false
 
+    buildTypes {
+        debug {
+            if (ads) {
+                debuggable false
+                minifyEnabled true
+                proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            }
+        }
+    }
+
     compileOptions {
         coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_17
@@ -47,12 +57,7 @@ android {
 
     sourceSets.main.assets.srcDir(layout.buildDirectory.dir('generated/lettrineAssets'))
     sourceSets.main.jniLibs.srcDir(layout.buildDirectory.dir('generated/lettrineJni'))
-    if (adTest) {
-        sourceSets.debug.java.srcDir('src/admob/java')
-        sourceSets.release.java.srcDir('src/noAds/java')
-    } else {
-        sourceSets.main.java.srcDir(ads ? 'src/admob/java' : 'src/noAds/java')
-    }
+    sourceSets.main.java.srcDir(ads ? 'src/admob/java' : 'src/noAds/java')
 
     packaging.jniLibs.useLegacyPackaging = true
 }
@@ -75,8 +80,9 @@ dependencies {
     implementation 'androidx.work:work-runtime:2.11.2'
     implementation 'com.google.android.libraries.identity.googleid:googleid:1.2.0'
     if (ads) {
-        add(adTest ? 'debugImplementation' : 'implementation', 'com.google.android.gms:play-services-ads:25.5.0')
-        add(adTest ? 'debugImplementation' : 'implementation', 'com.google.android.ump:user-messaging-platform:4.0.0')
+        implementation 'com.google.guava:guava:31.1-android'
+        implementation 'com.google.android.gms:play-services-ads:25.5.0'
+        implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
     }
     testImplementation 'junit:junit:4.13.2'
 }

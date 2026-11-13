@@ -156,10 +156,55 @@ final class TwoMoveChallenge {
                     down("START", "H8"), down("STARTERS", "H8"))
     );
 
+    private static final List<Design> BONUS_DESIGNS = List.of(
+            new Design("bonus-etoile", "Une étoile en vue", "Ouvre une colonne au bout de VERT.",
+                    "Ajoute un E pour prolonger VERT. Garde les lettres qui forment un astre.",
+                    "Le E de VERTE devient le début d’ÉTOILE. Le même jeton participe aux deux coups.",
+                    "ETOILEN", List.of(across("VERT", "H8")),
+                    across("VERTE", "H8"), down("ETOILE", "L8")),
+            new Design("bonus-arbre", "Racines", "Trouve un appui à gauche de CORDE.",
+                    "Ajoute deux lettres au début de CORDE. Garde tes deux R pour la colonne.",
+                    "ACCORDE donne un A au début d’ARBRE. Les deux R ont été gardés pour cette pose.",
+                    "ACRBREO", List.of(across("CORDE", "H8")),
+                    across("ACCORDE", "F8"), down("ARBRE", "F8")),
+            new Design("bonus-egal", "Le juste compte", "Fais deux poses avec les sept lettres du chevalet.",
+                    "Allonge LIT de quatre lettres. Garde G, A et L pour le second coup.",
+                    "LITERIE donne à ÉGAL son premier E. Les trois dernières tuiles complètent le mot.",
+                    "ERIEGAL", List.of(across("LIT", "H8")),
+                    across("LITERIE", "H8"), down("EGAL", "K8"))
+    );
+
+    private static final List<Design> ENGLISH_BONUS_DESIGNS = List.of(
+            new Design("en-bonus-storm", "A storm brewing", "Open a column at the end of BOOK.",
+                    "Add an S to extend BOOK. Save the letters that describe wild weather.",
+                    "The S in BOOKS becomes the first letter of STORM. It scores as part of both words.",
+                    "STORMEN", List.of(across("BOOK", "H8")),
+                    across("BOOKS", "H8"), down("STORM", "L8")),
+            new Design("en-bonus-cloud", "Cloud cover", "Make room to the left of AIR.",
+                    "Put two letters before AIR. Save L, O, U and D for the column.",
+                    "CHAIR puts a C on the board. The same C starts CLOUD.",
+                    "CHLOUDE", List.of(across("AIR", "H8")),
+                    across("CHAIR", "F8"), down("CLOUD", "F8")),
+            new Design("en-bonus-tide", "An icy tide", "Save three letters for the second move.",
+                    "Extend COLD with three tiles and keep I, D and E for the new column.",
+                    "COLDEST gives TIDE its first letter. I, D and E complete the crossing.",
+                    "ESTIDER", List.of(across("COLD", "H8")),
+                    across("COLDEST", "H8"), down("TIDE", "N8"))
+    );
+
     private TwoMoveChallenge() {}
 
     static List<Puzzle> catalog(Lexicon lexicon) {
         List<Design> designs = lexicon.language == GameLanguage.ENGLISH ? ENGLISH_DESIGNS : DESIGNS;
+        return prepareCatalog(designs, lexicon);
+    }
+
+    static List<Puzzle> bonusCatalog(Lexicon lexicon) {
+        List<Design> designs = lexicon.language == GameLanguage.ENGLISH ? ENGLISH_BONUS_DESIGNS : BONUS_DESIGNS;
+        return prepareCatalog(designs, lexicon);
+    }
+
+    private static List<Puzzle> prepareCatalog(List<Design> designs, Lexicon lexicon) {
         List<Puzzle> puzzles = new ArrayList<>(designs.size());
         for (Design design : designs) {
             Puzzle puzzle = prepare(design, lexicon);

@@ -462,7 +462,9 @@ Retrouvez vos fichiers de parties et téléchargez Lettrine pour Android.|Find y
 Télécharger des parties|Download games
 Utilisez le format CSV pour ouvrir les résultats dans un tableur.|Use CSV to open results in a spreadsheet.
 Lettrine pour Android|Lettrine for Android
-Version 0.13.0|Version 0.13.0
+Version 0.14.0|Version 0.14.0
+Circuit bonus|Bonus Circuit
+Trois nouveaux défis à enchaîner hors ligne avec un ticket. La première entrée est offerte.|One ticket gives you three new offline puzzles. Your first entry is free.
 WordRivet pour Android|WordRivet for Android
 Deux coups d’avance|Two Moves Ahead
 Douze défis hors ligne par langue. Jouez deux mots avec le même chevalet, puis regardez le rejeu de NAB.|Twelve offline puzzles in each language. Play two words from one rack, then watch NAB’s replay.

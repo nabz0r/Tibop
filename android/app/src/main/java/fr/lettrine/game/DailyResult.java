@@ -19,6 +19,7 @@ final class DailyResult {
     private final DailyChallenge challenge;
     private final Lexicon lexicon;
     private final ChallengeLink invitation;
+    private final Runnable onComplete;
     private final LocalDate date;
     private final String opening;
     private final LinearLayout summary;
@@ -32,12 +33,13 @@ final class DailyResult {
     private int shareStreak;
 
     DailyResult(ViewKit ui, DailyProgress progress, DailyChallenge challenge, Lexicon lexicon,
-                ChallengeLink invitation) {
+                ChallengeLink invitation, Runnable onComplete) {
         this.ui = ui;
         this.progress = progress;
         this.challenge = challenge;
         this.lexicon = lexicon;
         this.invitation = invitation;
+        this.onComplete = onComplete;
         date = challenge.date();
         opening = label(R.string.daily_board, challenge.openingWord(),
                 square(challenge.openingStart()), square(challenge.openingEnd()));
@@ -102,6 +104,7 @@ final class DailyResult {
         if (progress != null) {
             try {
                 DailyProgress.Snapshot saved = progress.complete(date, move.score());
+                onComplete.run();
                 bestScore = saved.bestScore();
                 shareStreak = saved.streak();
                 best.setText(bestLabel(ui, bestScore));

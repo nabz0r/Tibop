@@ -1,0 +1,7 @@
+<resources>
+    <string name="bonus_indigo_theme">Indigo Night</string>
+    <string name="bonus_poppy_theme">Poppy</string>
+    <string name="bonus_theme_cost">%1$d in-game coins</string>
+    <string name="bonus_theme_unlock">Unlock</string>
+    <string name="bonus_theme_insufficient">This theme could not be unlocked. Check your coin balance.</string>
+</resources>

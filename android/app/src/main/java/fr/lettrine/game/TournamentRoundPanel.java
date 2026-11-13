@@ -9,23 +9,27 @@ import android.widget.TextView;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 final class TournamentRoundPanel {
     private final ViewKit ui;
     private final SocialClient client;
     private final CardStyleStore cardStyles;
     private final Runnable back;
+    private final Consumer<JSONObject> completedEvent;
     private final long eventId;
     private final int number;
     private final LinearLayout root;
     private final TextView notice;
     private PracticePanel practice;
 
-    TournamentRoundPanel(ViewKit ui, SocialClient client, JSONObject round, Lexicon lexicon, Runnable back) {
+    TournamentRoundPanel(ViewKit ui, SocialClient client, JSONObject round, Lexicon lexicon, Runnable back,
+                         Consumer<JSONObject> completedEvent) {
         this.ui = ui;
         this.client = client;
         cardStyles = new CardStyleStore(ui.context);
         this.back = back;
+        this.completedEvent = completedEvent;
         eventId = round.optLong("event", -1);
         number = round.optInt("number");
         root = ui.column();
@@ -64,6 +68,7 @@ final class TournamentRoundPanel {
                     : TournamentPanel.slot(result.optJSONArray("slots"), number);
             boolean accepted = slot != null && result.optLong("id", -1) == eventId && !slot.isNull("score");
             boolean unlocked = accepted && cardStyles.recordTournament(result);
+            if (accepted) completedEvent.accept(result);
             if (!root.isAttachedToWindow()) return;
             if (!accepted) {
                 practice.setSubmitting(false);

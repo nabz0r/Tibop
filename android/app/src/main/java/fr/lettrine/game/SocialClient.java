@@ -22,6 +22,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import java.util.function.Consumer;
 
 final class SocialClient {
     interface Callback { void onResult(JSONObject result, String error); }
@@ -36,15 +37,18 @@ final class SocialClient {
     private final SharedPreferences preferences;
     private final Supplier<String> base;
     private final Supplier<String> nickname;
+    private final Consumer<JSONObject> referralBalance;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
 
-    SocialClient(Context context, GameLanguage language, Supplier<String> base, Supplier<String> nickname) {
+    SocialClient(Context context, GameLanguage language, Supplier<String> base, Supplier<String> nickname,
+                 Consumer<JSONObject> referralBalance) {
         this.context = context;
         this.language = language;
         preferences = context.getSharedPreferences(language.storageName("social_session"), Context.MODE_PRIVATE);
         this.base = base;
         this.nickname = nickname;
+        this.referralBalance = referralBalance;
     }
 
     boolean configured() { return origin(base.get()) != null; }
@@ -204,6 +208,8 @@ final class SocialClient {
             if (worker.isShutdown()) return;
             if (origin.equals(origin(base.get()))) {
                 if (accountChanged) TurnNotifications.accountChanged(context);
+                JSONObject referral = result == null ? null : result.optJSONObject("referral");
+                if (referral != null) referralBalance.accept(referral);
                 callback.onResult(result, error);
                 if (error == null && origin.equals(origin(base.get()))) TurnNotifications.refresh(context, origin);
             } else callback.onResult(null, context.getString(R.string.social_endpoint_changed));

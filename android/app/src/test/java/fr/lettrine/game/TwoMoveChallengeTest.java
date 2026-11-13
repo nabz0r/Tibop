@@ -50,8 +50,25 @@ public class TwoMoveChallengeTest {
         assertEquals(List.of("TO", "IT", "NO"), crosses.solution().get(0).preview().words());
     }
 
+    @Test public void bonusCircuitHasThreeNewPlayablePuzzlesInEachLanguage() {
+        for (Lexicon dictionary : List.of(french, english)) {
+            var bonus = TwoMoveChallenge.bonusCatalog(dictionary);
+            Set<String> baseIds = new HashSet<>();
+            for (var puzzle : TwoMoveChallenge.catalog(dictionary)) baseIds.add(puzzle.id());
+            assertEquals(3, bonus.size());
+            for (var puzzle : bonus) assertFalse(baseIds.contains(puzzle.id()));
+            verifyCatalog(bonus, dictionary, dictionary.language == GameLanguage.ENGLISH
+                    ? "Both moves have already been played." : "Les deux coups sont déjà joués.", 3);
+        }
+    }
+
     private static void verifyCatalog(List<TwoMoveChallenge.Puzzle> catalog, Lexicon lexicon, String finishedError) {
-        assertEquals(12, catalog.size());
+        verifyCatalog(catalog, lexicon, finishedError, 12);
+    }
+
+    private static void verifyCatalog(List<TwoMoveChallenge.Puzzle> catalog, Lexicon lexicon,
+                                      String finishedError, int size) {
+        assertEquals(size, catalog.size());
         Set<String> ids = new HashSet<>();
         Set<List<Character>> racks = new HashSet<>();
         for (var puzzle : catalog) {

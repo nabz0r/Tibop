@@ -516,10 +516,10 @@ mod tests {
         let english = Arc::new(Social::open(FilePath::new(":memory:"), english_engine()).unwrap());
         french.tournament_time.store(START, Ordering::Relaxed);
         english.tournament_time.store(START, Ordering::Relaxed);
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:8794")
-            .await
-            .unwrap();
-        eprintln!("Tournoi QA sur http://127.0.0.1:8794");
+        let address =
+            std::env::var("LETTRINE_SOCIAL_QA_BIND").unwrap_or_else(|_| "127.0.0.1:8794".into());
+        let listener = tokio::net::TcpListener::bind(&address).await.unwrap();
+        eprintln!("Tournoi QA sur http://{address}");
         axum::serve(listener, bilingual_router(french, english))
             .await
             .unwrap();

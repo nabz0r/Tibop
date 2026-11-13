@@ -1,12 +1,15 @@
 # WordRivet pour Android
 
-L’[APK 0.13.0](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). WordRivet est le nom de travail de la bêta Android de Lettrine. L’identifiant Android et la signature de la distribution directe permettent de mettre à jour une installation Lettrine existante. Le [bundle 0.13.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK 0.14.0](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). WordRivet est le nom de travail de la bêta Android de Lettrine. L’identifiant Android et la signature de la distribution directe permettent de mettre à jour une installation Lettrine existante. Le [bundle 0.14.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Jouer
 
 - **EN / FR** sur l’accueil ou **Profil → Réglages → Langue du jeu** change la langue des menus et celle du plateau. Le français est la langue initiale. Les sauvegardes, historiques, cotes, séries, records et sessions sociales sont propres à chaque langue. Les parties françaises précédentes sont accessibles en français.
 - **Défi du jour** propose une nouvelle position selon la date locale, même en mode avion. Validez un coup légal pour compter la journée dans votre série. Vous pouvez rejouer pour améliorer le record du jour.
 - **Deux coups d’avance / Two Moves Ahead** ouvre douze positions hors ligne par langue. Le premier placement reste sur le plateau et vous jouez le second avec les tuiles restantes. Le résultat cumule les deux coups. NAB donne un indice et rejoue une séquence en deux temps sur le plateau. Le record de chaque défi est enregistré sur l’appareil.
+- **Circuit bonus / Bonus Circuit** propose trois positions supplémentaires par langue. La première entrée est offerte sur l’appareil. Un ticket couvre ensuite le circuit complet, y compris sa reprise. La réserve de trois tickets gratuits récupère un ticket toutes les deux heures. Les pièces et tickets sont communs aux deux langues, et chaque circuit se reprend dans sa langue. La vidéo facultative de démonstration ouvre un ticket par jour.
+- Gagnez **25 pièces** sur le défi du jour, **50** à la première réussite de chaque défi du catalogue et **75** sur une coupe terminée. Échangez **100 pièces** contre un ticket dans le circuit ou débloquez les thèmes **Nuit indigo** et **Coquelicot** dans les réglages. Les achats en argent réel sont désactivés.
+- Le parrainage crédite un ticket à un nouveau joueur après le premier duel terminé avec son parrain. Le parrain peut obtenir trois tickets de parrainage par mois et par compte social. Le crédit apparaît au prochain chargement de **Amis** ou du duel.
 - **Bats mon score** partage une carte PNG avec la date, le score et, lorsqu’elle s’applique, la série. Le lien associé mène à une [page d’invitation](https://nabz0r.github.io/scrabnble/defi/). L’application ouvre la langue et la position du défi, puis compare le coup du destinataire au score partagé. **Copier le lien** est disponible pour les messageries qui séparent les images du texte. Une invitation pour une autre date se joue hors série.
 - **Profil** réunit le pseudo, la photo, le pays, l’âge et le sexe, tous facultatifs. Les exploits se débloquent à partir de vos parties et de vos défis. La photo, le pays, l’âge et le sexe restent sur cet appareil.
 - **Amis** propose une invitation à usage unique, des duels à un coup sur un plateau commun, la revanche et un classement calculé sur les duels terminés entre membres de votre cercle d’amis. Les deux joueurs peuvent jouer à des moments différents. Le score de l’adversaire est dévoilé une fois les deux coups envoyés.
@@ -45,7 +48,7 @@ Installer le SDK Android 36, le NDK `28.2.13676358`, Java 17, Python 3, CMake 3.
 
 Sur un poste où les dépendances sont en cache, `LETTRINE_GRADLE_OFFLINE=1` compile sans téléchargement. `ANDROID_NDK_HOME` permet de sélectionner le NDK. Pour tester un autre lexique autorisé, définir `LETTRINE_WORDS` avec un chemin de fichier UTF-8 contenant un mot par ligne et `LETTRINE_WORDS_LABEL` avec le nom de l’édition. Les poids entraînés du bot s’activent si leur empreinte correspond au lexique de l’APK.
 
-Les livrables du dépôt compilent sans AdMob. Une variante distincte permet de tester une vidéo facultative qui ouvre un défi supplémentaire. [Configuration et récompenses](../docs/ECONOMIE_ANDROID.md) · [Simulations du moteur Android](../docs/SIMULATIONS_ANDROID.md)
+Les livrables de la bêta utilisent les annonces de démonstration Google. Pour les reproduire, préfixez les commandes de compilation par `LETTRINE_ADMOB_TEST=1`. Sans cet indicateur et sans identifiants AdMob configurés, la compilation ne contient pas le SDK publicitaire. [Configuration et récompenses](../docs/ECONOMIE_ANDROID.md) · [Simulations du moteur Android](../docs/SIMULATIONS_ANDROID.md)
 
 ## Préparer la bêta Google Play
 
@@ -143,5 +146,12 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 - Les 46 tests Android et les 25 tests serveur passent. Les calendriers ont été vérifiés sur quatre ans et les 164 plateaux anglais en ligne correspondent exactement au catalogue Android. Les 120 parties anglaises simulées couvrent 3 221 tours avec deux, trois ou quatre joueurs.
 - En mode avion sur Android 8, la mise à jour depuis Lettrine a conservé les sauvegardes françaises à l’identique. Le parcours anglais CATS puis STOP a marqué 18 points, le rejeu NAB a affiché ses deux poses et le record a survécu au redémarrage. Le retour en français a retrouvé l’Elo et l’historique existants.
 - Sur Android 16 avec un serveur de test, une invitation anglaise, un duel complet, la revanche avec échange des chevalets et les trois manches du tournoi ont été joués. L’APK et le bundle sont signés. Les APK extraits du bundle s’installent sur Android 16 avec des pages de 16 Kio et permettent de passer en anglais avec les ressources embarquées.
+
+## Vérification de la version 0.14.0
+
+- Les 54 tests Android, le contrôle statique Android et les 27 tests serveur passent. Sur Android 8 et 16 en mode avion, les circuits français et anglais ont été terminés à 64 et 66 points. Le rejeu NAB, la reprise du circuit et du brouillon après arrêt forcé et le débit d’un seul ticket par circuit ont été vérifiés.
+- Un défi du catalogue anglais a crédité 50 pièces. Une installation mise à jour a retrouvé l’historique français, la courbe Elo et l’explication embarquée en mode avion.
+- Les essais serveur FR/EN ont vérifié que le parrainage crédite les deux comptes après leurs coups légaux et que la revanche ou la répétition d’un envoi ne crédite aucun doublon. Le serveur HTTPS de bêta a été mis à jour.
+- Sur Android 16, l’annulation de la vidéo de démonstration a laissé le solde intact. Une annonce Google terminée a crédité un ticket bonus.
 
 Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.

@@ -21,6 +21,7 @@ use std::{
 };
 use wolges::movegen::Play;
 
+mod referral;
 mod tournament;
 
 const FR_LEXICON: &str = "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a";
@@ -399,6 +400,7 @@ impl Social {
         scope.commit()?;
         conn.execute_batch(SCHEMA)?;
         conn.execute_batch(tournament::SCHEMA)?;
+        conn.execute_batch(referral::SCHEMA)?;
         Ok(Self {
             db: Mutex::new(conn),
             engine,
@@ -659,6 +661,7 @@ async fn session(
                 "INSERT INTO social_sessions(token,user_id) VALUES(?1,?2)",
                 params![session, id],
             )?;
+            referral::register(db, &id, now())?;
             id
         };
         Ok(Json(json!({"profile":private_profile(db,&id)?})))
@@ -819,10 +822,11 @@ async fn accept(
     let token = digest(&body.token);
     write(app, move |_, db| {
         let recipient = user_id(db, &session)?;
+        let time = now();
         let (owner, used) = db
             .query_row(
                 "SELECT owner,accepted_by FROM social_invites WHERE token=?1 AND expires_at>?2",
-                params![token, now()],
+                params![token, time],
                 |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?)),
             )
             .optional()?
@@ -859,6 +863,7 @@ async fn accept(
                 "UPDATE social_invites SET accepted_by=?1 WHERE token=?2",
                 params![recipient, token],
             )?;
+            referral::attribute(db, &owner, &recipient, time)?;
         }
         Ok(Json(json!({"friend":profile(db,&owner)?})))
     })
@@ -1093,7 +1098,10 @@ async fn get_duel(
         if !friends(db, &duel.a, &duel.b)? {
             return Err(missing("Duel indisponible."));
         }
-        Ok(Json(json!({"duel":duel_json(app,db,&duel,&user)?})))
+        Ok(Json(json!({
+            "duel":duel_json(app,db,&duel,&user)?,
+            "referral":referral::snapshot(db,&user)?,
+        })))
     })
     .await
 }
@@ -1314,7 +1322,17 @@ async fn play(
             db.execute(update, params![score, canonical, duel_id])?;
         }
         let duel = duel(db, &duel_id, &user)?;
-        Ok(Json(json!({"duel":duel_json(app,db,&duel,&user)?})))
+        if !previous.completed()
+            && duel.completed()
+            && duel.move_a.is_some()
+            && duel.move_b.is_some()
+        {
+            referral::complete(db, &duel.a, &duel.b, now())?;
+        }
+        Ok(Json(json!({
+            "duel":duel_json(app,db,&duel,&user)?,
+            "referral":referral::snapshot(db,&user)?,
+        })))
     })
     .await
 }
@@ -1409,6 +1427,7 @@ async fn me(State(app): State<Arc<Social>>, headers: HeaderMap) -> Api<Json<Valu
             "duels":duels,
             "ranking":ranking(db,profile(db,&user)?,&contacts)?,
             "google_client_id":social_google::client_id(),
+            "referral":referral::snapshot(db,&user)?,
         })))
     }).await
 }
@@ -1521,6 +1540,7 @@ fn attach_google(db: &Connection, session: &str, user: &str, sub: &str) -> Api<S
         EXISTS(SELECT 1 FROM social_friends WHERE a=?1 OR b=?1)
         OR EXISTS(SELECT 1 FROM social_duels WHERE a=?1 OR b=?1)
         OR EXISTS(SELECT 1 FROM social_tournament_scores WHERE user_id=?1)
+        OR EXISTS(SELECT 1 FROM social_referral_wallets WHERE user_id=?1)
         OR EXISTS(SELECT 1 FROM social_blocks WHERE owner=?1 OR other=?1)",
         [user],
         |row| row.get::<_, bool>(0),
@@ -1723,7 +1743,7 @@ mod tests {
         let placement_a = candidate(&english, puzzle, rack_a, rack_b);
         let placement_b = candidate(&english, puzzle, rack_b, rack_a);
         let duel_path = format!("duels/{id}/play");
-        en(
+        let played = en(
             Method::POST,
             &duel_path,
             &a,
@@ -1731,6 +1751,7 @@ mod tests {
             StatusCode::OK,
         )
         .await;
+        assert_eq!(played["referral"]["tickets_earned"], 0);
         let finished = en(
             Method::POST,
             &duel_path,
@@ -1741,6 +1762,22 @@ mod tests {
         .await;
         assert_eq!(finished["duel"]["status"], "finished");
         assert!(finished["duel"]["score"].as_i64().unwrap() > 0);
+        assert_eq!(
+            finished["referral"],
+            json!({"wallet_id":bob["profile"]["id"],"tickets_earned":1})
+        );
+        let credited = en(
+            Method::GET,
+            &format!("duels/{id}"),
+            &a,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(
+            credited["referral"],
+            json!({"wallet_id":alice["profile"]["id"],"tickets_earned":1})
+        );
         let mirror = en(
             Method::POST,
             &format!("duels/{id}/mirror"),
@@ -1756,6 +1793,7 @@ mod tests {
         en(Method::POST, &mirror_path, &a, placement_b, StatusCode::OK).await;
         let finished = en(Method::POST, &mirror_path, &b, placement_a, StatusCode::OK).await;
         assert_eq!(finished["duel"]["status"], "finished");
+        assert_eq!(finished["referral"]["tickets_earned"], 1);
         assert_eq!(
             finished["duel"]["score"],
             finished["duel"]["original_opponent_score"]
@@ -1944,6 +1982,10 @@ mod tests {
         }
         let bob = request(&base, Method::GET, "me", &b, Value::Null, StatusCode::OK).await;
         let id_b = bob["profile"]["id"].as_str().unwrap();
+        assert_eq!(
+            bob["referral"],
+            json!({"wallet_id":id_b,"tickets_earned":0})
+        );
         let invitation = request(
             &base,
             Method::POST,
@@ -2352,6 +2394,7 @@ mod tests {
         .await;
         assert_eq!(played["duel"]["status"], "waiting");
         assert_eq!(played["duel"]["score"], 15);
+        assert_eq!(played["referral"]["tickets_earned"], 0);
         assert!(played["duel"]["opponent_score"].is_null());
         request(&base, Method::POST, &submission, &a, simple, StatusCode::OK).await;
         request(
@@ -2371,7 +2414,7 @@ mod tests {
             Method::POST,
             &submission,
             &b,
-            reference,
+            reference.clone(),
             StatusCode::OK,
         )
         .await;
@@ -2379,7 +2422,18 @@ mod tests {
         assert_eq!(completed["duel"]["score"], 17);
         assert_eq!(completed["duel"]["opponent_score"], 15);
         assert_eq!(completed["duel"]["winner"], id_b);
+        assert_eq!(completed["referral"]["tickets_earned"], 1);
         assert_eq!(completed["duel"]["mirror_available"], false);
+        let repeated = request(
+            &base,
+            Method::POST,
+            &submission,
+            &b,
+            reference,
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(repeated["referral"], completed["referral"]);
         request(
             &base,
             Method::POST,
@@ -2390,6 +2444,10 @@ mod tests {
         )
         .await;
         let ranks = request(&base, Method::GET, "me", &a, Value::Null, StatusCode::OK).await;
+        assert_eq!(
+            ranks["referral"],
+            json!({"wallet_id":id_a,"tickets_earned":1})
+        );
         assert_eq!(ranks["ranking"][0]["wins"], 1);
         assert_eq!(ranks["ranking"][0]["id"], id_b);
         let path = format!("duels/{id}/rematch");

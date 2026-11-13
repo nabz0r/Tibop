@@ -1,10 +1,13 @@
 <resources>
-    <string name="rewarded_title">Défi bonus</string>
-    <string name="rewarded_details">Un plateau d’entraînement à jouer après une courte vidéo.</string>
+    <string name="rewarded_title">Un ticket bonus</string>
     <string name="rewarded_watch">Regarder la vidéo</string>
-    <string name="rewarded_play">Jouer le défi bonus</string>
     <string name="rewarded_loading">Préparation de la vidéo…</string>
     <string name="rewarded_unavailable">Vidéo indisponible. Vous pouvez continuer à jouer.</string>
     <string name="rewarded_privacy">Confidentialité publicitaire</string>
-    <string name="rewarded_confirm">La vidéo ouvre un défi d’entraînement. Il se joue à votre rythme.</string>
+    <string name="rewarded_confirm">Une vidéo terminée donne un ticket bonus, dans la limite d’un par jour.</string>
+    <string name="rewarded_ticket_earned">Un ticket bonus crédité.</string>
+    <string name="referral_ticket_earned">Récompense de parrainage créditée.</string>
+    <string name="referral_invite_info">Si tu débutes, terminez votre premier duel ensemble pour gagner chacun un ticket bonus.</string>
+    <string name="tournament_coins_earned">Coupe terminée · 75 pièces gagnées.</string>
+    <string name="daily_coins_earned">Défi du jour · 25 pièces gagnées.</string>
 </resources>

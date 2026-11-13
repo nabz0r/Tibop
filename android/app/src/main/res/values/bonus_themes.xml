@@ -1,0 +1,7 @@
+<resources>
+    <string name="bonus_indigo_theme">Nuit indigo</string>
+    <string name="bonus_poppy_theme">Coquelicot</string>
+    <string name="bonus_theme_cost">%1$d pièces du jeu</string>
+    <string name="bonus_theme_unlock">Débloquer</string>
+    <string name="bonus_theme_insufficient">Ce thème n’a pas pu être débloqué. Vérifie ton solde de pièces.</string>
+</resources>

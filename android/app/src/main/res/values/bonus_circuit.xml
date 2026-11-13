@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bonus_home_title">Circuit bonus</string>
+    <string name="bonus_home_detail">Trois nouveaux défis et des tickets à recharger.</string>
+    <string name="bonus_rules">Enchaîne trois défis Deux coups d’avance. Un ticket couvre tout le circuit. La première entrée est offerte.</string>
+    <string name="bonus_wallet">Mes tickets et pièces</string>
+    <string name="bonus_balance">Pièces %1$d · Tickets %2$d/%3$d · Bonus %4$d</string>
+    <string name="bonus_refill_full">Les tickets gratuits se rechargent toutes les 2 h.</string>
+    <string name="bonus_refill_hours">Prochain ticket dans %1$d h %2$02d</string>
+    <string name="bonus_refill_minutes">Prochain ticket dans %1$d min</string>
+    <string name="bonus_start_free">Jouer le premier circuit offert</string>
+    <string name="bonus_start_ticket">Jouer le circuit · 1 ticket</string>
+    <string name="bonus_resume">Reprendre le circuit</string>
+    <string name="bonus_exchange">Échanger %1$d pièces contre 1 ticket</string>
+    <string name="bonus_watch_video">Regarder une vidéo · +1 ticket</string>
+    <string name="bonus_video_unavailable">Vidéo indisponible dans cette version</string>
+    <string name="bonus_video_claimed">Ticket vidéo reçu pour aujourd’hui</string>
+    <string name="bonus_referral_copy">Parraine un nouvel ami. Après votre premier duel terminé, chacun reçoit un ticket bonus.</string>
+    <string name="bonus_invite">Inviter depuis Amis</string>
+    <string name="bonus_round">Défi %1$d sur 3</string>
+    <string name="bonus_round_score">%1$d · %2$s · %3$d pts</string>
+    <string name="bonus_in_progress">Circuit en cours · défi %1$d</string>
+    <string name="bonus_complete">Circuit terminé · %1$d pts</string>
+    <string name="bonus_next_round">Défi suivant</string>
+    <string name="bonus_see_results">Voir le résultat du circuit</string>
+    <string name="bonus_unavailable">Le lexique intégré ne permet pas de jouer ces trois positions.</string>
+    <string name="bonus_save_error">Impossible d’enregistrer la progression. Réessaie.</string>
+    <string name="bonus_start_error">Le circuit n’a pas pu démarrer. Vérifie tes tickets et réessaie.</string>
+</resources>

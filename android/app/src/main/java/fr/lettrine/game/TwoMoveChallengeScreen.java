@@ -9,9 +9,15 @@ import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 
 final class TwoMoveChallengeScreen {
     private final ViewKit ui;
@@ -19,15 +25,31 @@ final class TwoMoveChallengeScreen {
     private final LinearLayout panel;
     private final List<TwoMoveChallenge.Puzzle> catalog;
     private final SharedPreferences progress;
+    private final Consumer<String> baseCompletion;
+    private final CircuitPlay circuit;
     private PuzzlePanel active;
 
-    TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon) {
+    record CircuitPlay(String savedDraft, IntPredicate complete, Consumer<String> saveDraft,
+                       Runnable next, boolean lastRound) {}
+
+    TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, Consumer<String> baseCompletion) {
+        this(ui, lexicon, null, baseCompletion);
+        showCatalog();
+    }
+
+    TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, TwoMoveChallenge.Puzzle puzzle, CircuitPlay circuit) {
+        this(ui, lexicon, circuit, null);
+        open(puzzle);
+    }
+
+    private TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, CircuitPlay circuit, Consumer<String> baseCompletion) {
         this.ui = ui;
         this.lexicon = lexicon;
+        this.baseCompletion = baseCompletion;
+        this.circuit = circuit;
         panel = ui.column();
-        catalog = TwoMoveChallenge.catalog(lexicon);
+        catalog = circuit == null ? TwoMoveChallenge.catalog(lexicon) : List.of();
         progress = ui.context.getSharedPreferences(lexicon.language.storageName("two_move_challenges"), Context.MODE_PRIVATE);
-        showCatalog();
     }
 
     View view() { return panel; }
@@ -35,6 +57,7 @@ final class TwoMoveChallengeScreen {
     boolean goBack() {
         if (active == null) return false;
         if (active.replay >= 0) active.leaveReplay();
+        else if (circuit != null) return false;
         else showCatalog();
         return true;
     }
@@ -107,6 +130,7 @@ final class TwoMoveChallengeScreen {
         private final TextView replayToggle;
         private final TextView replayStep;
         private final TextView retry;
+        private final TextView next;
         private final TextView nabText;
         private final LinearLayout rackRow;
         private final LinearLayout playRow;
@@ -175,7 +199,14 @@ final class TwoMoveChallengeScreen {
             layout.addView(replayToggle);
             retry = ui.textButton(label(R.string.two_move_retry), this::restart);
             layout.addView(retry);
-            layout.addView(ui.textButton(label(R.string.two_move_catalog), TwoMoveChallengeScreen.this::showCatalog));
+            next = circuit == null ? null : ui.button(label(circuit.lastRound()
+                    ? R.string.bonus_see_results : R.string.bonus_next_round), true, circuit.next());
+            if (next == null) {
+                layout.addView(ui.textButton(label(R.string.two_move_catalog), TwoMoveChallengeScreen.this::showCatalog));
+            } else {
+                layout.addView(next);
+                restoreDraft();
+            }
 
             buildRack();
             render(-1);
@@ -288,6 +319,7 @@ final class TwoMoveChallengeScreen {
             int index = stagedAt(square);
             if (index >= 0) {
                 selected = staged.remove(index).rackIndex();
+                saveDraft();
                 render(-1);
             } else if (selected >= 0) drop(square, selected);
         }
@@ -320,6 +352,7 @@ final class TwoMoveChallengeScreen {
             selected = -1;
             board.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
             ui.audio.tile();
+            saveDraft();
             render(square);
         }
 
@@ -331,12 +364,14 @@ final class TwoMoveChallengeScreen {
             FrenchGame.Tile tile = staged.get(index);
             staged.set(index, new FrenchGame.Tile(to, tile.rackIndex(), tile.letter(), tile.blank()));
             ui.audio.tile();
+            saveDraft();
             render(to);
         }
 
         private void clear() {
             staged.clear();
             selected = -1;
+            saveDraft();
             render(-1);
         }
 
@@ -344,18 +379,24 @@ final class TwoMoveChallengeScreen {
             if (!playing()) return;
             TwoMoveChallenge.Step step = TwoMoveChallenge.play(position, staged, lexicon);
             if (!step.preview().valid()) return;
+            if (first != null && circuit != null && !circuit.complete().test(step.after().totalScore())) {
+                Toast.makeText(ui.context, R.string.bonus_save_error, Toast.LENGTH_SHORT).show();
+                return;
+            }
             position = step.after();
             if (first == null) first = step;
             else {
                 second = step;
-                if (position.totalScore() > progress.getInt(puzzle.id(), -1)) {
+                if (circuit == null && position.totalScore() > progress.getInt(puzzle.id(), -1)) {
                     progress.edit().putInt(puzzle.id(), position.totalScore()).apply();
                 }
+                if (circuit == null) baseCompletion.accept(puzzle.id());
             }
             ui.audio.played();
             hintVisible = false;
             staged.clear();
             selected = -1;
+            if (second == null) saveDraft();
             buildRack();
             render(-1);
             if (second != null) scrollToStart();
@@ -368,6 +409,7 @@ final class TwoMoveChallengeScreen {
             staged.addAll(first.tiles());
             first = null;
             selected = -1;
+            saveDraft();
             buildRack();
             render(-1);
         }
@@ -384,6 +426,36 @@ final class TwoMoveChallengeScreen {
             render(-1);
             fitBoard();
             scrollToStart();
+        }
+
+        private void saveDraft() {
+            if (circuit == null) return;
+            JSONArray moves = new JSONArray();
+            moves.put(MatchCodec.tiles(first == null ? List.of() : first.tiles(), true));
+            moves.put(MatchCodec.tiles(staged, true));
+            circuit.saveDraft().accept(moves.toString());
+        }
+
+        private void restoreDraft() {
+            String saved = circuit.savedDraft();
+            if (saved == null || saved.isEmpty()) return;
+            try {
+                JSONArray moves = new JSONArray(saved);
+                List<FrenchGame.Tile> opening = MatchCodec.readTiles(moves.getJSONArray(0), true);
+                if (!opening.isEmpty()) {
+                    TwoMoveChallenge.Step played = TwoMoveChallenge.play(position, opening, lexicon);
+                    if (!played.preview().valid()) return;
+                    first = played;
+                    position = first.after();
+                }
+                for (FrenchGame.Tile tile : MatchCodec.readTiles(moves.getJSONArray(1), true)) {
+                    if (!canStage(tile.position(), tile.rackIndex())) continue;
+                    char rackLetter = position.rack().get(tile.rackIndex());
+                    if (tile.blank() ? rackLetter == FrenchGame.JOKER : rackLetter == tile.letter()) staged.add(tile);
+                }
+            } catch (JSONException | IllegalArgumentException ignored) {
+                // A saved draft is optional. The current circuit remains resumable.
+            }
         }
 
         private void toggleReplay() {
@@ -416,7 +488,8 @@ final class TwoMoveChallengeScreen {
             show(nabText, reviewing || showHint && hintVisible);
             show(replayStep, reviewing);
             show(replayToggle, reviewing || !playing || showHint && hintVisible);
-            show(retry, !playing && !reviewing);
+            show(retry, circuit == null && !playing && !reviewing);
+            if (next != null) show(next, !playing && !reviewing);
             hint.setText(hintVisible ? R.string.two_move_hint_hide : R.string.two_move_hint);
             replayToggle.setText(reviewing ? R.string.two_move_yours : R.string.two_move_replay);
             board.guide(showHint && hintVisible ? puzzle.hintPosition() : -1);
