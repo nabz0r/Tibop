@@ -462,9 +462,9 @@ Retrouvez vos fichiers de parties et téléchargez Lettrine pour Android.|Find y
 Télécharger des parties|Download games
 Utilisez le format CSV pour ouvrir les résultats dans un tableur.|Use CSV to open results in a spreadsheet.
 Lettrine pour Android|Lettrine for Android
-Version 0.10|Version 0.10
-Revanche miroir|Mirror rematch
-Après un duel à chevalets différents dans Amis, rejouez sur le même plateau avec le chevalet de l’autre.|After a Friends duel with different racks, play the same board with each other’s racks.
+Version 0.11|Version 0.11
+Duels et tournoi en ligne|Online duels and tournament
+Ouvrez le lien de la bêta Android pour rejoindre vos amis. Activez les notifications dans Amis pour être prévenu quand vous pouvez jouer.|Open the Android beta link to join your friends. Enable notifications in Friends to know when you can play.
 Terminez les trois défis d’un week-end pour débloquer ce fond de carte à partager. Retrouvez-le dans votre collection.|Finish all three challenges on a weekend to unlock this share-card background. Find it in your collection.
 Aperçu de Nocturne dorée, une carte bleu nuit avec des tuiles dorées|Preview of Nocturne dorée, a midnight-blue card with golden tiles
 APK Android|Android APK

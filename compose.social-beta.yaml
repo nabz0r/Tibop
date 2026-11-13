@@ -1,0 +1,37 @@
+name: lettrine-beta
+
+services:
+  social:
+    image: lettrine-social-beta:local
+    ports: !reset []
+    volumes: !override
+      - beta_social_data:/var/lib/lettrine
+    environment:
+      LETTRINE_GOOGLE_CLIENT_ID: ${LETTRINE_BETA_GOOGLE_CLIENT_ID:-}
+
+  beta_proxy:
+    image: nginx:alpine
+    depends_on:
+      social:
+        condition: service_healthy
+    volumes:
+      - ./infra/social-beta-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./web/beta:/usr/share/nginx/html/beta:ro
+    read_only: true
+    tmpfs: ["/var/cache/nginx", "/var/run"]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  beta_tunnel:
+    image: cloudflare/cloudflared:2026.11.0
+    network_mode: service:beta_proxy
+    command: ["tunnel", "--no-autoupdate", "--protocol", "http2", "--url", "http://127.0.0.1:8080"]
+    depends_on:
+      beta_proxy:
+        condition: service_started
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    restart: "no"
+
+volumes:
+  beta_social_data:

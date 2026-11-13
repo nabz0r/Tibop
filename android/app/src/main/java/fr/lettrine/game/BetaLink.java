@@ -1,0 +1,37 @@
+package fr.lettrine.game;
+
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+record BetaLink(String origin, String invitation) {
+    private static final String APP = "lettrine://beta/v1/?";
+    private static final Pattern TOKEN = Pattern.compile("[0-9a-f]{32}");
+    private static final Pattern PARAMETERS = Pattern.compile("origin=([^&]+)(?:&invite=([0-9a-f]{32}))?");
+
+    static BetaLink parse(String value) {
+        if (value == null || value.length() > 720) return null;
+        try {
+            if (value.startsWith(APP)) {
+                Matcher fields = PARAMETERS.matcher(value.substring(APP.length()));
+                if (!fields.matches()) return null;
+                return verified(URLDecoder.decode(fields.group(1), StandardCharsets.UTF_8.name()), fields.group(2));
+            }
+            URI uri = URI.create(value);
+            if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null || !"/beta".equals(uri.getRawPath())
+                    || uri.getRawQuery() != null) return null;
+            return verified("https://" + uri.getRawAuthority(), uri.getRawFragment());
+        } catch (IllegalArgumentException | java.io.UnsupportedEncodingException invalid) {
+            return null;
+        }
+    }
+
+    private static BetaLink verified(String address, String invitation) {
+        String origin = SocialClient.origin(address);
+        if (origin == null || !origin.startsWith("https://") || invitation != null
+                && !TOKEN.matcher(invitation).matches()) return null;
+        return new BetaLink(origin, invitation);
+    }
+}

@@ -51,6 +51,8 @@ Le port local se règle via `LETTRINE_PORT`. Les tests de santé confirment que 
 
 Le service social conserve les deux chevalets des nouveaux duels et valide le coup avec celui du joueur authentifié. Le miroir référence le duel d’origine, réutilise son plateau et inverse les chevalets. La réponse du tournoi indique si le compte a déjà terminé les trois manches d’un même week-end, ce qui permet de restaurer le fond de carte sur Android.
 
+La bêta en ligne tourne dans un projet Compose séparé avec son propre volume. Le proxy HTTPS publie la page de connexion et l’API sociale. Le point de lecture authentifié `GET /api/social/turns` renvoie les duels qui attendent le coup du compte. Android le vérifie via WorkManager et ouvre le duel au toucher de l’alerte. [Déploiement de la bêta](../infra/README.beta.md)
+
 Pour jouer depuis plusieurs appareils, `./tools/start.sh` utilise l’IPv4 locale du Mac. Le port de jeu se règle via `LETTRINE_LAN_PORT`. Avec `docker compose` directement, définir `LETTRINE_LAN_IP` sur l’adresse IPv4 locale à utiliser. Les joueurs ouvrent le lien d’invitation depuis ce réseau. Le navigateur récupère périodiquement l’état de la partie. Le serveur valide le tour et les mots, conserve le sac et calcule le score. Le lien identifie le salon. Un jeton individuel conservé par le navigateur donne accès à sa place et à ses lettres.
 
 Les places des bots sont réservées à la création de la table. Le serveur calcule leur coup avec le moteur de jeu, à partir du plateau, de leur propre chevalet et des informations publiques. Lorsqu’une partie est ouverte dans un navigateur, la consultation du salon fait avancer les tours des bots. La partie reprend au même tour après une fermeture de l’onglet ou un redémarrage.

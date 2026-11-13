@@ -14,6 +14,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 final class SocialPanel {
@@ -33,6 +34,9 @@ final class SocialPanel {
     private final Consumer<JSONObject> openDuel;
     private final Consumer<String> connectGoogle;
     private final Runnable openTournament;
+    private final Runnable openNotifications;
+    private final Consumer<BetaLink> openBeta;
+    private final Supplier<String> betaInviteBase;
     private final LinearLayout root;
     private final TextView notice;
     private final LinearLayout body;
@@ -43,13 +47,17 @@ final class SocialPanel {
     private boolean deleted;
 
     SocialPanel(ViewKit ui, SocialClient client, Consumer<JSONObject> openDuel, String invitation,
-                Consumer<String> connectGoogle, Runnable openTournament) {
+                Consumer<String> connectGoogle, Runnable openTournament, Runnable openNotifications,
+                Consumer<BetaLink> openBeta, Supplier<String> betaInviteBase) {
         this.ui = ui;
         this.client = client;
         this.openDuel = openDuel;
         this.invitation = invitation;
         this.connectGoogle = connectGoogle;
         this.openTournament = openTournament;
+        this.openNotifications = openNotifications;
+        this.openBeta = openBeta;
+        this.betaInviteBase = betaInviteBase;
 
         root = ui.column();
         notice = ui.body("");
@@ -57,6 +65,9 @@ final class SocialPanel {
         notice.setVisibility(View.GONE);
         root.addView(notice);
         root.addView(TournamentPanel.entry(ui, this.openTournament));
+        if (client.configured()) {
+            addAction(root, R.string.turn_notifications_title, false, this.openNotifications);
+        }
         ui.gap(root, 14);
         body = ui.column();
         root.addView(body);
@@ -267,7 +278,8 @@ final class SocialPanel {
                 showNotice(label(R.string.social_invalid_invite));
                 return;
             }
-            String message = label(R.string.social_share_invitation, WEB_INVITE + token);
+            String base = betaInviteBase.get();
+            String message = label(R.string.social_share_invitation, (base == null ? WEB_INVITE : base) + token);
             Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, message);
             try { ui.context.startActivity(Intent.createChooser(send, label(R.string.social_invite))); }
             catch (ActivityNotFoundException exception) { showNotice(label(R.string.social_share_error)); }
@@ -285,7 +297,14 @@ final class SocialPanel {
         AlertDialog dialog = new AlertDialog.Builder(ui.context).setTitle(R.string.social_enter_link).setView(entry)
                 .setNegativeButton(R.string.social_cancel, null).setPositiveButton(R.string.social_confirm, null).create();
         dialog.setOnShowListener(view -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button -> {
-            String token = invitationToken(input.getText().toString());
+            String value = input.getText().toString().strip();
+            BetaLink beta = BetaLink.parse(value);
+            if (beta != null) {
+                dialog.dismiss();
+                openBeta.accept(beta);
+                return;
+            }
+            String token = invitationToken(value);
             if (token == null) input.setError(label(R.string.social_invalid_invite));
             else {
                 dialog.dismiss();

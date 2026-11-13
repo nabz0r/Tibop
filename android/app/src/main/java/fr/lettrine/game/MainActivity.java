@@ -66,6 +66,7 @@ public final class MainActivity extends Activity {
     private static final int EXPORT_FILE = 43;
     private static final int APP_SETTINGS = 44;
     private static final int PROFILE_PHOTO = 45;
+    private static final int TURN_PERMISSION = 46;
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
 
     private enum Screen { HOME, GAMES, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW, PRACTICE,
@@ -87,6 +88,7 @@ public final class MainActivity extends Activity {
     private SocialClient socialClient;
     private CancellationSignal googleSignIn;
     private String pendingSocialInvite;
+    private Object pendingTurnNavigation;
     private Lexicon lexicon;
     private FrenchGame game;
     private MatchCodec.State guestState;
@@ -160,7 +162,7 @@ public final class MainActivity extends Activity {
             toast("Une sauvegarde locale n’a pas pu être lue.");
         }
         showHome();
-        receiveChallenge(getIntent());
+        receiveNavigation(getIntent());
         rewarded.refreshConsent(this::refreshRewardSettings);
         worker.submit(() -> {
             try {
@@ -204,7 +206,55 @@ public final class MainActivity extends Activity {
 
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        receiveNavigation(intent);
+    }
+
+    private void receiveNavigation(Intent intent) {
+        pendingTurnNavigation = null;
+        String notified = TurnNotifications.takeDuel(this, intent, socialBaseUrl());
+        if (notified != null) {
+            if (screen == Screen.GAME && !persist()) return;
+            Object navigation = new Object();
+            pendingTurnNavigation = navigation;
+            socialClient.notifiedDuel(notified, (result, error) -> {
+                if (isDestroyed() || pendingTurnNavigation != navigation) return;
+                pendingTurnNavigation = null;
+                JSONObject duel = result == null ? null : result.optJSONObject("duel");
+                if (duel == null || !notified.equals(duel.optString("id"))) {
+                    toast(error == null ? getString(R.string.turn_notification_unavailable) : error);
+                    return;
+                }
+                if (lexicon == null && lexiconError == null) {
+                    showHome();
+                    pendingChallenge = () -> showSocialDuel(duel);
+                } else showSocialDuel(duel);
+            });
+            return;
+        }
+        if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())
+                && intent.getData() != null && "beta".equals(intent.getData().getHost())
+                && "lettrine".equals(intent.getData().getScheme())) {
+            confirmBeta(BetaLink.parse(intent.getDataString()));
+            return;
+        }
         receiveChallenge(intent);
+    }
+
+    private void confirmBeta(BetaLink link) {
+        if (link == null) {
+            toast(getString(R.string.social_beta_invalid));
+            return;
+        }
+        dialog(getString(R.string.social_beta_title), getString(R.string.social_beta_confirm, link.origin()))
+                .setNegativeButton(R.string.social_cancel, null)
+                .setPositiveButton(R.string.social_beta_connect, (ignored, action) -> {
+                    if (screen == Screen.GAME && !persist()) return;
+                    preferences.edit().putString("social_endpoint", link.origin())
+                            .putString("social_beta_origin", link.origin()).apply();
+                    pendingSocialInvite = link.invitation();
+                    refreshTurnNotifications();
+                    showSocial();
+                }).show();
     }
 
     private void receiveChallenge(Intent intent) {
@@ -249,6 +299,7 @@ public final class MainActivity extends Activity {
         super.onResume();
         audio.foreground(true);
         refreshDailyHome();
+        refreshTurnNotifications();
     }
 
     @Override protected void onPause() {
@@ -318,6 +369,7 @@ public final class MainActivity extends Activity {
     private void page(Screen next, boolean navigation) {
         if (explanationDialog != null) explanationDialog.dismiss();
         cancelReview();
+        if (next != Screen.HOME || screen != Screen.HOME) pendingTurnNavigation = null;
         if (next != Screen.HOME) pendingChallenge = null;
         if (next != Screen.PROFILE) profilePanel = null;
         if (next != Screen.SOCIAL && googleSignIn != null) {
@@ -1463,6 +1515,13 @@ public final class MainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(request, permissions, results);
+        if (request == TURN_PERMISSION) {
+            boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
+            TurnNotifications.setEnabled(this, granted);
+            refreshTurnNotifications();
+            if (screen == Screen.SETTINGS) showSettings();
+            return;
+        }
         if (request != BLUETOOTH_PERMISSION) return;
         if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
             preferences.edit().remove("bluetooth_permission_requested").apply();
@@ -1642,6 +1701,10 @@ public final class MainActivity extends Activity {
         }
         content.addView(ui.option("↗", getString(R.string.social_navigation_endpoint),
                 socialBaseUrl().isEmpty() ? "" : Uri.parse(socialBaseUrl()).getHost(), this::editSocialEndpoint));
+        ui.gap(content, 8);
+        content.addView(ui.option("◌", getString(R.string.turn_notifications_title),
+                getString(TurnNotifications.enabled(this) && TurnNotifications.available(this)
+                        ? R.string.turn_notifications_on : R.string.turn_notifications_off), this::editTurnNotifications));
         ui.gap(content, 18);
         content.addView(ui.micro("APPARENCE", ui.palette.accent()));
         ui.gap(content, 8);
@@ -1662,6 +1725,54 @@ public final class MainActivity extends Activity {
                     (notice == null || notice.trim().isEmpty() ? "Lexique intégré au moment de la compilation." : notice)
                             + "\n\nEmpreinte SHA-256 : " + lexicon.hash).setPositiveButton("Fermer", null).show()));
         }
+    }
+
+    private void editTurnNotifications() {
+        boolean enabled = TurnNotifications.enabled(this);
+        String detail = getString(R.string.turn_notifications_detail);
+        if (enabled && !TurnNotifications.available(this)) {
+            new AlertDialog.Builder(this).setTitle(R.string.turn_notifications_title)
+                    .setMessage(R.string.turn_notifications_system)
+                    .setNegativeButton(R.string.turn_notifications_disable, (dialog, which) -> setTurnNotifications(false))
+                    .setPositiveButton(R.string.turn_notifications_open_settings, (dialog, which) -> openNotificationSettings())
+                    .show();
+            return;
+        }
+        dialog(getString(R.string.turn_notifications_title), detail)
+                .setNegativeButton(R.string.social_cancel, null)
+                .setPositiveButton(enabled ? R.string.turn_notifications_disable : R.string.turn_notifications_enable,
+                        (dialog, which) -> {
+                            if (enabled) setTurnNotifications(false);
+                            else if (Build.VERSION.SDK_INT >= 33
+                                    && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                                    != PackageManager.PERMISSION_GRANTED) {
+                                if (preferences.getBoolean("turn_permission_requested", false)
+                                        && !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+                                    openNotificationSettings();
+                                    return;
+                                }
+                                preferences.edit().putBoolean("turn_permission_requested", true).apply();
+                                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, TURN_PERMISSION);
+                            } else if (!TurnNotifications.available(this)) {
+                                setTurnNotifications(true);
+                                openNotificationSettings();
+                            } else setTurnNotifications(true);
+                        }).show();
+    }
+
+    private void openNotificationSettings() {
+        startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()));
+    }
+
+    private void setTurnNotifications(boolean enabled) {
+        TurnNotifications.setEnabled(this, enabled);
+        refreshTurnNotifications();
+        if (screen == Screen.SETTINGS) showSettings();
+    }
+
+    private void refreshTurnNotifications() {
+        TurnNotifications.refresh(this, socialBaseUrl());
     }
 
     private Switch soundSwitch(int label, String key) {
@@ -1770,6 +1881,7 @@ public final class MainActivity extends Activity {
         CancellationSignal request = googleSignIn;
         googleSignIn = null;
         if (request != null) request.cancel();
+        refreshTurnNotifications();
         if (screen == Screen.SOCIAL || pendingSocialInvite != null) showSocial();
         else showSettings();
     }
@@ -1781,7 +1893,7 @@ public final class MainActivity extends Activity {
         String invite = pendingSocialInvite;
         if (socialClient.configured()) pendingSocialInvite = null;
         content.addView(new SocialPanel(ui, socialClient, this::showSocialDuel, invite, this::connectGoogle,
-                this::showTournament).view());
+                this::showTournament, this::editTurnNotifications, this::confirmBeta, this::betaInviteBase).view());
     }
 
     private void showTournament() {
@@ -1799,11 +1911,19 @@ public final class MainActivity extends Activity {
 
     private void showSocialDuel(JSONObject duel) {
         if (!ready()) return;
+        TurnNotifications.dismiss(this, duel.optString("id"));
         page(Screen.SOCIAL_DUEL, false);
         top("Lettrine", this::showSocial, null);
         heading(getString(SocialDuelPanel.isMirror(duel) ? R.string.social_mirror_title
                 : R.string.social_navigation_duel), "");
         content.addView(new SocialDuelPanel(ui, socialClient, duel, lexicon, this::showSocial).view());
+    }
+
+    private String betaInviteBase() {
+        String origin = SocialClient.origin(socialBaseUrl());
+        if (origin == null) return null;
+        return origin.equals(preferences.getString("social_beta_origin", ""))
+                || origin.equals(SocialClient.origin(BuildConfig.SOCIAL_BASE_URL)) ? origin + "/beta#" : null;
     }
 
     private void connectGoogle(String clientId) {

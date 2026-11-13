@@ -49,7 +49,7 @@ final class SocialClient {
 
     static boolean validBase(String value) { return origin(value) != null; }
 
-    private static String origin(String value) {
+    static String origin(String value) {
         if (value == null || value.isBlank()) return null;
         try {
             URI uri = URI.create(value.trim());
@@ -121,6 +121,10 @@ final class SocialClient {
         request("GET", "/duels/" + segment(duel), null, callback);
     }
 
+    void notifiedDuel(String duel, Callback callback) {
+        request("GET", "/duels/" + segment(duel), null, callback, false);
+    }
+
     void play(String duel, List<FrenchGame.Tile> tiles, Callback callback) {
         request("POST", "/duels/" + segment(duel) + "/play", placement(tiles), callback);
     }
@@ -155,6 +159,10 @@ final class SocialClient {
     void close() { worker.shutdownNow(); }
 
     private void request(String method, String path, JSONObject body, Callback callback) {
+        request(method, path, body, callback, true);
+    }
+
+    private void request(String method, String path, JSONObject body, Callback callback, boolean createSession) {
         String origin = origin(base.get());
         if (origin == null) {
             callback.onResult(null, context.getString(R.string.social_not_configured));
@@ -163,7 +171,11 @@ final class SocialClient {
         String name = nickname.get();
         worker.execute(() -> {
             try {
-                String token = session(origin, name);
+                String token = createSession ? session(origin, name) : existingSession(origin);
+                if (token == null) {
+                    deliver(origin, callback, null, context.getString(R.string.turn_notification_unavailable), false);
+                    return;
+                }
                 JSONObject result;
                 try {
                     result = exchange(origin, method, path, body, token);
@@ -176,21 +188,29 @@ final class SocialClient {
                 if (method.equals("DELETE") && path.equals("/profile")) {
                     preferences.edit().remove("token:" + origin).remove("ready:" + origin).apply();
                 }
-                deliver(origin, callback, result, null);
+                deliver(origin, callback, result, null, path.equals("/google"));
             } catch (ApiError exception) {
-                deliver(origin, callback, null, exception.getMessage());
+                deliver(origin, callback, null, exception.getMessage(), false);
             } catch (IOException | JSONException exception) {
-                deliver(origin, callback, null, context.getString(R.string.social_network_error));
+                deliver(origin, callback, null, context.getString(R.string.social_network_error), false);
             }
         });
     }
 
-    private void deliver(String origin, Callback callback, JSONObject result, String error) {
+    private void deliver(String origin, Callback callback, JSONObject result, String error, boolean accountChanged) {
         main.post(() -> {
             if (worker.isShutdown()) return;
-            if (origin.equals(origin(base.get()))) callback.onResult(result, error);
-            else callback.onResult(null, context.getString(R.string.social_endpoint_changed));
+            if (origin.equals(origin(base.get()))) {
+                if (accountChanged) TurnNotifications.accountChanged(context);
+                callback.onResult(result, error);
+                if (error == null && origin.equals(origin(base.get()))) TurnNotifications.refresh(context, origin);
+            } else callback.onResult(null, context.getString(R.string.social_endpoint_changed));
         });
+    }
+
+    private String existingSession(String origin) {
+        if (!preferences.getBoolean("ready:" + origin, false)) return null;
+        return preferences.getString("token:" + origin, null);
     }
 
     private String session(String origin, String name) throws IOException, JSONException, ApiError {

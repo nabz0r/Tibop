@@ -300,6 +300,7 @@ fn router(app: Arc<Social>) -> Router {
         .route("/health", get(|| async { "ok" }))
         .route("/api/social/session", post(session))
         .route("/api/social/me", get(me))
+        .route("/api/social/turns", get(turns))
         .route(
             "/api/social/profile",
             post(save_profile).delete(delete_profile),
@@ -328,15 +329,25 @@ async fn write<T: Send + 'static>(
     app: Arc<Social>,
     f: impl FnOnce(&Social, &Transaction<'_>) -> Api<T> + Send + 'static,
 ) -> Api<T> {
+    with_db(app, move |app, db| {
+        let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+        let output = f(app, &tx)?;
+        tx.commit()?;
+        Ok(output)
+    })
+    .await
+}
+
+async fn with_db<T: Send + 'static>(
+    app: Arc<Social>,
+    f: impl FnOnce(&Social, &mut Connection) -> Api<T> + Send + 'static,
+) -> Api<T> {
     tokio::task::spawn_blocking(move || {
         let mut db = app
             .db
             .lock()
             .map_err(|_| err(StatusCode::SERVICE_UNAVAILABLE, "Stockage indisponible."))?;
-        let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
-        let output = f(&app, &tx)?;
-        tx.commit()?;
-        Ok(output)
+        f(&app, &mut db)
     })
     .await
     .map_err(|_| err(StatusCode::SERVICE_UNAVAILABLE, "Stockage indisponible."))?
@@ -927,6 +938,61 @@ async fn get_duel(
     .await
 }
 
+#[derive(Debug, PartialEq, Serialize)]
+struct PendingTurn {
+    id: String,
+    opponent: String,
+    kind: &'static str,
+    created_at: i64,
+}
+
+fn pending_turns(db: &Connection, user: &str) -> Api<Vec<PendingTurn>> {
+    // At most one active duel per pair. Start from the user's bounded friend list
+    // so polling does not scan their archived games.
+    let mut statement = db.prepare_cached(
+        "WITH contacts AS (
+            SELECT a,b,b AS opponent FROM social_friends WHERE a=?1
+            UNION ALL
+            SELECT a,b,a AS opponent FROM social_friends WHERE b=?1
+        )
+        SELECT d.id,u.nickname,deals.mirror_of IS NOT NULL,d.created_at
+        FROM contacts f
+        JOIN social_duels d INDEXED BY social_active_duel ON d.a=f.a AND d.b=f.b
+        JOIN social_users u ON u.id=f.opponent
+        LEFT JOIN social_duel_deals deals ON deals.duel_id=d.id
+        WHERE (d.score_a IS NULL OR d.score_b IS NULL)
+          AND CASE WHEN d.a=?1 THEN d.score_a ELSE d.score_b END IS NULL
+        ORDER BY d.created_at DESC,d.id",
+    )?;
+    let rows = statement.query_map([user], |row| {
+        Ok(PendingTurn {
+            id: row.get(0)?,
+            opponent: row.get(1)?,
+            kind: if row.get::<_, bool>(2)? {
+                "mirror"
+            } else {
+                "classic"
+            },
+            created_at: row.get(3)?,
+        })
+    })?;
+    Ok(rows.collect::<rusqlite::Result<_>>()?)
+}
+
+async fn turns(State(app): State<Arc<Social>>, headers: HeaderMap) -> Api<Response> {
+    let session = auth(headers)?;
+    let turns = with_db(app, move |_, db| {
+        let user = user_id(db, &session)?;
+        pending_turns(db, &user)
+    })
+    .await?;
+    Ok((
+        [(header::CACHE_CONTROL, "private, no-store")],
+        Json(json!({"turns":turns})),
+    )
+        .into_response())
+}
+
 async fn rematch(
     State(app): State<Arc<Social>>,
     headers: HeaderMap,
@@ -1358,6 +1424,27 @@ mod tests {
         body
     }
 
+    async fn turn_feed(base: &str, token: &str) -> Value {
+        let response = reqwest::Client::new()
+            .get(format!("{base}/api/social/turns"))
+            .bearer_auth(token)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers()[header::CACHE_CONTROL],
+            "private, no-store"
+        );
+        response.json().await.unwrap()
+    }
+
+    fn expected_turn(id: &str, opponent: &str, kind: &str, feed: &Value) -> Value {
+        let created_at = feed["turns"][0]["created_at"].as_i64().unwrap();
+        assert!(created_at > 0 && created_at <= now());
+        json!({"turns":[{"id":id,"opponent":opponent,"kind":kind,"created_at":created_at}]})
+    }
+
     fn candidate(app: &Social, puzzle: &Puzzle, rack: &str, other: &str) -> Value {
         let rack_codes = rack
             .chars()
@@ -1458,6 +1545,26 @@ mod tests {
         let a = "a".repeat(64);
         let b = "b".repeat(64);
         let c = "c".repeat(64);
+        for token in ["", "invalid", &a] {
+            request(
+                &base,
+                Method::GET,
+                "turns",
+                token,
+                Value::Null,
+                StatusCode::UNAUTHORIZED,
+            )
+            .await;
+        }
+        assert_eq!(
+            app.db
+                .lock()
+                .unwrap()
+                .query_row("SELECT count(*) FROM social_sessions", [], |row| row
+                    .get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
         for (token, name) in [(&a, "Alice"), (&b, "Benoît"), (&c, "Clara")] {
             request(
                 &base,
@@ -1501,6 +1608,22 @@ mod tests {
         let response: Value = response.json().await.unwrap();
         let a_classic = &response["duel"];
         let id = a_classic["id"].as_str().unwrap();
+        let empty = json!({"turns":[]});
+        let classic_a_turn = turn_feed(&base, &a).await;
+        let classic_b_turn = turn_feed(&base, &b).await;
+        assert_eq!(
+            classic_a_turn,
+            expected_turn(id, "Benoît", "classic", &classic_a_turn)
+        );
+        assert_eq!(
+            classic_b_turn,
+            expected_turn(id, "Alice", "classic", &classic_b_turn)
+        );
+        assert_eq!(
+            classic_a_turn["turns"][0]["created_at"],
+            classic_b_turn["turns"][0]["created_at"]
+        );
+        assert_eq!(turn_feed(&base, &c).await, empty);
         let classic_path = format!("duels/{id}");
         let classic_play = format!("{classic_path}/play");
         let mirror_path = format!("{classic_path}/mirror");
@@ -1572,6 +1695,8 @@ mod tests {
         .await;
         assert_eq!(first["duel"]["status"], "waiting");
         assert!(first["duel"]["opponent_score"].is_null());
+        assert_eq!(turn_feed(&base, &a).await, empty);
+        assert_eq!(turn_feed(&base, &b).await, classic_b_turn);
         let finished = request(
             &base,
             Method::POST,
@@ -1582,6 +1707,7 @@ mod tests {
         )
         .await;
         assert_eq!(finished["duel"]["mirror_available"], true);
+        assert_eq!(turn_feed(&base, &b).await, empty);
         let (a_mirror, b_mirror) = tokio::join!(
             request(
                 &base,
@@ -1601,6 +1727,16 @@ mod tests {
             ),
         );
         let id_m = a_mirror["duel"]["id"].as_str().unwrap();
+        let mirror_a_turn = turn_feed(&base, &a).await;
+        let mirror_b_turn = turn_feed(&base, &b).await;
+        assert_eq!(
+            mirror_a_turn,
+            expected_turn(id_m, "Benoît", "mirror", &mirror_a_turn)
+        );
+        assert_eq!(
+            mirror_b_turn,
+            expected_turn(id_m, "Alice", "mirror", &mirror_b_turn)
+        );
         assert_eq!(a_mirror["duel"]["id"], b_mirror["duel"]["id"]);
         assert_ne!(id, id_m);
         assert_eq!(a_mirror["duel"]["kind"], "mirror");
@@ -1640,6 +1776,8 @@ mod tests {
         }
         let replayed = request(&base, Method::POST, &m_play, &a, move_b, StatusCode::OK).await;
         assert_eq!(replayed["duel"]["score"], finished["duel"]["score"]);
+        assert_eq!(turn_feed(&base, &a).await, empty);
+        assert_eq!(turn_feed(&base, &b).await, mirror_b_turn);
         let complete = request(&base, Method::POST, &m_play, &b, move_a, StatusCode::OK).await;
         assert_eq!(complete["duel"]["score"], first["duel"]["score"]);
         assert_eq!(complete["duel"]["mirror_available"], false);
@@ -1663,6 +1801,13 @@ mod tests {
         .await;
         assert_eq!(regular["duel"]["kind"], "classic");
         assert_ne!(regular["duel"]["date"], a_classic["date"]);
+        assert_eq!(
+            turn_feed(&base, &b).await["turns"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
         request(
             &base,
             Method::POST,
@@ -1672,6 +1817,8 @@ mod tests {
             StatusCode::OK,
         )
         .await;
+        assert_eq!(turn_feed(&base, &a).await, empty);
+        assert_eq!(turn_feed(&base, &b).await, empty);
         request(
             &base,
             Method::GET,
@@ -1977,6 +2124,16 @@ mod tests {
             assert!(bob["opponent_score"].is_null());
             assert_eq!(bob["mirror_available"], false);
             assert!(active_duel(&db, a, b).unwrap().is_some());
+            assert!(pending_turns(&db, a).unwrap().is_empty());
+            assert_eq!(
+                pending_turns(&db, b).unwrap(),
+                vec![PendingTurn {
+                    id: "legacy".into(),
+                    opponent: "Alice".into(),
+                    kind: "classic",
+                    created_at: 1,
+                }]
+            );
         }
         std::fs::remove_file(&path).unwrap();
     }
