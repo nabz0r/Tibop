@@ -2,6 +2,22 @@
 
 Les nouvelles parties classiques françaises utilisent le lexique filtré et les poids Maître de référence. Les campagnes historiques indiquent le lexique utilisé. [Empreintes et filtres](../data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android)
 
+## Vérification de Tibop 0.17.0
+
+Les 94 tests unitaires Android passent. Lint se termine avec 0 erreur et 41 avertissements. Les tests du parcours jouent les douze niveaux et les trois finales de chaque langue avec les lexiques embarqués. Ils vérifient les objectifs, l’ouverture du niveau suivant et les trois agrandissements de l’atelier. Un coup valide qui manque l’objectif ne débloque pas le niveau suivant. La validation de la sauvegarde couvre les clés de progression et de brouillon des douze niveaux en français et en anglais.
+
+Sur la première version candidate signée, les douze niveaux ont été terminés dans l’interface Android en français et en anglais. Le parcours a aussi vérifié une égalité avec NAB suivie d’un nouvel essai, la reprise après arrêt forcé et l’apparition des trois aménagements à mesure des victoires.
+
+Sur l’émulateur Android 8, la mise à jour depuis l’APK public 0.16.7 a conservé une partie classique et son brouillon. Les quatre premiers niveaux ont été terminés et la table de jeu éclairée est apparue dans l’atelier. Sur l’émulateur Android 16, les niveaux français 5 et 8 ont été rejoués et le sélecteur compact du joker a permis de jouer NESTS au niveau anglais 6. Après effacement des données locales de test, l’import ZIP a restauré les douze niveaux anglais terminés et l’atelier aménagé.
+
+Un essai automatisé a tiré des coups parmi les placements proposés par le moteur, avec 60 tentatives par niveau et par langue. En français, 719 des 720 tentatives sont allées au bout et 526 ont atteint leur objectif. L’autre tentative s’est arrêtée faute de second placement. En anglais, les 720 tentatives sont allées au bout et 565 ont atteint leur objectif. Le contrôle a comparé les scores de 1 919 placements à un calcul séparé par tour et vérifié que 1 800 placements invalides laissaient la position intacte. Ces résultats décrivent le comportement du moteur avec des coups tirés au hasard. La difficulté pour de nouveaux joueurs reste à mesurer sur téléphone.
+
+Le contrôle de la partie classique a terminé 180 parties locales à deux, trois et quatre joueurs en français et en anglais. Les scores et la reprise des 6 057 tours ont été vérifiés. Le moteur a rejeté 6 284 actions volontairement invalides.
+
+```sh
+./tools/android_gameplay/run-multiplayer.py 30 2026111417 6
+```
+
 ## Vérification de Tibop 0.16.7
 
 Les 89 tests unitaires Android passent. Sur une position construite pour le test, le moteur refuse `OK` avec le lexique de base, accepte la pose avec `OK` ajouté à la liste d’entraînement, et NAB peut choisir ce coup. Les tests couvrent aussi la normalisation, l’empreinte des listes d’entraînement, les conditions de déblocage des apparences et la prise en charge du chevalet dans la sauvegarde de la Collection. Lint se termine avec 0 erreur et 40 avertissements.

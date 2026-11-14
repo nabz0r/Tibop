@@ -27,7 +27,7 @@ final class TwoMoveChallenge {
 
     record BonusSet(String id, List<Puzzle> puzzles) {}
 
-    private record Line(String word, int start, int direction) {}
+    record Line(String word, int start, int direction) {}
 
     private record Design(String id, String title, String objective, String hint, String explanation,
                           String letters, List<Line> seeds, Line first, Line second) {}
@@ -287,14 +287,19 @@ final class TwoMoveChallenge {
     }
 
     static Step play(Position position, List<FrenchGame.Tile> tiles, Lexicon lexicon) {
+        return play(position, tiles, lexicon, TURN_LIMIT);
+    }
+
+    static Step play(Position position, List<FrenchGame.Tile> tiles, Lexicon lexicon, int turnLimit) {
         List<FrenchGame.Tile> placed = List.copyOf(tiles);
-        if (position.moves() == TURN_LIMIT) {
+        if (position.moves() >= turnLimit) {
             return new Step(position, placed, FrenchGame.Preview.invalid(
                     lexicon.language == GameLanguage.ENGLISH ? "Both moves have already been played." : "Les deux coups sont déjà joués."), position);
         }
         FrenchGame.Preview preview = FrenchGame.preview(position.board, position.blanks, position.rack,
                 lexicon, placed);
-        if (preview.valid() && position.moves() == 0 && placed.size() == position.rack.size()) {
+        if (preview.valid() && turnLimit == TURN_LIMIT && position.moves() == 0
+                && placed.size() == position.rack.size()) {
             preview = FrenchGame.Preview.invalid(lexicon.language == GameLanguage.ENGLISH
                     ? "Keep at least one tile for the second move." : "Garde au moins une lettre pour le deuxième coup.");
         }
@@ -322,10 +327,10 @@ final class TwoMoveChallenge {
                 && !Bot.scoreCandidates(position.board, position.blanks, position.rack, lexicon).isEmpty();
     }
 
-    private static Puzzle prepare(Design design, Lexicon lexicon) {
+    static Position initial(List<Line> seeds, String letters, Lexicon lexicon) {
         char[] board = new char[FrenchGame.CELLS];
         boolean[] blanks = new boolean[FrenchGame.CELLS];
-        for (Line line : design.seeds) {
+        for (Line line : seeds) {
             List<Character> seedRack = new ArrayList<>(FrenchGame.RACK_SIZE);
             for (int i = 0; i < line.word.length(); i++) {
                 int position = FrenchGame.step(line.start, line.direction, i);
@@ -338,8 +343,13 @@ final class TwoMoveChallenge {
         }
 
         List<Character> rack = new ArrayList<>(FrenchGame.RACK_SIZE);
-        for (int i = 0; i < design.letters.length(); i++) rack.add(design.letters.charAt(i));
-        Position initial = new Position(board, blanks, rack, List.of());
+        for (int i = 0; i < letters.length(); i++) rack.add(letters.charAt(i));
+        return new Position(board, blanks, rack, List.of());
+    }
+
+    private static Puzzle prepare(Design design, Lexicon lexicon) {
+        Position initial = initial(design.seeds, design.letters, lexicon);
+        if (initial == null) return null;
         Step first = play(initial, placement(design.first, initial.board, initial.rack), lexicon);
         if (!first.preview.valid()) return null;
         Step second = play(first.after, placement(design.second, first.after.board, first.after.rack), lexicon);
@@ -348,7 +358,7 @@ final class TwoMoveChallenge {
                 first.tiles.get(0).position(), initial, List.of(first, second));
     }
 
-    private static List<FrenchGame.Tile> placement(Line line, char[] board, List<Character> rack) {
+    static List<FrenchGame.Tile> placement(Line line, char[] board, List<Character> rack) {
         boolean[] used = new boolean[rack.size()];
         List<FrenchGame.Tile> tiles = new ArrayList<>();
         for (int i = 0; i < line.word.length(); i++) {
@@ -369,9 +379,9 @@ final class TwoMoveChallenge {
         return tiles;
     }
 
-    private static Line across(String word, String cell) { return line(word, cell, 1); }
+    static Line across(String word, String cell) { return line(word, cell, 1); }
 
-    private static Line down(String word, String cell) { return line(word, cell, FrenchGame.SIZE); }
+    static Line down(String word, String cell) { return line(word, cell, FrenchGame.SIZE); }
 
     private static Line line(String word, String cell, int direction) {
         int row = Integer.parseInt(cell.substring(1)) - 1;

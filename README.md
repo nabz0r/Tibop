@@ -4,10 +4,10 @@
 
 <h1 align="center">Tibop</h1>
 
-<p align="center">Affrontez NAB, le Maine Coon, dans un jeu de lettres classique pour Android. Jouez en français ou en anglais et revenez sur vos meilleurs coups.</p>
+<p align="center">Relevez douze défis de lettres, transformez l’atelier de NAB et affrontez le Maine Coon dans des parties classiques sur Android. Jouez en français ou en anglais, même hors ligne.</p>
 
 <p align="center">
-  <strong><a href="https://github.com/nabz0r/Tibop/releases/download/v0.16.7/Tibop-0.16.7.apk">Télécharger Tibop 0.16.7</a></strong> ·
+  <strong><a href="https://github.com/nabz0r/Tibop/releases/download/v0.17.0/Tibop-0.17.0.apk">Télécharger Tibop 0.17.0</a></strong> ·
   <a href="https://nabz0r.github.io/Tibop/">Page de la bêta</a> ·
   <a href="android/README.md">Guide Android</a> ·
   <a href="#tibop-studio">Studio sur Mac</a>
@@ -18,14 +18,22 @@
 </p>
 
 <p align="center">
-  <a href="docs/media/tibop-android.webp"><img src="docs/media/tibop-android.webp" width="760" alt="Tibop 0.16.7 avec l’accueil, la Collection, les skins en partie et le résultat du défi du jour"></a>
+  <a href="docs/media/tibop-atelier.webp"><img src="docs/media/tibop-atelier.webp" width="870" alt="La carte des douze niveaux, un croisement joué et l’atelier transformé en galerie des trophées dans Tibop 0.17.0"></a>
 </p>
 
 ## Aperçus Android
 
-Captures et animations enregistrées dans Tibop **0.16.7**.
+### L’atelier de NAB
 
-### Partie solo avec des skins
+Captures prises dans Tibop **0.17.0**. Aux niveaux 4, 8 et 12, dépassez le score de NAB pour éclairer la table de jeu, aménager la bibliothèque, puis ouvrir la galerie des trophées.
+
+[Carte des douze niveaux](docs/media/tibop-atelier-carte.webp) · [Deux mots en un coup](docs/media/tibop-atelier-croisement.webp) · [Finale du chapitre 2 en vidéo](docs/media/tibop-atelier-gameplay.mp4) · [Galerie des trophées](docs/media/tibop-atelier-galerie.webp)
+
+### Jeu classique et entraînement
+
+Les captures suivantes ont été enregistrées dans Tibop **0.16.7**.
+
+#### Partie solo avec des skins
 
 Le plateau et les tuiles **Aurore** sont équipés avec le chevalet **Érable**. Le GIF montre la pose, la validation du coup et la réponse de NAB. [Voir les skins en pleine partie](docs/media/tibop-skins-en-partie.webp)
 
@@ -33,7 +41,7 @@ Le plateau et les tuiles **Aurore** sont équipés avec le chevalet **Érable**.
   <a href="docs/media/tibop-gameplay-solo.gif"><img src="docs/media/tibop-gameplay-solo.gif" width="340" alt="Partie solo avec les skins Aurore et Érable, de la pose du mot à la réponse de NAB"></a>
 </p>
 
-### Ajouter puis jouer `OK`
+#### Ajouter puis jouer `OK`
 
 Dans **Lexique personnel**, ajoutez `OK`, puis ouvrez **Jouer avec mes mots**. Sur ce tirage d’exemple, la pose rapporte **22 points** en entraînement local. [Voir le coup validé](docs/media/tibop-ok-en-partie.webp)
 
@@ -45,6 +53,7 @@ Dans **Lexique personnel**, ajoutez `OK`, puis ouvrez **Jouer avec mes mots**. S
 
 ## Jouer sur Android
 
+- **L’atelier de NAB** propose douze niveaux courts, en français et en anglais. En un ou deux coups, atteignez un objectif de placement ou de score. Aux niveaux 4, 8 et 12, battez le score de NAB pour agrandir l’atelier. L’accès est libre et chaque langue garde ses records. [L’atelier de NAB](android/README.md#latelier-de-nab)
 - **Partie classique** lance une partie solo contre NAB ou reprend celle en cours. Choisissez l’un des quatre niveaux fixes ou laissez le mode adaptatif ajuster la difficulté pendant la partie. Le bouton **EN / FR** change les menus et le lexique. Chaque langue garde sa progression.
 - **À plusieurs**, passez le téléphone à deux, trois ou quatre ou jouez en duel Bluetooth. En ligne, ouvrez **Amis** pour rejoindre un serveur de bêta, jouer un duel à un coup chacun, demander une revanche miroir ou participer au tournoi du week-end. [Accès à la bêta et invitations](android/README.md#amis-et-duels-en-bêta)
 - **En quelques minutes**, jouez le défi du jour, essayez de placer deux mots avec un même chevalet dans *Deux coups d’avance*, ou améliorez votre record sur les trois parcours du circuit bonus.
@@ -61,11 +70,11 @@ En fin de partie, NAB peut mettre un coup à revoir en évidence avec les cases,
 
 **Expliquer ce coup** affiche immédiatement le score et son premier détail vérifié, même en mode avion. Ouvrez les autres détails pour lire les mots croisés, les primes ou le rôle des jokers. Sur demande, SmolLM2 135M Instruct Q4_0 sélectionne un détail à mettre en avant. Le moteur Android joue les coups de NAB et calcule les scores. [Modèle, empreinte et licences](android/app/src/main/assets/SmolLM2-NOTICE.md)
 
-[Essai sur téléphone](android/README.md#tester-la-bêta-sur-son-téléphone) · [Vérifications de Tibop 0.16.7](docs/SIMULATIONS_ANDROID.md#vérification-de-tibop-0167) · [Mesures du modèle embarqué](docs/SIMULATIONS_ANDROID.md#mesures-du-modèle-embarqué)
+[Essai sur téléphone](android/README.md#tester-la-bêta-sur-son-téléphone) · [Vérifications de Tibop 0.17.0](docs/SIMULATIONS_ANDROID.md#vérification-de-tibop-0170) · [Mesures du modèle embarqué](docs/SIMULATIONS_ANDROID.md#mesures-du-modèle-embarqué)
 
 ### Garder votre progression
 
-- **Profil → Réglages → Sauvegarder et transférer** crée un fichier ZIP avec les parties, l’historique et la progression locale des deux langues. Gardez-le dans un dossier accessible pour pouvoir le restaurer sur une autre installation. [Ce que contient la sauvegarde](android/README.md#transférer-sa-progression)
+- **Profil → Réglages → Sauvegarder et transférer** crée un fichier ZIP avec les parties, l’historique et la progression locale des deux langues, atelier compris. Gardez-le dans un dossier accessible pour pouvoir le restaurer sur une autre installation. [Ce que contient la sauvegarde](android/README.md#transférer-sa-progression)
 - **Profil → Réglages → Lexique personnel** ajoute des mots à la main ou importe une liste TXT autorisée pour l’entraînement contre NAB ou à plusieurs sur le même appareil. Chaque liste a son propre historique. [Ajouter des mots ou importer une liste](android/README.md#jouer-avec-un-lexique-personnel)
 
 ## Tibop Studio

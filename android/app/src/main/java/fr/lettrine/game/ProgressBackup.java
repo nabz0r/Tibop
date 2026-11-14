@@ -33,6 +33,7 @@ final class ProgressBackup {
     private static final String FORMAT = "wordrivet.progress.v1";
     private static final String ECONOMY = "bonus-economy-v1.bin";
     private static final String PHOTO = "profile-photo.jpg";
+    private static final String CAMPAIGN = NabCampaignProgress.PREFS;
     private static final String[] MATCH_FILES = {"current-match.json", "saved-matches.json", "history.json"};
     private static final int MAX_BYTES = 48 * 1024 * 1024;
     private static final Map<String, Class<?>> SETTINGS = Map.ofEntries(
@@ -52,7 +53,8 @@ final class ProgressBackup {
             Map.entry("daily_progress", Map.of()), Map.entry("daily_progress-en", Map.of()),
             Map.entry("daily_draft", Map.of()), Map.entry("daily_draft-en", Map.of()),
             Map.entry("two_move_draft", Map.of()), Map.entry("two_move_draft-en", Map.of()),
-            Map.entry("two_move_challenges", Map.of()), Map.entry("two_move_challenges-en", Map.of()));
+            Map.entry("two_move_challenges", Map.of()), Map.entry("two_move_challenges-en", Map.of()),
+            Map.entry(CAMPAIGN, Map.of()), Map.entry(CAMPAIGN + "-en", Map.of()));
 
     record Snapshot(Map<String, byte[]> entries) {}
 
@@ -61,7 +63,9 @@ final class ProgressBackup {
     static Snapshot capture(Context context) throws IOException, JSONException {
         synchronized (GameStore.STORE_LOCK) {
             synchronized (BonusEconomy.LOCK) {
-                return captureLocked(context);
+                synchronized (NabCampaignProgress.LOCK) {
+                    return captureLocked(context);
+                }
             }
         }
     }
@@ -171,6 +175,16 @@ final class ProgressBackup {
     static Class<?> type(String group, String key) {
         var known = PREFS.get(group);
         if (!known.isEmpty()) return known.get(key);
+        if (isCampaign(group)) {
+            String[] parts = key.split("/", -1);
+            if (parts.length != 2 || !parts[1].matches("[1-9][0-9]?")
+                    || !NabCampaignProgress.validStage(Integer.parseInt(parts[1]))) return null;
+            return switch (parts[0]) {
+                case "stars", "score" -> Integer.class;
+                case "draft", "lexicon" -> String.class;
+                default -> null;
+            };
+        }
         if (key.startsWith("lexicon/") && (group.startsWith("daily_progress")
                 || group.startsWith("daily_draft") || group.startsWith("two_move_draft"))) {
             String valueKey = key.substring("lexicon/".length());
@@ -190,6 +204,15 @@ final class ProgressBackup {
         } catch (NumberFormatException invalid) {
             return null;
         }
+    }
+
+    private static boolean isCampaign(String group) {
+        return group.equals(CAMPAIGN) || group.equals(CAMPAIGN + "-en");
+    }
+
+    private static JSONObject groupValues(JSONObject preferences, String group) throws JSONException {
+        boolean optional = group.startsWith("two_move_draft") || isCampaign(group);
+        return optional && !preferences.has(group) ? new JSONObject() : preferences.getJSONObject(group);
     }
 
     private static boolean validDraftDate(String value) {
@@ -226,15 +249,17 @@ final class ProgressBackup {
     private static void validate(Snapshot snapshot) throws IOException, JSONException {
         JSONObject preferences = preferences(snapshot);
         for (String group : PREFS.keySet()) {
-            JSONObject values = group.startsWith("two_move_draft") && !preferences.has(group)
-                    ? new JSONObject() : preferences.getJSONObject(group);
+            JSONObject values = groupValues(preferences, group);
+            boolean campaign = isCampaign(group);
             var keys = values.keys();
             while (keys.hasNext()) {
                 String key = keys.next();
                 Object value = values.get(key);
                 Class<?> kind = type(group, key);
+                boolean draft = group.contains("_draft") || campaign && key.startsWith("draft/");
+                int maxText = draft ? NabCampaignProgress.MAX_DRAFT_LENGTH : 256;
                 if (kind == null || !kind.isInstance(value)
-                        || value instanceof String string && string.length() > (group.contains("_draft") ? 1024 : 256)
+                        || value instanceof String string && string.length() > maxText
                         || value instanceof Integer number && number < 0) {
                     throw new IOException("Réglage de sauvegarde invalide");
                 }
@@ -246,13 +271,9 @@ final class ProgressBackup {
                     continue;
                 }
                 if (group.startsWith("daily_draft")) MatchCodec.readTiles(new JSONArray((String) value), true);
-                if (group.startsWith("two_move_draft")) {
-                    JSONArray moves = new JSONArray((String) value);
-                    if (moves.length() != 2) throw new IOException("Brouillon incomplet");
-                    MatchCodec.readTiles(moves.getJSONArray(0), true);
-                    MatchCodec.readTiles(moves.getJSONArray(1), true);
-                }
+                if (draft) validateTwoMoveDraft((String) value);
             }
+            if (campaign) validateCampaign(values);
         }
         try {
             JSONObject settings = preferences.getJSONObject("preferences");
@@ -293,6 +314,31 @@ final class ProgressBackup {
         }
     }
 
+    private static void validateTwoMoveDraft(String value) throws IOException, JSONException {
+        JSONArray moves = new JSONArray(value);
+        if (moves.length() != 2) throw new IOException("Brouillon incomplet");
+        MatchCodec.readTiles(moves.getJSONArray(0), true);
+        MatchCodec.readTiles(moves.getJSONArray(1), true);
+    }
+
+    private static void validateCampaign(JSONObject values) throws IOException, JSONException {
+        boolean previousComplete = true;
+        for (int level = 1; level <= NabCampaign.STAGE_COUNT; level++) {
+            String starsKey = NabCampaignProgress.key("stars", level);
+            String scoreKey = NabCampaignProgress.key("score", level);
+            String draftKey = NabCampaignProgress.key("draft", level);
+            boolean completed = values.has(starsKey);
+            if (completed != values.has(scoreKey) || completed && (!previousComplete
+                    || values.getInt(starsKey) < 1 || values.getInt(starsKey) > 3
+                    || values.getInt(scoreKey) < 1 || values.getInt(scoreKey) > NabCampaignProgress.MAX_SCORE)
+                    || values.has(draftKey) != values.has(NabCampaignProgress.key("lexicon", level))
+                    || values.has(draftKey) && !previousComplete) {
+                throw new IOException("Progression de l’atelier invalide");
+            }
+            previousComplete = completed;
+        }
+    }
+
     private static void validateMatch(JSONObject row, GameLanguage language) throws JSONException, IOException {
         FrenchGame game = MatchCodec.restore(row);
         boolean solo = "solo".equals(row.getString("mode"));
@@ -319,7 +365,9 @@ final class ProgressBackup {
     static void restore(Context context, Snapshot incoming) throws IOException, JSONException {
         synchronized (GameStore.STORE_LOCK) {
             synchronized (BonusEconomy.LOCK) {
-                restoreLocked(context, incoming);
+                synchronized (NabCampaignProgress.LOCK) {
+                    restoreLocked(context, incoming);
+                }
             }
         }
     }
@@ -360,16 +408,18 @@ final class ProgressBackup {
     static void recover(Context context) throws IOException, JSONException {
         synchronized (GameStore.STORE_LOCK) {
             synchronized (BonusEconomy.LOCK) {
-                AtomicFile journal = journal(context);
-                Snapshot previous;
-                try {
-                    previous = readEntries(journal.openRead());
-                } catch (FileNotFoundException missing) {
-                    if (journal.getBaseFile().exists()) throw missing;
-                    return;
+                synchronized (NabCampaignProgress.LOCK) {
+                    AtomicFile journal = journal(context);
+                    Snapshot previous;
+                    try {
+                        previous = readEntries(journal.openRead());
+                    } catch (FileNotFoundException missing) {
+                        if (journal.getBaseFile().exists()) throw missing;
+                        return;
+                    }
+                    apply(context, previous);
+                    clear(journal);
                 }
-                apply(context, previous);
-                clear(journal);
             }
         }
     }
@@ -408,8 +458,7 @@ final class ProgressBackup {
             SharedPreferences store = prefs(context, group);
             SharedPreferences.Editor editor = store.edit();
             for (String key : store.getAll().keySet()) if (type(group, key) != null) editor.remove(key);
-            JSONObject values = group.startsWith("two_move_draft") && !preferences.has(group)
-                    ? new JSONObject() : preferences.getJSONObject(group);
+            JSONObject values = groupValues(preferences, group);
             var keys = values.keys();
             while (keys.hasNext()) {
                 String key = keys.next();

@@ -76,7 +76,7 @@ public final class MainActivity extends Activity {
 
     private enum Screen { HOME, GAMES, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, RESULT, REVIEW, PRACTICE,
         SOCIAL, SOCIAL_DUEL, PROFILE, COLLECTION, TOURNAMENT, TOURNAMENT_ROUND, HELP, TWO_MOVES, BONUS_CIRCUIT, BACKUP,
-        PERSONAL_LEXICON, SHOP }
+        PERSONAL_LEXICON, SHOP, ATELIER, ATELIER_LEVEL }
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -92,6 +92,9 @@ public final class MainActivity extends Activity {
     private ProfileStore profileStore;
     private ProfilePanel profilePanel;
     private TwoMoveChallengeScreen twoMoveScreen;
+    private TwoMoveChallengeScreen atelierLevel;
+    private NabCampaignProgress atelierProgress;
+    private List<NabCampaign.Stage> atelierStages;
     private BonusCircuitScreen bonusCircuit;
     private ShopPanel shop;
     private Runnable shopBack;
@@ -194,6 +197,7 @@ public final class MainActivity extends Activity {
         rewarded = new RewardedPractice(this);
         economy = new BonusEconomy(this);
         dailyProgress = new DailyProgress(this, gameLanguage);
+        atelierProgress = new NabCampaignProgress(this, gameLanguage);
         skinStore = new SkinStore(this);
         profileStore = new ProfileStore(this);
         socialClient = new SocialClient(this, gameLanguage, this::socialBaseUrl, profileStore::nickname,
@@ -458,6 +462,8 @@ public final class MainActivity extends Activity {
             case REVIEW -> reviewBack.run();
             case PRACTICE -> leavePractice();
             case TWO_MOVES -> leaveTwoMoves();
+            case ATELIER -> showHome();
+            case ATELIER_LEVEL -> leaveAtelierLevel();
             case BONUS_CIRCUIT -> leaveBonusCircuit();
             case SOCIAL_DUEL -> showSocial();
             case TOURNAMENT -> showSocial();
@@ -498,6 +504,7 @@ public final class MainActivity extends Activity {
         if (next != Screen.HOME) pendingChallenge = null;
         if (next != Screen.PROFILE) profilePanel = null;
         if (next != Screen.TWO_MOVES) twoMoveScreen = null;
+        if (next != Screen.ATELIER_LEVEL) atelierLevel = null;
         if (next != Screen.BONUS_CIRCUIT) bonusCircuit = null;
         if (next != Screen.SHOP) shop = null;
         if (next != Screen.SOCIAL && googleSignIn != null) {
@@ -542,7 +549,8 @@ public final class MainActivity extends Activity {
         scroll.addView(centered, new ScrollView.LayoutParams(-1, -2));
         content = ui.column();
         int margin = next == Screen.GAME || next == Screen.PRACTICE || next == Screen.TOURNAMENT_ROUND
-                || next == Screen.SOCIAL_DUEL || next == Screen.TWO_MOVES || next == Screen.BONUS_CIRCUIT ? 10 : 17;
+                || next == Screen.SOCIAL_DUEL || next == Screen.TWO_MOVES || next == Screen.BONUS_CIRCUIT
+                || next == Screen.ATELIER_LEVEL ? 10 : 17;
         content.setPadding(ui.dp(margin), ui.dp(7), ui.dp(margin), ui.dp(16));
         centered.addView(content, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_HORIZONTAL));
         LinearLayout capturedContent = content;
@@ -670,7 +678,18 @@ public final class MainActivity extends Activity {
             if (ready()) openSolo(Screen.HOME);
         };
         boolean hasGameToResume = canResume || !savedId.isEmpty();
-        content.addView(homeClassic(getString(hasGameToResume ? R.string.app_resume : R.string.app_vs_bot), () -> {
+        NabCampaignProgress.Snapshot workshop = atelierProgress.snapshot();
+        boolean campaignFinished = workshop.completed() == NabCampaign.STAGE_COUNT;
+        String campaignAction = campaignFinished ? getString(R.string.atelier_home_complete)
+                : getString(R.string.atelier_home_continue, workshop.nextStage());
+        content.addView(homeAtelier(campaignAction, () -> openChallenge(() -> {
+            if (campaignFinished) showAtelier(false);
+            else showAtelierLevel(workshop.nextStage());
+        }), campaignFinished ? null : () -> openChallenge(() -> showAtelier(false))));
+        ui.gap(content, 10);
+
+        content.addView(ui.option("▦", getString(R.string.home_classic),
+                getString(hasGameToResume ? R.string.app_resume : R.string.app_vs_bot), () -> {
             if (canResume) {
                 if (ready()) showGame();
             } else if (!savedId.isEmpty()) resumeMatch(savedId, Screen.HOME);
@@ -742,7 +761,7 @@ public final class MainActivity extends Activity {
         content.addView(pair);
     }
 
-    private View homeClassic(String actionLabel, Runnable play) {
+    private View homeAtelier(String actionLabel, Runnable play, Runnable map) {
         FrameLayout hero = new FrameLayout(this);
         hero.setBackground(ui.shape(ui.palette.deep(), 26));
         hero.setClipToOutline(true);
@@ -761,14 +780,21 @@ public final class MainActivity extends Activity {
         copy.setGravity(Gravity.CENTER_VERTICAL);
         copy.setMinimumHeight(ui.dp(179));
         copy.setPaddingRelative(ui.dp(16), ui.dp(16), ui.dp(showMascot ? 131 : 16), ui.dp(16));
-        copy.addView(homeTitle(getString(R.string.home_classic), 25, 0xfffaf5ff));
+        copy.addView(homeTitle(getString(R.string.atelier_title), 25, 0xfffaf5ff));
         ui.gap(copy, 5);
-        copy.addView(ui.text(getString(R.string.home_classic_detail), 13, 0xfffff3ff, ui.regular));
+        copy.addView(ui.text(getString(R.string.atelier_home_intro), 13, 0xfffff3ff, ui.regular));
         ui.gap(copy, 13);
         TextView action = ui.button(actionLabel, true, play);
         action.setTextColor(0xff481242);
         action.setBackground(ui.arcadeKey(0xffffa5df, 0xffffe5f6, 0xff993777));
         copy.addView(action, new LinearLayout.LayoutParams(-2, -2));
+        if (map != null) {
+            TextView mapLink = ui.textButton(getString(R.string.atelier_tab_map), map);
+            mapLink.setTextColor(0xfffaf5ff);
+            mapLink.setBackground(ui.touch(0xff49328c, 12, 0xff876bc4));
+            ui.gap(copy, 6);
+            copy.addView(mapLink, new LinearLayout.LayoutParams(-2, -2));
+        }
         hero.addView(copy, new FrameLayout.LayoutParams(-1, -2));
         return hero;
     }
@@ -876,6 +902,45 @@ public final class MainActivity extends Activity {
     private void openChallenge(Runnable action) {
         if (lexicon == null && lexiconError == null) pendingChallenge = action;
         if (ready()) action.run();
+    }
+
+    private Lexicon atelierLexicon() {
+        return frenchClassicLexicon == null ? bundledLexicon : frenchClassicLexicon;
+    }
+
+    private void showAtelier(boolean workshop) {
+        Lexicon dictionary = atelierLexicon();
+        if (!loadAtelier(dictionary)) return;
+        page(Screen.ATELIER, false);
+        top(getString(R.string.app_name), this::showHome, null);
+        ui.gap(content, 9);
+        content.addView(new AtelierScreen(ui, atelierStages, atelierProgress.snapshot(), this::showAtelierLevel)
+                .view(workshop));
+    }
+
+    private void showAtelierLevel(int number) {
+        Lexicon dictionary = atelierLexicon();
+        if (!loadAtelier(dictionary)) return;
+        if (number < 1 || number > atelierStages.size() || !atelierProgress.snapshot().unlocked(number)) return;
+        page(Screen.ATELIER_LEVEL, false);
+        top(getString(R.string.atelier_title), this::leaveAtelierLevel, null);
+        ui.gap(content, 6);
+        atelierLevel = new TwoMoveChallengeScreen(ui, dictionary, new TwoMoveChallengeScreen.CampaignPlay(
+                atelierStages.get(number - 1), atelierProgress, () -> showAtelierLevel(number + 1),
+                () -> showAtelier(false), () -> showAtelier(true)));
+        content.addView(atelierLevel.view());
+    }
+
+    private boolean loadAtelier(Lexicon dictionary) {
+        if (dictionary == null) return false;
+        if (atelierStages == null) atelierStages = NabCampaign.catalog(dictionary);
+        if (atelierStages.size() == NabCampaign.STAGE_COUNT) return true;
+        toast(getString(R.string.atelier_play_unavailable));
+        return false;
+    }
+
+    private void leaveAtelierLevel() {
+        if (atelierLevel == null || !atelierLevel.goBack()) showAtelier(false);
     }
 
     private void openTwoMoves() {

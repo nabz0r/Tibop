@@ -1,0 +1,23 @@
+<resources>
+    <string name="atelier_play_level">Level %1$d / %2$d</string>
+    <string name="atelier_play_nab">NAB · %1$s</string>
+    <string name="atelier_play_success">Goal reached · %1$s</string>
+    <string name="atelier_play_try_again">Try the goal again</string>
+    <string name="atelier_play_goal_ready">✓ Goal reached</string>
+    <string name="atelier_play_goal_short">Valid move · goal still open</string>
+    <string name="atelier_play_reward">Workshop upgraded · %1$s</string>
+    <string name="atelier_play_visit">See the workshop</string>
+    <string name="atelier_play_map">Back to the map</string>
+    <string name="atelier_play_save_error">Progress could not be saved. Try submitting your move again.</string>
+    <string name="atelier_play_unavailable">The workshop levels could not be loaded.</string>
+    <string name="atelier_play_word_score">%1$s +%2$d</string>
+    <string name="atelier_play_versus_score">You · %1$s  /  NAB · %2$s</string>
+    <string name="atelier_play_bingo">Bonus +50</string>
+    <string name="atelier_play_replay_example">See a winning example</string>
+    <string name="atelier_play_replay_rival">Replay NAB’s score</string>
+    <string name="atelier_play_replay_rival_turn">NAB · Move %1$d</string>
+    <plurals name="atelier_play_stars">
+        <item quantity="one">%1$d star out of 3</item>
+        <item quantity="other">%1$d stars out of 3</item>
+    </plurals>
+</resources>

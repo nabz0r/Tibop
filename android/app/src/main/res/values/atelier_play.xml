@@ -1,0 +1,23 @@
+<resources>
+    <string name="atelier_play_level">Niveau %1$d / %2$d</string>
+    <string name="atelier_play_nab">NAB · %1$s</string>
+    <string name="atelier_play_success">Objectif atteint · %1$s</string>
+    <string name="atelier_play_try_again">Objectif à retenter</string>
+    <string name="atelier_play_goal_ready">✓ Objectif atteint</string>
+    <string name="atelier_play_goal_short">Coup valide · objectif à atteindre</string>
+    <string name="atelier_play_reward">Atelier amélioré · %1$s</string>
+    <string name="atelier_play_visit">Voir l’atelier</string>
+    <string name="atelier_play_map">Revenir à la carte</string>
+    <string name="atelier_play_save_error">La progression n’a pas pu être enregistrée. Réessaie de valider le coup.</string>
+    <string name="atelier_play_unavailable">Impossible de charger les niveaux de l’atelier.</string>
+    <string name="atelier_play_word_score">%1$s +%2$d</string>
+    <string name="atelier_play_versus_score">Toi · %1$s  /  NAB · %2$s</string>
+    <string name="atelier_play_bingo">Prime +50</string>
+    <string name="atelier_play_replay_example">Voir un coup gagnant</string>
+    <string name="atelier_play_replay_rival">Revoir le score de NAB</string>
+    <string name="atelier_play_replay_rival_turn">NAB · Coup %1$d</string>
+    <plurals name="atelier_play_stars">
+        <item quantity="one">%1$d étoile sur 3</item>
+        <item quantity="other">%1$d étoiles sur 3</item>
+    </plurals>
+</resources>

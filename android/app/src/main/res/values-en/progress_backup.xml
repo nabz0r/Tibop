@@ -2,7 +2,7 @@
 <resources>
     <string name="backup_title">Back up and transfer</string>
     <string name="backup_summary">Export or restore French and English progress</string>
-    <string name="backup_details">The file contains games, history, Elo, puzzles, coins, tickets, themes and the local profile for both languages. It may contain your photo and profile details. Keep it somewhere private. Friends sign-ins stay on their original device.</string>
+    <string name="backup_details">The file contains games, history, Elo, puzzles, NAB’s Workshop, coins, tickets, themes and the local profile for both languages. It may contain your photo and profile details. Keep it somewhere private. Friends sign-ins stay on their original device.</string>
     <string name="backup_export">Create a backup</string>
     <string name="backup_import">Restore a backup</string>
     <string name="backup_replace">This backup replaces the current local progress for both languages. Export your current progress first if you want to keep it.</string>

@@ -1,16 +1,18 @@
 # Tibop pour Android
 
-[Tibop 0.16.7](https://github.com/nabz0r/Tibop/releases/tag/v0.16.7) est la bêta Android avec NAB le Maine Coon. Le jeu fonctionne en invité hors ligne à partir d’Android 8 (API 26). La bêta conserve l’identifiant Android et la signature des éditions distribuées en APK direct.
+[Tibop 0.17.0](https://github.com/nabz0r/Tibop/releases/tag/v0.17.0) est la bêta Android avec NAB le Maine Coon. Le jeu fonctionne en invité hors ligne à partir d’Android 8 (API 26). La bêta conserve l’identifiant Android et la signature des éditions distribuées en APK direct.
 
 ## Tester la bêta sur son téléphone
 
-1. Sur Android, [téléchargez Tibop 0.16.7](https://github.com/nabz0r/Tibop/releases/download/v0.16.7/Tibop-0.16.7.apk) et ouvrez le fichier. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Gardez la bêta précédente installée et choisissez **Mettre à jour** pour conserver vos parties et votre progression.
-2. En français, ouvrez **Jouer contre NAB** ou **Jouer à deux ou plus** et démarrez une nouvelle partie. Faites glisser une tuile du chevalet sur une autre pour déplacer la première. Faites ensuite glisser une tuile sur le plateau. Quittez l’application en cours de tour et touchez **Reprendre ma partie** pour retrouver l’ordre des lettres et le brouillon.
-3. Pour tester le lexique, si le tirage le permet, essayez `KM` ou `KG` sur la case centrale, puis un mot courant comme `AS` ou `CHAT`. Le jeu indique le motif du refus ou le score du coup. Le filtre s’applique aux nouvelles parties classiques en français.
-4. Pour un duel avec le lexique filtré, installez tous les deux la mise à jour et ouvrez **Amis** pour vous connecter avant de lancer un nouveau duel. Les liens d’amitié déjà envoyés s’utilisent comme avant.
+1. Sur Android, [téléchargez Tibop 0.17.0](https://github.com/nabz0r/Tibop/releases/download/v0.17.0/Tibop-0.17.0.apk) et ouvrez le fichier. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Gardez la bêta précédente installée et choisissez **Mettre à jour** pour conserver vos parties et votre progression.
+2. Depuis l’accueil, ouvrez **L’atelier de NAB**. Jouez les quatre premiers niveaux pour aménager la table de jeu éclairée. Passez en anglais avec **EN** pour retrouver un parcours distinct.
+3. En français, ouvrez **Jouer contre NAB** ou **Jouer à deux ou plus** et démarrez une nouvelle partie. Faites glisser une tuile du chevalet sur une autre pour déplacer la première. Faites ensuite glisser une tuile sur le plateau. Quittez l’application en cours de tour et touchez **Reprendre ma partie** pour retrouver l’ordre des lettres et le brouillon.
+4. Pour tester le lexique, si le tirage le permet, essayez `KM` ou `KG` sur la case centrale, puis un mot courant comme `AS` ou `CHAT`. Le jeu indique le motif du refus ou le score du coup. Le filtre s’applique aux nouvelles parties classiques en français.
+5. Pour un duel avec le lexique filtré, installez tous les deux la mise à jour et ouvrez **Amis** pour vous connecter avant de lancer un nouveau duel. Les liens d’amitié déjà envoyés s’utilisent comme avant.
 
 ## Jouer
 
+- Depuis **L’atelier de NAB**, touchez **Continuer · Niveau N** pour entrer directement dans le niveau en cours, ou **Carte** pour parcourir les douze niveaux. Quitter un niveau ramène à la carte. [L’atelier de NAB](#latelier-de-nab)
 - La carte **Partie classique** affiche **Reprendre ma partie** lorsqu’une partie est en cours, ou **Jouer contre NAB**. L’accueil propose ensuite **Jouer à deux ou plus**, **Mes parties** et le **Défi du jour**, suivi de **Deux coups d’avance** et du circuit. Retrouvez Bluetooth, **Premier défi** et **Comment jouer** sous **Autres modes**.
 - **EN / FR** sur l’accueil ou **Profil → Réglages → Langue du jeu** change la langue des menus et celle du plateau. Le français est la langue initiale. Les sauvegardes, historiques, cotes, séries, records et sessions sociales sont propres à chaque langue. Les parties françaises précédentes sont accessibles en français.
 - **Défi du jour** propose une nouvelle position selon la date locale, même en mode avion. Validez un coup légal pour compter la journée dans votre série. Vous pouvez rejouer pour améliorer le record du jour.
@@ -50,6 +52,12 @@ SmolLM2 135M Instruct quantifié en 4 bits tourne sur le processeur via llama.cp
 
 En solo, le bilan se concentre sur vos tours. Les variantes sont calculées à partir du plateau et du chevalet du tour, avec le lexique de la partie. Le classement privilégie les plus grands écarts de points immédiats parmi les placements trouvés. Pour les parties Bluetooth et les anciens journaux sans chevalets, le bilan peut expliquer les coups visibles.
 
+## L’atelier de NAB
+
+Ouvrez **L’atelier de NAB** depuis l’accueil. Chacun des douze niveaux propose une position, un chevalet et un objectif à remplir en un ou deux coups. Battez le score de NAB aux niveaux 4, 8 et 12 pour débloquer la table de jeu éclairée, la bibliothèque et la galerie des trophées dans l’onglet **Atelier**. Vous pouvez rejouer les niveaux terminés pour améliorer vos records. La progression et les records sont distincts en français et en anglais. Les douze niveaux sont accessibles gratuitement et jouables hors ligne.
+
+[Voir l’accueil, les niveaux et l’atelier](../docs/media/tibop-atelier.webp)
+
 ## Compiler sur le Mac
 
 Installer le SDK Android 36, le NDK `28.2.13676358`, Java 17, Python 3, CMake 3.22 ou plus récent et Ninja. Le premier build récupère les dépendances Gradle, le modèle et la source de llama.cpp. Le script vérifie les empreintes des deux téléchargements et compile le moteur d’inférence pour ARM et x86 en 32 et 64 bits.
@@ -64,7 +72,7 @@ Sur un poste où les dépendances sont en cache, `LETTRINE_GRADLE_OFFLINE=1` com
 
 L’APK de la bêta utilise les annonces de démonstration Google. Pour reproduire cette configuration, lancez `LETTRINE_ADMOB_TEST=1 ./android/scripts/build.sh`. [Configuration et récompenses](../docs/ECONOMIE_ANDROID.md) · [Simulations du moteur Android](../docs/SIMULATIONS_ANDROID.md)
 
-Une seule publication GitHub à la fois distribue l’APK de la bêta signé à partir de `main`. Les pages de téléchargement et d’invitation utilisent ce fichier. Son empreinte SHA-256 figure dans les notes de version.
+La publication GitHub de la bêta actuelle distribue l’APK signé à partir de `main`. Les pages de téléchargement et d’invitation utilisent ce fichier. Son empreinte SHA-256 figure dans les notes de version.
 
 ## Préparer un bundle Google Play
 
@@ -107,7 +115,7 @@ Les fichiers sont générés par [prepare_french_definitions.py](../tools/prepar
 
 ## Transférer sa progression
 
-Dans **Profil → Réglages → Sauvegarder et transférer**, créez un fichier ZIP puis choisissez **Restaurer une sauvegarde** sur l’autre installation. Le fichier reprend les parties et brouillons sauvegardés, l’historique, l’Elo, les défis, les pièces, les tickets, les choix de la Collection, les thèmes, les réglages de jeu et le profil local des deux langues. La restauration remplace la progression locale actuelle après confirmation. Le ZIP peut contenir la photo et le profil local. Gardez-le dans un endroit privé.
+Dans **Profil → Réglages → Sauvegarder et transférer**, créez un fichier ZIP puis choisissez **Restaurer une sauvegarde** sur l’autre installation. Le fichier reprend les parties et brouillons sauvegardés, l’historique, l’Elo, les défis, la progression de l’atelier, les pièces, les tickets, les choix de la Collection, les thèmes, les réglages de jeu et le profil local des deux langues. La restauration remplace la progression locale actuelle après confirmation. Le ZIP peut contenir la photo et le profil local. Gardez-le dans un endroit privé.
 
 Le ZIP couvre les parties jouées avec les lexiques fournis. Le lexique personnel et ses parties sont propres à l’installation. Pour récupérer un compte Amis sur un autre appareil, il faut l’avoir lié à Google et retrouver le même serveur et la même langue. Un compte invité local ne peut pas être récupéré après désinstallation.
 
@@ -119,17 +127,23 @@ Le service de la bêta dispose de sa propre base et d’un accès HTTPS séparé
 
 Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion Google, créer un client OAuth Web et des clients Android pour `fr.lettrine.game` avec les certificats des distributions à tester. Passer l’identifiant du client Web au serveur avec `LETTRINE_GOOGLE_CLIENT_ID`. Le serveur valide la signature Google, le destinataire du jeton et le nonce avant d’associer le compte. Le profil local, les parties hors ligne et l’Elo restent sur l’appareil. La connexion Google peut restaurer le compte social sur un autre appareil. [Connexion Google sur Android](https://developer.android.com/identity/sign-in/credential-manager-siwg-implementation) · [Validation du jeton Google](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token)
 
-## Tibop 0.16.7
+## Tibop 0.17.0
 
-- La Collection combine indépendamment le plateau, le chevalet et les tuiles. Une sauvegarde ZIP peut transférer ces trois sélections.
-- Le lexique d’entraînement accepte des mots saisis dans l’application et permet de retrouver les parties d’une liste déjà jouée. Les signatures de lexique continuent de distinguer les éditions.
-- Sur émulateur Android 16, la mise à jour depuis la 0.16.6 a conservé le plateau, le score, le tour, l’ordre du chevalet et un brouillon de trois lettres. La Collection a aussi été vérifiée en anglais sur un écran de 240 dp avec du texte à 145 %.
-- Les 89 tests unitaires Android passent. Lint se termine sans erreur, avec 40 avertissements. [Vérifications de Tibop 0.16.7](../docs/SIMULATIONS_ANDROID.md#vérification-de-tibop-0167)
+- **L’atelier de NAB** est accessible depuis l’accueil en français et en anglais. Douze niveaux composent le parcours, avec un ou deux placements par niveau et un score de NAB à battre aux niveaux 4, 8 et 12.
+- Les records et la progression sont locaux et propres à chaque langue. Les étapes franchies aménagent l’atelier.
+- [Vérifications de Tibop 0.17.0](../docs/SIMULATIONS_ANDROID.md#vérification-de-tibop-0170)
 
 ## Historique des vérifications
 
 <details>
 <summary>Résultats des éditions précédentes</summary>
+
+### Vérification de la version 0.16.7
+
+- La Collection combine indépendamment le plateau, le chevalet et les tuiles. Une sauvegarde ZIP peut transférer ces trois sélections.
+- Le lexique d’entraînement accepte des mots saisis dans l’application et permet de retrouver les parties d’une liste déjà jouée. Les signatures de lexique continuent de distinguer les éditions.
+- Sur émulateur Android 16, la mise à jour depuis la 0.16.6 a conservé le plateau, le score, le tour, l’ordre du chevalet et un brouillon de trois lettres. La Collection a aussi été vérifiée en anglais sur un écran de 240 dp avec du texte à 145 %.
+- Les 89 tests unitaires Android passent. Lint se termine sans erreur, avec 40 avertissements. [Vérifications de Tibop 0.16.7](../docs/SIMULATIONS_ANDROID.md#vérification-de-tibop-0167)
 
 ### Vérification de la version 0.16.6
 

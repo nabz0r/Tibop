@@ -461,7 +461,7 @@ Outils|Tools
 Retrouvez vos fichiers de parties et téléchargez Tibop pour Android.|Find your game files and download Tibop for Android.
 Télécharger des parties|Download games
 Utilisez le format CSV pour ouvrir les résultats dans un tableur.|Use CSV to open results in a spreadsheet.
-Version 0.16.7|Version 0.16.7
+Version 0.17.0|Version 0.17.0
 Collection|Collection
 Combinez six plateaux, quatre chevalets et six styles de tuiles. L’aperçu réunit vos choix avant de jouer.|Mix six boards, four racks and six tile styles. Preview your combination before playing.
 Lexique personnel|Personal dictionary
@@ -469,8 +469,8 @@ Ajoutez vos mots au lexique de jeu pour l’entraînement hors ligne, ou importe
 Circuit bonus|Bonus Circuit
 Trois nouveaux défis à enchaîner hors ligne avec un ticket. La première entrée est offerte.|One ticket gives you three new offline puzzles. Your first entry is free.
 Tibop pour Android|Tibop for Android
-NAB le Maine Coon|NAB the Maine Coon
-Retrouvez NAB dans les défis, sur le nouveau plateau et dans le bilan de vos parties.|Find NAB in challenges, on the new board and in your game reviews.
+L’atelier de NAB|NAB’s Workshop
+Jouez douze niveaux en un ou deux coups et agrandissez l’atelier en réussissant les finales contre NAB.|Play twelve levels in one or two moves and expand the workshop by completing the finales against NAB.
 Définitions hors ligne|Offline definitions
 Consultez les mots du coup joué sans connexion. Les fiches françaises relient aussi les verbes conjugués à leur infinitif et les noms au pluriel à leur singulier.|Look up played words offline. French entries also link inflected verbs to their infinitive and plural nouns to their singular form.
 Deux coups d’avance|Two Moves Ahead

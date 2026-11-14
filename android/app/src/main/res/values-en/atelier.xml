@@ -1,0 +1,35 @@
+<resources>
+    <string name="atelier_title">NAB’s Workshop</string>
+    <string name="atelier_home_intro">Advance on the map and grow your workshop.</string>
+    <string name="atelier_home_continue">Continue · Level %1$d</string>
+    <string name="atelier_home_complete">View the map</string>
+    <string name="atelier_tab_map">Map</string>
+    <string name="atelier_tab_workshop">Workshop</string>
+    <string name="atelier_campaign_count">Progress · %1$d / %2$d</string>
+    <string name="atelier_next_reward">Unlock at level %1$d · %2$s</string>
+    <string name="atelier_chapter_number">Chapter %1$d</string>
+    <string name="atelier_chapter_1">First Words</string>
+    <string name="atelier_chapter_2">Premium Squares and Crossings</string>
+    <string name="atelier_chapter_3">Two Moves Ahead</string>
+    <string name="atelier_level_number">%1$d</string>
+    <string name="atelier_level_label">Level %1$d · %2$s</string>
+    <string name="atelier_level_open">Ready to play</string>
+    <string name="atelier_level_locked">Locked</string>
+    <string name="atelier_level_finale">Finale</string>
+    <plurals name="atelier_level_result">
+        <item quantity="one">%1$d of 3 stars, best score %2$d</item>
+        <item quantity="other">%1$d of 3 stars, best score %2$d</item>
+    </plurals>
+    <string name="atelier_campaign_done">All 12 levels are complete. Replay them to improve your scores.</string>
+    <string name="atelier_room_starter">NAB’s Workbench</string>
+    <string name="atelier_room_table">Lit Game Table</string>
+    <string name="atelier_room_library">Library</string>
+    <string name="atelier_room_gallery">Trophy Gallery</string>
+    <string name="atelier_room_art_starter">A wooden table and a bowl of tiles sit beside empty bookshelves.</string>
+    <string name="atelier_room_art_table">A lamp lights the game table. Books and drawers fill the shelves.</string>
+    <string name="atelier_room_art_library">Full bookshelves, a trophy, and two corkboards surround the game table.</string>
+    <string name="atelier_room_art_gallery">Stained glass and lanterns illuminate an open book and a gold trophy.</string>
+    <string name="atelier_upgrades_heading">Workshop Upgrades</string>
+    <string name="atelier_upgrade_earned">Unlocked · %1$s</string>
+    <string name="atelier_upgrade_locked">Complete level %1$d.</string>
+</resources>

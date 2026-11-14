@@ -1,6 +1,6 @@
 package fr.lettrine.game;
 
-import android.app.AlertDialog;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
@@ -13,12 +13,14 @@ import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 
 final class TwoMoveChallengeScreen {
+    private static final List<String> STARS = List.of("☆☆☆", "★☆☆", "★★☆", "★★★");
     private final ViewKit ui;
     private final Lexicon lexicon;
     private final Lexicon legacyLexicon;
@@ -28,32 +30,43 @@ final class TwoMoveChallengeScreen {
     private final SharedPreferences drafts;
     private final Consumer<String> baseCompletion;
     private final CircuitPlay circuit;
+    private final CampaignPlay campaign;
     private PuzzlePanel active;
 
     record CircuitPlay(String savedDraft, IntPredicate complete, Consumer<String> saveDraft,
                        Runnable next, boolean lastRound) {}
 
+    record CampaignPlay(NabCampaign.Stage stage, NabCampaignProgress progress, Runnable next,
+                        Runnable map, Runnable workshop) {}
+
     TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, Lexicon legacyLexicon, Consumer<String> baseCompletion) {
-        this(ui, lexicon, legacyLexicon, null, baseCompletion);
+        this(ui, lexicon, legacyLexicon, null, null, baseCompletion);
         showCatalog();
     }
 
     TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, TwoMoveChallenge.Puzzle puzzle, CircuitPlay circuit) {
-        this(ui, lexicon, lexicon, circuit, null);
+        this(ui, lexicon, lexicon, circuit, null, null);
         open(puzzle);
     }
 
+    TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, CampaignPlay campaign) {
+        this(ui, lexicon, lexicon, null, campaign, null);
+        open(campaign.stage().puzzle());
+    }
+
     private TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, Lexicon legacyLexicon,
-                                   CircuitPlay circuit, Consumer<String> baseCompletion) {
+                                   CircuitPlay circuit, CampaignPlay campaign, Consumer<String> baseCompletion) {
         this.ui = ui;
         this.lexicon = lexicon;
         this.legacyLexicon = legacyLexicon;
         this.baseCompletion = baseCompletion;
         this.circuit = circuit;
+        this.campaign = campaign;
         panel = ui.column();
-        catalog = circuit == null ? TwoMoveChallenge.catalog(lexicon) : List.of();
+        boolean freePractice = circuit == null && campaign == null;
+        catalog = freePractice ? TwoMoveChallenge.catalog(lexicon) : List.of();
         progress = ui.context.getSharedPreferences(lexicon.language.storageName("two_move_challenges"), Context.MODE_PRIVATE);
-        drafts = circuit == null ? ui.context.getSharedPreferences(lexicon.language.storageName("two_move_draft"),
+        drafts = freePractice ? ui.context.getSharedPreferences(lexicon.language.storageName("two_move_draft"),
                 Context.MODE_PRIVATE) : null;
     }
 
@@ -62,7 +75,7 @@ final class TwoMoveChallengeScreen {
     boolean goBack() {
         if (active == null) return false;
         if (active.replay >= 0) active.leaveReplay();
-        else if (circuit != null) return false;
+        else if (circuit != null || campaign != null) return false;
         else showCatalog();
         return true;
     }
@@ -142,8 +155,13 @@ final class TwoMoveChallengeScreen {
         private final TextView hint;
         private final TextView replayToggle;
         private final TextView replayStep;
+        private final TextView replayRival;
         private final TextView retry;
         private final TextView next;
+        private final LinearLayout campaignResult;
+        private final TextView campaignStatus;
+        private final TextView scoreBreakdown;
+        private final TextView workshopButton;
         private final LinearLayout nabCard;
         private final TextView nabText;
         private final LinearLayout rackRow;
@@ -152,8 +170,13 @@ final class TwoMoveChallengeScreen {
         private TwoMoveChallenge.Position position;
         private TwoMoveChallenge.Step first;
         private TwoMoveChallenge.Step second;
+        private TwoMoveChallenge.Step finish;
+        private ValueAnimator scoreAnimation;
+        private int earnedStars;
+        private int earnedWorkshop;
         private int selected = -1;
         private int replay = -1;
+        private boolean rivalReplay;
         private boolean hintVisible;
         private boolean blocked;
 
@@ -184,6 +207,24 @@ final class TwoMoveChallengeScreen {
             ui.gap(layout, 6);
             layout.addView(objective);
             ui.gap(layout, 8);
+
+            campaignResult = campaign == null ? null : ui.column();
+            campaignStatus = campaign == null ? null : ui.text("", 18, ui.palette.ink(), ui.display);
+            scoreBreakdown = campaign == null ? null : ui.body("");
+            workshopButton = campaign == null ? null
+                    : ui.button(label(R.string.atelier_play_visit), false, campaign.workshop());
+            if (campaign != null) {
+                campaignStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+                campaignResult.setBackground(ui.shape(ui.palette.tripleLetter(), 18, ui.palette.line()));
+                ui.inset(campaignResult, 12, 10);
+                campaignResult.addView(campaignStatus);
+                ui.gap(campaignResult, 4);
+                campaignResult.addView(scoreBreakdown);
+                ui.gap(campaignResult, 7);
+                campaignResult.addView(workshopButton);
+                layout.addView(campaignResult);
+                ui.gap(layout, 6);
+            }
             board = new BoardView(ui, this);
             layout.addView(board, new LinearLayout.LayoutParams(-1, -2));
             ui.gap(layout, 6);
@@ -244,13 +285,27 @@ final class TwoMoveChallengeScreen {
             layout.addView(replayStep);
             replayToggle = ui.textButton("", this::toggleReplay);
             layout.addView(replayToggle);
+            replayRival = campaign == null || !campaign.stage().rival() ? null
+                    : ui.textButton(label(R.string.atelier_play_replay_rival), () -> {
+                        rivalReplay = true;
+                        showReplay(0);
+                    });
+            if (replayRival != null) layout.addView(replayRival);
             retry = ui.textButton(label(R.string.two_move_retry), this::restart);
-            layout.addView(retry);
-            next = circuit == null ? null : ui.button(label(circuit.lastRound()
-                    ? R.string.bonus_see_results : R.string.bonus_next_round), true, circuit.next());
-            if (next == null) {
+            if (campaign == null) layout.addView(retry);
+            if (campaign != null) {
+                boolean last = campaign.stage().number() == NabCampaign.STAGE_COUNT;
+                next = ui.button(last ? label(R.string.atelier_play_map)
+                        : label(R.string.atelier_home_continue, campaign.stage().number() + 1), true,
+                        last ? campaign.map() : campaign.next());
+                campaignResult.addView(next);
+                campaignResult.addView(retry);
+            } else if (circuit == null) {
+                next = null;
                 layout.addView(ui.textButton(label(R.string.two_move_catalog), TwoMoveChallengeScreen.this::showCatalog));
             } else {
+                next = ui.button(label(circuit.lastRound() ? R.string.bonus_see_results : R.string.bonus_next_round),
+                        true, circuit.next());
                 layout.addView(next);
             }
             restoreDraft();
@@ -290,7 +345,10 @@ final class TwoMoveChallengeScreen {
             // A zoomed board can consume vertical scroll gestures over a small viewport.
             // Keep the controls reachable and leave zoom changes to the player here.
             if (compact) return;
-            char[] cells = puzzle.solution().get(1).after().board();
+            List<TwoMoveChallenge.Step> moves = replayMoves();
+            TwoMoveChallenge.Position framed = replay >= 0 ? moves.get(moves.size() - 1).after()
+                    : campaign != null && finish != null ? position : puzzle.solution().get(puzzle.solution().size() - 1).after();
+            char[] cells = framed.board();
             int minRow = FrenchGame.SIZE;
             int minCol = FrenchGame.SIZE;
             int maxRow = 0;
@@ -359,7 +417,7 @@ final class TwoMoveChallengeScreen {
 
         private void reorderRack(int source, int target) { rackDrop.reorderViews(source, target); }
 
-        private boolean playing() { return replay < 0 && second == null; }
+        private boolean playing() { return replay < 0 && finish == null; }
 
         private boolean used(int rackIndex) {
             for (FrenchGame.Tile tile : staged) if (tile.rackIndex() == rackIndex) return true;
@@ -389,16 +447,10 @@ final class TwoMoveChallengeScreen {
             if (!canStage(square, rackIndex)) return;
             char letter = position.rack().get(rackIndex);
             if (letter == FrenchGame.JOKER) {
-                String[] letters = new String[26];
-                for (int i = 0; i < letters.length; i++) letters[i] = Character.toString((char) ('A' + i));
                 TwoMoveChallenge.Position original = position;
-                new AlertDialog.Builder(ui.context).setTitle(R.string.practice_joker_choice)
-                        .setItems(letters, (dialog, item) -> {
-                            if (position == original && canStage(square, rackIndex)) {
-                                stage(square, rackIndex, (char) ('A' + item), true);
-                            }
-                        })
-                        .setNegativeButton(R.string.practice_cancel, null).show();
+                new TurnMenu(ui, R.string.practice_joker_choice).chooseJoker(chosen -> {
+                    if (position == original && canStage(square, rackIndex)) stage(square, rackIndex, chosen, true);
+                });
             } else stage(square, rackIndex, letter, false);
         }
 
@@ -438,16 +490,18 @@ final class TwoMoveChallengeScreen {
 
         private void submit() {
             if (!playing() || blocked) return;
-            TwoMoveChallenge.Step step = TwoMoveChallenge.play(position, staged, lexicon);
+            TwoMoveChallenge.Step step = playMove(staged);
             if (!step.preview().valid()) return;
-            if (first != null && circuit != null && !circuit.complete().test(step.after().totalScore())) {
+            boolean finalMove = first != null || campaign != null && campaign.stage().turns() == 1;
+            if (finalMove && circuit != null && !circuit.complete().test(step.after().totalScore())) {
                 Toast.makeText(ui.context, R.string.bonus_save_error, Toast.LENGTH_SHORT).show();
                 return;
             }
+            if (finalMove && campaign != null && !recordCampaign(step)) return;
             position = step.after();
             if (first == null) {
                 first = step;
-                blocked = !TwoMoveChallenge.hasSecondMove(position, lexicon);
+                blocked = !finalMove && !TwoMoveChallenge.hasSecondMove(position, lexicon);
             } else {
                 second = step;
                 if (drafts != null) {
@@ -458,15 +512,44 @@ final class TwoMoveChallengeScreen {
                     removeDraft();
                 }
             }
-            if (second != null && ui.celebrations) ui.audio.celebrate();
+            if (finalMove) finish = step;
+            if (finalMove && (campaign == null || earnedStars > 0) && ui.celebrations) ui.audio.celebrate();
             else ui.audio.played();
             hintVisible = false;
             staged.clear();
             selected = -1;
-            if (second == null) saveDraft();
+            if (!finalMove) saveDraft();
             buildRack();
             render(-1);
-            if (second != null || blocked) scrollToStart();
+            if (finalMove && campaign != null) {
+                fitBoard();
+                animateCampaignScore();
+            }
+            if (finalMove || blocked) scrollToStart();
+        }
+
+        private TwoMoveChallenge.Step playMove(List<FrenchGame.Tile> tiles) {
+            return campaign == null ? TwoMoveChallenge.play(position, tiles, lexicon)
+                    : NabCampaign.play(campaign.stage(), position, tiles, lexicon);
+        }
+
+        private boolean recordCampaign(TwoMoveChallenge.Step step) {
+            NabCampaign.Stage stage = campaign.stage();
+            earnedStars = NabCampaign.qualifies(stage, step) ? NabCampaign.stars(stage, step.after()) : 0;
+            if (earnedStars == 0) {
+                campaign.progress().saveDraft(stage.number(), lexicon.hash, null);
+                return true;
+            }
+            int previousRoom = campaign.progress().snapshot().workshopLevel();
+            try {
+                NabCampaignProgress.Snapshot saved = campaign.progress().complete(stage, earnedStars,
+                        step.after().totalScore());
+                earnedWorkshop = saved.workshopLevel() > previousRoom ? saved.workshopLevel() : 0;
+                return true;
+            } catch (IOException exception) {
+                Toast.makeText(ui.context, R.string.atelier_play_save_error, Toast.LENGTH_SHORT).show();
+                return false;
+            }
         }
 
         private void editFirst() {
@@ -483,14 +566,19 @@ final class TwoMoveChallengeScreen {
         }
 
         private void restart() {
-            if (drafts != null && second != null) {
+            if (scoreAnimation != null) scoreAnimation.cancel();
+            if (drafts != null && finish != null) {
                 open(puzzle);
                 return;
             }
             position = puzzle.initial();
             first = null;
             second = null;
+            finish = null;
+            earnedStars = 0;
+            earnedWorkshop = 0;
             replay = -1;
+            rivalReplay = false;
             hintVisible = false;
             blocked = false;
             staged.clear();
@@ -511,7 +599,9 @@ final class TwoMoveChallengeScreen {
             moves.put(MatchCodec.tiles(first == null ? List.of() : first.tiles(), true));
             moves.put(MatchCodec.tiles(staged, true));
             String saved = moves.toString();
-            if (drafts == null) circuit.saveDraft().accept(saved);
+            if (campaign != null) campaign.progress().saveDraft(campaign.stage().number(), lexicon.hash,
+                    first == null && staged.isEmpty() ? null : saved);
+            else if (drafts == null) circuit.saveDraft().accept(saved);
             else drafts.edit().putString(puzzle.id(), saved)
                     .putString("lexicon/" + puzzle.id(), lexicon.hash).apply();
         }
@@ -521,15 +611,16 @@ final class TwoMoveChallengeScreen {
         }
 
         private void restoreDraft() {
-            String saved = drafts == null ? circuit.savedDraft() : drafts.getString(puzzle.id(), "");
+            String saved = campaign != null ? campaign.progress().draft(campaign.stage().number(), lexicon.hash)
+                    : drafts == null ? circuit.savedDraft() : drafts.getString(puzzle.id(), "");
             if (saved == null || saved.isEmpty()) return;
             try {
                 JSONArray moves = new JSONArray(saved);
                 if (moves.length() != 2) return;
                 List<FrenchGame.Tile> opening = MatchCodec.readTiles(moves.getJSONArray(0), true);
                 List<FrenchGame.Tile> pending = MatchCodec.readTiles(moves.getJSONArray(1), true);
-                if (!opening.isEmpty()) {
-                    TwoMoveChallenge.Step played = TwoMoveChallenge.play(position, opening, lexicon);
+                if (!opening.isEmpty() && (campaign == null || campaign.stage().turns() == 2)) {
+                    TwoMoveChallenge.Step played = playMove(opening);
                     if (!played.preview().valid()) return;
                     first = played;
                     position = first.after();
@@ -545,13 +636,20 @@ final class TwoMoveChallengeScreen {
         }
 
         private void toggleReplay() {
-            if (replay < 0) showReplay(0);
+            if (replay < 0) {
+                rivalReplay = false;
+                showReplay(0);
+            }
             else leaveReplay();
+        }
+
+        private List<TwoMoveChallenge.Step> replayMoves() {
+            return rivalReplay ? campaign.stage().rivalMoves() : puzzle.solution();
         }
 
         private void showReplay(int index) {
             replay = index;
-            List<FrenchGame.Tile> tiles = puzzle.solution().get(replay).tiles();
+            List<FrenchGame.Tile> tiles = replayMoves().get(replay).tiles();
             render(tiles.get(0).position());
             fitBoard();
             scrollToStart();
@@ -559,7 +657,9 @@ final class TwoMoveChallengeScreen {
 
         private void leaveReplay() {
             replay = -1;
+            rivalReplay = false;
             render(-1);
+            if (campaign != null) fitBoard();
             scrollToStart();
         }
 
@@ -567,21 +667,24 @@ final class TwoMoveChallengeScreen {
             boolean reviewing = replay >= 0;
             boolean playing = playing();
             boolean showHint = playing && first == null;
+            if (campaignResult != null) show(campaignResult, !playing && !reviewing);
             show(rackRow, playing);
             show(feedback, !playing || !blocked);
             show(playRow, playing && !blocked);
             show(edit, playing && first != null);
             show(hint, showHint);
             show(nabCard, reviewing || showHint && hintVisible);
-            show(replayStep, reviewing);
+            show(replayStep, reviewing && replayMoves().size() > 1);
             show(replayToggle, reviewing || !playing || showHint && hintVisible);
+            if (replayRival != null) show(replayRival, !playing && !reviewing);
             show(retry, circuit == null && !playing && !reviewing);
-            if (next != null) show(next, !playing && !reviewing);
+            if (next != null) show(next, !playing && !reviewing && (campaign == null || earnedStars > 0));
             hint.setText(hintVisible ? R.string.two_move_hint_hide : R.string.two_move_hint);
-            replayToggle.setText(reviewing ? R.string.two_move_yours : R.string.two_move_replay);
+            replayToggle.setText(reviewing ? R.string.two_move_yours : campaign == null ? R.string.two_move_replay
+                    : R.string.atelier_play_replay_example);
             board.guide(showHint && hintVisible ? puzzle.hintPosition() : -1);
             portrait.pose(reviewing || showHint && hintVisible ? R.drawable.nab_arcade_think
-                    : blocked ? R.drawable.nab_arcade_sad
+                    : blocked || campaign != null && !playing && earnedStars == 0 ? R.drawable.nab_arcade_sad
                     : playing ? R.drawable.nab_arcade_focus : R.drawable.nab_arcade_cheer);
 
             if (reviewing) {
@@ -590,31 +693,46 @@ final class TwoMoveChallengeScreen {
             }
             if (!playing) {
                 List<String> words = new ArrayList<>(first.preview().words());
-                words.addAll(second.preview().words());
+                if (second != null) words.addAll(second.preview().words());
                 DefinitionAction.update(ui, definition, words);
                 phase.setText(label(R.string.two_move_result, points(position.totalScore())));
-                objective.setText(label(R.string.two_move_breakdown,
+                objective.setText(campaign != null ? puzzle.objective() : label(R.string.two_move_breakdown,
                         points(first.preview().score()), points(second.preview().score())));
-                feedback.setText(score(second.preview()));
+                feedback.setText(score(finish.preview()));
                 feedback.setBackground(ui.shape(ui.palette.ordinary(), 12));
-                renderBoard(position, List.of(), second.tiles(), -1, "");
+                renderBoard(position, List.of(), finish.tiles(), -1, "");
+                if (campaign != null) renderCampaignResult();
                 return;
             }
 
             DefinitionAction.update(ui, definition, List.of());
             boolean firstMove = first == null;
-            phase.setText(firstMove ? label(R.string.two_move_phase, 1)
+            String turnLabel = firstMove ? label(R.string.two_move_phase, 1)
                     : label(R.string.two_move_phase, 2) + "  ·  "
-                            + label(R.string.two_move_running_total, points(position.totalScore())));
+                            + label(R.string.two_move_running_total, points(position.totalScore()));
+            if (campaign != null && firstMove) {
+                NabCampaign.Stage stage = campaign.stage();
+                turnLabel = label(R.string.atelier_play_level, stage.number(), NabCampaign.STAGE_COUNT);
+                if (stage.rival()) turnLabel += "  ·  " + label(R.string.atelier_play_nab, points(stage.rivalScore()));
+            }
+            phase.setText(turnLabel);
             objective.setText(firstMove ? puzzle.objective()
                     : label(blocked ? R.string.bonus_no_second_move : R.string.two_move_keep));
-            submit.setText(firstMove ? R.string.two_move_first : R.string.two_move_second);
-            FrenchGame.Preview preview = staged.isEmpty() ? null : TwoMoveChallenge.play(position, staged, lexicon).preview();
+            if (campaign != null && !firstMove && !blocked) objective.setText(puzzle.objective());
+            submit.setText(campaign != null && campaign.stage().turns() == 1 ? R.string.practice_ready
+                    : firstMove ? R.string.two_move_first : R.string.two_move_second);
+            TwoMoveChallenge.Step candidate = staged.isEmpty() ? null : playMove(staged);
+            FrenchGame.Preview preview = candidate == null ? null : candidate.preview();
             boolean valid = preview != null && preview.valid();
             ui.enabled(submit, valid);
             ui.enabled(clear, !staged.isEmpty() || selected >= 0);
+            int status = R.string.practice_status_valid;
+            if (valid && campaign != null && candidate.after().moves() == campaign.stage().turns()) {
+                status = NabCampaign.qualifies(campaign.stage(), candidate) ? R.string.atelier_play_goal_ready
+                        : R.string.atelier_play_goal_short;
+            }
             String message = blocked ? "" : preview == null ? label(R.string.two_move_pick) : valid
-                    ? label(R.string.practice_status_valid) + "\n" + score(preview) : preview.error();
+                    ? label(status) + "\n" + score(preview) : preview.error();
             feedback.setText(message);
             int feedbackColor = valid ? ui.palette.ordinary() : preview != null ? ui.palette.doubleWord() : ui.palette.paper();
             feedback.setBackground(ui.shape(feedbackColor, 12));
@@ -630,17 +748,100 @@ final class TwoMoveChallengeScreen {
         }
 
         private void renderReplay(int animate) {
-            TwoMoveChallenge.Step step = puzzle.solution().get(replay);
+            List<TwoMoveChallenge.Step> moves = replayMoves();
+            TwoMoveChallenge.Step step = moves.get(replay);
             DefinitionAction.update(ui, definition, step.preview().words());
-            phase.setText(label(R.string.two_move_replay_phase, replay + 1));
+            phase.setText(label(rivalReplay ? R.string.atelier_play_replay_rival_turn : R.string.two_move_replay_phase,
+                    replay + 1));
             objective.setText(label(R.string.two_move_running_total, points(step.after().totalScore())));
             feedback.setText(score(step.preview()));
             feedback.setBackground(ui.shape(ui.palette.ordinary(), 12));
             replayStep.setText(replay == 0 ? R.string.two_move_replay_next : R.string.two_move_replay_previous);
-            nabText.setText(replay == 0
+            nabText.setText(rivalReplay ? label(R.string.atelier_play_nab, points(campaign.stage().rivalScore()))
+                    : replay == 0 && moves.size() > 1
                     ? label(R.string.two_move_replay_note) + "\n" + rackText(step.after().rack())
                     : label(R.string.two_move_nab_hint, puzzle.explanation()));
             renderBoard(step.after(), List.of(), step.tiles(), animate, "");
+        }
+
+        private void renderCampaignResult() {
+            String result = earnedStars == 0 ? label(R.string.atelier_play_try_again)
+                    : label(R.string.atelier_play_success, STARS.get(earnedStars));
+            if (earnedWorkshop > 0) result += "\n" + label(R.string.atelier_play_reward,
+                    label(AtelierScreen.rewardName(earnedWorkshop)));
+            campaignStatus.setText(result);
+            if (earnedStars > 0) campaignStatus.setContentDescription(label(R.string.atelier_play_success,
+                    ui.context.getResources().getQuantityString(R.plurals.atelier_play_stars, earnedStars, earnedStars))
+                    + (earnedWorkshop == 0 ? "" : ". " + label(R.string.atelier_play_reward,
+                            label(AtelierScreen.rewardName(earnedWorkshop)))));
+            else campaignStatus.setContentDescription(null);
+            show(workshopButton, earnedWorkshop > 0);
+            NabCampaign.Stage stage = campaign.stage();
+            String breakdown = String.join("  ·  ", campaignWords(finish).stream()
+                    .map(word -> label(R.string.atelier_play_word_score, word.word(), word.score())).toList());
+            if (stage.rival()) breakdown = label(R.string.atelier_play_versus_score,
+                    points(position.totalScore()), points(stage.rivalScore())) + "\n" + breakdown;
+            if (finish.tiles().size() == FrenchGame.RACK_SIZE) breakdown += "  ·  " + label(R.string.atelier_play_bingo);
+            scoreBreakdown.setText(breakdown);
+        }
+
+        private List<FrenchGame.FormedWord> campaignWords(TwoMoveChallenge.Step move) {
+            return FrenchGame.recordedWords(move.before().board(), move.before().blanks(), move.tiles(), lexicon.language);
+        }
+
+        private void animateCampaignScore() {
+            if (!ui.animate || !ui.celebrations || earnedStars == 0) return;
+            TwoMoveChallenge.Step played = finish;
+            List<FrenchGame.FormedWord> words = campaignWords(played);
+            if (words.size() < 2) return;
+            int base = played.before().totalScore();
+            int[] totals = new int[words.size() + 1];
+            totals[0] = base;
+            for (int i = 0; i < words.size(); i++) totals[i + 1] = totals[i] + words.get(i).score();
+            List<List<Integer>> lines = campaignWordLines(played);
+            scoreAnimation = ValueAnimator.ofInt(1, words.size() + 1);
+            scoreAnimation.setDuration(190L * words.size());
+            scoreAnimation.setInterpolator(new android.view.animation.LinearInterpolator());
+            scoreAnimation.addUpdateListener(animation -> {
+                if (finish != played || replay >= 0 || !board.isAttachedToWindow()) {
+                    animation.cancel();
+                    return;
+                }
+                int count = (Integer) animation.getAnimatedValue();
+                boolean finalFrame = count > words.size();
+                phase.setText(label(R.string.two_move_result, points(finalFrame ? position.totalScore() : totals[count])));
+                board.highlightSquares(!finalFrame && count <= lines.size() ? lines.get(count - 1) : List.of());
+            });
+            scoreAnimation.start();
+        }
+
+        private List<List<Integer>> campaignWordLines(TwoMoveChallenge.Step played) {
+            char[] letters = played.after().board();
+            List<FrenchGame.Tile> tiles = played.tiles();
+            int start = tiles.get(0).position();
+            boolean horizontal = tiles.size() == 1 ? wordLine(letters, start, 1).size() > 1
+                    : tiles.get(1).position() / FrenchGame.SIZE == start / FrenchGame.SIZE;
+            List<List<Integer>> lines = new ArrayList<>();
+            lines.add(wordLine(letters, start, horizontal ? 1 : FrenchGame.SIZE));
+            for (FrenchGame.Tile tile : tiles) {
+                List<Integer> cross = wordLine(letters, tile.position(), horizontal ? FrenchGame.SIZE : 1);
+                if (cross.size() > 1) lines.add(cross);
+            }
+            return lines;
+        }
+
+        private List<Integer> wordLine(char[] letters, int square, int direction) {
+            int start = square;
+            int previous = FrenchGame.step(start, direction, -1);
+            while (previous >= 0 && letters[previous] != 0) {
+                start = previous;
+                previous = FrenchGame.step(start, direction, -1);
+            }
+            List<Integer> line = new ArrayList<>();
+            for (int cell = start; cell >= 0 && letters[cell] != 0; cell = FrenchGame.step(cell, direction, 1)) {
+                line.add(cell);
+            }
+            return line;
         }
 
         private String rackText(List<Character> rack) {
@@ -657,6 +858,7 @@ final class TwoMoveChallengeScreen {
 
         private void renderBoard(TwoMoveChallenge.Position state, List<FrenchGame.Tile> pending,
                                  List<FrenchGame.Tile> highlighted, int animate, String suffix) {
+            if (campaign != null) board.highlightSquares(List.of());
             char[] cells = state.board();
             boolean[] blanks = state.blanks();
             board.update(cells, blanks, pending, highlighted, animate);

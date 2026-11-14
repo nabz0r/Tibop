@@ -1,0 +1,35 @@
+<resources>
+    <string name="atelier_title">L’atelier de NAB</string>
+    <string name="atelier_home_intro">Avance sur la carte et fais grandir ton atelier.</string>
+    <string name="atelier_home_continue">Continuer · Niveau %1$d</string>
+    <string name="atelier_home_complete">Revoir la carte</string>
+    <string name="atelier_tab_map">Carte</string>
+    <string name="atelier_tab_workshop">Atelier</string>
+    <string name="atelier_campaign_count">Progression · %1$d / %2$d</string>
+    <string name="atelier_next_reward">À débloquer au niveau %1$d · %2$s</string>
+    <string name="atelier_chapter_number">Chapitre %1$d</string>
+    <string name="atelier_chapter_1">Premiers mots</string>
+    <string name="atelier_chapter_2">Cases et croisements</string>
+    <string name="atelier_chapter_3">Deux coups d’avance</string>
+    <string name="atelier_level_number">%1$d</string>
+    <string name="atelier_level_label">Niveau %1$d · %2$s</string>
+    <string name="atelier_level_open">À jouer</string>
+    <string name="atelier_level_locked">Verrouillé</string>
+    <string name="atelier_level_finale">Finale</string>
+    <plurals name="atelier_level_result">
+        <item quantity="one">%1$d étoile sur 3, record de %2$d points</item>
+        <item quantity="other">%1$d étoiles sur 3, record de %2$d points</item>
+    </plurals>
+    <string name="atelier_campaign_done">Les 12 niveaux sont réussis. Rejoue-les pour améliorer tes scores.</string>
+    <string name="atelier_room_starter">L’établi de NAB</string>
+    <string name="atelier_room_table">Table de jeu éclairée</string>
+    <string name="atelier_room_library">Bibliothèque</string>
+    <string name="atelier_room_gallery">Galerie des trophées</string>
+    <string name="atelier_room_art_starter">Une table en bois et un bol de tuiles près d’une bibliothèque vide.</string>
+    <string name="atelier_room_art_table">Une lampe éclaire la table. Des livres et des tiroirs remplissent les étagères.</string>
+    <string name="atelier_room_art_library">Une bibliothèque garnie, un trophée et deux tableaux de liège entourent la table de jeu.</string>
+    <string name="atelier_room_art_gallery">Des vitraux et des lanternes éclairent un livre ouvert et la coupe dorée.</string>
+    <string name="atelier_upgrades_heading">Améliorations de l’atelier</string>
+    <string name="atelier_upgrade_earned">Débloqué · %1$s</string>
+    <string name="atelier_upgrade_locked">Termine le niveau %1$d.</string>
+</resources>

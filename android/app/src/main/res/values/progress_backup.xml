@@ -2,7 +2,7 @@
 <resources>
     <string name="backup_title">Sauvegarder et transférer</string>
     <string name="backup_summary">Exporter ou restaurer la progression FR et EN</string>
-    <string name="backup_details">Le fichier conserve les parties, l’historique, l’Elo, les défis, les pièces, les tickets, les thèmes et le profil local dans les deux langues. Il peut contenir votre photo et votre profil. Gardez-le dans un endroit privé. Les connexions aux comptes Amis restent sur leur appareil.</string>
+    <string name="backup_details">Le fichier conserve les parties, l’historique, l’Elo, les défis, l’atelier de NAB, les pièces, les tickets, les thèmes et le profil local dans les deux langues. Il peut contenir votre photo et votre profil. Gardez-le dans un endroit privé. Les connexions aux comptes Amis restent sur leur appareil.</string>
     <string name="backup_export">Créer une sauvegarde</string>
     <string name="backup_import">Restaurer une sauvegarde</string>
     <string name="backup_replace">Cette sauvegarde remplace la progression locale actuelle dans les deux langues. Pour conserver la progression actuelle, exportez-la avant de restaurer.</string>
