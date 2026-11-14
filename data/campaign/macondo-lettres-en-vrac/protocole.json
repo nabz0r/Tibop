@@ -1,0 +1,100 @@
+{
+  "schema": "wordrivet.fisf-direct-training-plan.v1",
+  "lexicon": "Lettres en vrac (MPL 2.0, formes de plateau normalisées)",
+  "lexicon_sha256": "4346fed90d914ecdf12db0eb8ffb0a760ced1330621f8673c8cfe3fe2a23d0dc",
+  "engine": "fr-classic-v1",
+  "macondo": "Macondo v0.13.9 max_score",
+  "reference_binary_sha256": "1ff282cc1dff16ba423763f73e850c81c9ea4b4418496282cc4e2e1f0e2eb030",
+  "image": "sha256:82f692d66d41322537b4641fa8f371951f071ebc24d0baf4a22ea0430486877a",
+  "clock_ms": 1200000,
+  "candidate_weights": {
+    "base": {
+      "blank_weight": 23,
+      "end_penalty": 3,
+      "leave_scale": 100,
+      "s_weight": 9,
+      "turnover": 0,
+      "width": 12
+    },
+    "autojeu": {
+      "blank_weight": 69,
+      "end_penalty": 2,
+      "leave_scale": 163,
+      "s_weight": 13,
+      "turnover": 4,
+      "width": 22
+    },
+    "largeur-22": {
+      "blank_weight": 23,
+      "end_penalty": 3,
+      "leave_scale": 100,
+      "s_weight": 9,
+      "turnover": 0,
+      "width": 22
+    },
+    "reliquat-75": {
+      "blank_weight": 23,
+      "end_penalty": 3,
+      "leave_scale": 75,
+      "s_weight": 9,
+      "turnover": 0,
+      "width": 12
+    },
+    "reliquat-130": {
+      "blank_weight": 23,
+      "end_penalty": 3,
+      "leave_scale": 130,
+      "s_weight": 9,
+      "turnover": 0,
+      "width": 12
+    },
+    "joker-42": {
+      "blank_weight": 42,
+      "end_penalty": 3,
+      "leave_scale": 100,
+      "s_weight": 9,
+      "turnover": 0,
+      "width": 12
+    },
+    "renouvellement": {
+      "blank_weight": 24,
+      "end_penalty": 3,
+      "leave_scale": 72,
+      "s_weight": 7,
+      "turnover": 5,
+      "width": 20
+    },
+    "equilibre": {
+      "blank_weight": 35,
+      "end_penalty": 4,
+      "leave_scale": 115,
+      "s_weight": 16,
+      "turnover": 2,
+      "width": 18
+    },
+    "reliquat-large": {
+      "blank_weight": 30,
+      "end_penalty": 3,
+      "leave_scale": 145,
+      "s_weight": 12,
+      "turnover": -1,
+      "width": 20
+    }
+  },
+  "screening": {
+    "first_seed": 984530000,
+    "pairs": 100
+  },
+  "selection": {
+    "first_seed": 984540000,
+    "pairs": 150,
+    "nonbase_finalists": 3
+  },
+  "holdout": {
+    "first_seed": 984570000,
+    "pairs_per_policy": 500
+  },
+  "ranking": "Descending match point rate, then descending mean score margin, then ascending candidate identifier.",
+  "winner": "Highest-ranked non-base finalist pooling both Macondo training rounds; base remains the fixed external control.",
+  "method": "Full NAB Peak and Macondo games with the same FISF arbiter, lexicon, initial draws and swapped seats. Only weights vary. Holdout scores not used for selection."
+}

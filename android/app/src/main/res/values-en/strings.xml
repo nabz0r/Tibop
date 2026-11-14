@@ -6,9 +6,12 @@
     <string name="move_explanation_last">Explain the last move</string>
     <string name="move_explanation_current">Explain this move</string>
     <string name="move_explanation_title">Move %1$d explanation</string>
-    <string name="move_explanation_loading">Analyzing on this device…</string>
-    <string name="move_explanation_model">Explanation from the built-in model</string>
-    <string name="move_explanation_engine">Game engine explanation · model unavailable</string>
+    <string name="move_explanation_more">Show other details</string>
+    <string name="move_explanation_less">Hide other details</string>
+    <string name="move_explanation_ask_model">Ask NAB to pick a detail</string>
+    <string name="move_explanation_loading">NAB is picking a detail on this device…</string>
+    <string name="move_explanation_model">Detail selected by SmolLM2\n\n%1$s</string>
+    <string name="move_explanation_engine">The on-device model is unavailable.</string>
     <string name="move_explanation_partial">A score breakdown is unavailable for this move.</string>
     <string name="move_explanation_close">Close</string>
 </resources>

@@ -1,5 +1,5 @@
 use crate::{
-    engine::{Engine, ExpertPolicy, MoveKind, Tile},
+    engine::{BASE_EXPERT, ENGINE_VERSION, Engine, ExpertPolicy, MoveKind, Tile},
     fisf_match::{ClockStatus, EndReason, MatchRules, STANDARD_CLOCK_MS, TurnKind},
     peak::{DEFAULT_CONFIG, PeakConfig, PeakSearch},
 };
@@ -9,6 +9,8 @@ use rand_xoshiro::Xoshiro256PlusPlus;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use sha2::{Digest, Sha256};
 use std::{
+    env,
+    ffi::OsStr,
     fs::{self, OpenOptions},
     io::{BufRead, BufReader, BufWriter, Read, Write},
     path::Path,
@@ -285,6 +287,11 @@ struct Report {
     host_os: &'static str,
     host_arch: &'static str,
     host_logical_cpus: Option<usize>,
+    nab_policy: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    nab_model_sha256: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    nab_model_promoted: Option<bool>,
     nab_base: ExpertPolicy,
     nab_search: PeakConfig,
     initial_clock_ms: u64,
@@ -308,6 +315,79 @@ struct Report {
     relative_elo: f64,
     elo_method: &'static str,
     elapsed_seconds: f64,
+}
+
+#[derive(Deserialize)]
+struct TrainedPolicy {
+    schema: String,
+    engine: String,
+    lexicon_sha256: String,
+    selected: ExpertPolicy,
+    promoted: bool,
+}
+
+impl TrainedPolicy {
+    fn read(bytes: &[u8], lexicon_sha256: &str) -> Result<Self> {
+        let model: Self = serde_json::from_slice(bytes)?;
+        ensure!(
+            model.schema == "lettrine.bot-policy.v1",
+            "Schéma du modèle NAB incompatible"
+        );
+        ensure!(
+            model.engine == ENGINE_VERSION,
+            "Moteur du modèle NAB incompatible"
+        );
+        ensure!(
+            model.lexicon_sha256 == lexicon_sha256,
+            "Le modèle NAB a été entraîné sur un autre lexique"
+        );
+        let selected = model.selected;
+        ensure!(
+            (60..=180).contains(&selected.leave_scale)
+                && (20..=78).contains(&selected.blank_weight)
+                && (6..=34).contains(&selected.s_weight)
+                && (-2..=8).contains(&selected.turnover)
+                && (2..=8).contains(&selected.end_penalty)
+                && (10..=35).contains(&selected.width),
+            "Paramètres entraînés du modèle NAB hors limites"
+        );
+        Ok(model)
+    }
+}
+
+struct NabSelection {
+    policy: &'static str,
+    expert: ExpertPolicy,
+    model_sha256: Option<String>,
+    model_promoted: Option<bool>,
+}
+
+impl NabSelection {
+    fn select(source: Option<&OsStr>, lexicon_sha256: &str) -> Result<Self> {
+        let (policy, expert) = match source {
+            None => ("auto", crate::server::model_policy(lexicon_sha256)),
+            Some(value) if value == "base" => ("base", BASE_EXPERT),
+            Some(value) => {
+                let path = Path::new(value);
+                let bytes = fs::read(path)
+                    .with_context(|| format!("Lecture du modèle NAB {}", path.display()))?;
+                let model = TrainedPolicy::read(&bytes, lexicon_sha256)
+                    .with_context(|| format!("Vérification du modèle NAB {}", path.display()))?;
+                return Ok(Self {
+                    policy: "trained",
+                    expert: model.selected,
+                    model_sha256: Some(format!("{:x}", Sha256::digest(&bytes))),
+                    model_promoted: Some(model.promoted),
+                });
+            }
+        };
+        Ok(Self {
+            policy,
+            expert,
+            model_sha256: None,
+            model_promoted: None,
+        })
+    }
 }
 
 fn score_play(
@@ -635,14 +715,17 @@ pub(crate) fn run(
         report_path != games_path && !report_path.exists() && !games_path.exists(),
         "Choisissez deux nouveaux chemins de sortie"
     );
+    let nab = NabSelection::select(
+        env::var_os("LETTRINE_FISF_NAB_MODEL").as_deref(),
+        &engine.digest,
+    )?;
     let reference_path = reference_path
         .canonicalize()
         .context("Chemin du moteur externe")?;
     let reference_hash = format!("{:x}", Sha256::digest(fs::read(&reference_path)?));
     let (reference, identity) =
         Reference::start(&reference_path, engine.reference_graph()?, STARTUP_DEADLINE)?;
-    let expert = crate::server::model_policy(&engine.digest);
-    let mut peak = PeakSearch::new(engine, expert, DEFAULT_CONFIG)?;
+    let mut peak = PeakSearch::new(engine, nab.expert, DEFAULT_CONFIG)?;
     let started = Instant::now();
     let mut log = BufWriter::new(
         OpenOptions::new()
@@ -699,7 +782,10 @@ pub(crate) fn run(
         host_os: std::env::consts::OS,
         host_arch: std::env::consts::ARCH,
         host_logical_cpus: std::thread::available_parallelism().ok().map(usize::from),
-        nab_base: expert,
+        nab_policy: nab.policy,
+        nab_model_sha256: nab.model_sha256,
+        nab_model_promoted: nab.model_promoted,
+        nab_base: nab.expert,
         nab_search: DEFAULT_CONFIG,
         initial_clock_ms: STANDARD_CLOCK_MS,
         clock_model: "wall_time_monotonic_ms_rounded_up_includes_reference_ipc",
@@ -736,6 +822,54 @@ mod tests {
     use super::*;
     use crate::profiles;
     use std::sync::OnceLock;
+
+    #[test]
+    fn nab_policy_can_pin_base_or_load_matching_trained_model() {
+        let path = Path::new("data/models/fr-bots-v1.json");
+        let lexicon_sha256 = format!(
+            "{:x}",
+            Sha256::digest(fs::read("data/fr/words.txt").unwrap())
+        );
+        let base = NabSelection::select(Some(OsStr::new("base")), &lexicon_sha256).unwrap();
+        let trained = NabSelection::select(Some(path.as_os_str()), &lexicon_sha256).unwrap();
+        let auto = NabSelection::select(None, &lexicon_sha256).unwrap();
+
+        assert_eq!(base.policy, "base");
+        assert_eq!(base.expert, BASE_EXPERT);
+        assert!(base.model_sha256.is_none());
+        assert_eq!(trained.policy, "trained");
+        assert_eq!(trained.model_promoted, Some(true));
+        assert_eq!(
+            trained.model_sha256,
+            Some(format!("{:x}", Sha256::digest(fs::read(path).unwrap())))
+        );
+        assert_eq!(auto.policy, "auto");
+        assert_eq!(auto.expert, trained.expert);
+        assert_ne!(trained.expert, base.expert);
+    }
+
+    #[test]
+    fn trained_model_rejects_mismatch_but_allows_unpromoted_evaluation() {
+        let mut value = serde_json::json!({
+            "schema": "lettrine.bot-policy.v1",
+            "engine": ENGINE_VERSION,
+            "lexicon_sha256": "shared-lexicon-digest",
+            "selected": BASE_EXPERT,
+            "promoted": false,
+        });
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let candidate = TrainedPolicy::read(&bytes, "shared-lexicon-digest").unwrap();
+        assert!(!candidate.promoted);
+        assert!(TrainedPolicy::read(&bytes, "another-digest").is_err());
+        value["selected"]["width"] = serde_json::json!(0);
+        assert!(
+            TrainedPolicy::read(
+                &serde_json::to_vec(&value).unwrap(),
+                "shared-lexicon-digest"
+            )
+            .is_err()
+        );
+    }
 
     fn fixture() -> Match<'static> {
         static ENGINE: OnceLock<Engine> = OnceLock::new();

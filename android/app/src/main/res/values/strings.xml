@@ -6,9 +6,12 @@
     <string name="move_explanation_last">Expliquer le dernier coup</string>
     <string name="move_explanation_current">Expliquer ce coup</string>
     <string name="move_explanation_title">Explication du coup %1$d</string>
-    <string name="move_explanation_loading">Analyse sur cet appareil…</string>
-    <string name="move_explanation_model">Explication avec le modèle embarqué</string>
-    <string name="move_explanation_engine">Explication du moteur de jeu · modèle indisponible</string>
+    <string name="move_explanation_more">Voir les autres détails</string>
+    <string name="move_explanation_less">Masquer les autres détails</string>
+    <string name="move_explanation_ask_model">Choisir un détail avec NAB</string>
+    <string name="move_explanation_loading">NAB choisit un détail sur cet appareil…</string>
+    <string name="move_explanation_model">Détail choisi par SmolLM2\n\n%1$s</string>
+    <string name="move_explanation_engine">Le modèle local est indisponible.</string>
     <string name="move_explanation_partial">Détail des points indisponible pour ce coup.</string>
     <string name="move_explanation_close">Fermer</string>
 </resources>

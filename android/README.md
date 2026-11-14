@@ -1,6 +1,6 @@
 # WordRivet pour Android
 
-L’[APK 0.15.1](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). WordRivet est le nom de travail de la bêta Android de Lettrine. L’identifiant Android et la signature de la distribution directe permettent de mettre à jour une installation Lettrine existante. Le [bundle 0.15.1](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK 0.15.2](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). WordRivet est la bêta Android de Lettrine. L’identifiant Android et la signature de l’APK permettent de mettre à jour une installation directe. Le [bundle 0.15.2](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Jouer
 
@@ -28,13 +28,13 @@ L’[APK 0.15.1](artifacts/lettrine.apk) fonctionne en invité hors ligne à par
 - Dans **Profil → Réglages**, choisissez une ambiance originale et son volume, et activez séparément les sons de tuiles. Les sons se jouent hors ligne.
 - **Historique** présente les résultats, les statistiques et la relecture coup par coup. Exporter une partie ou tout l’historique en JSON, puis déposer le fichier dans l’administration du studio Lettrine.
 - **Évolution de l’Elo** se trouve dans l’historique. Elle suit la cote de départ puis les parties solo cotées. Sélectionnez un point pour retrouver la cote, sa variation et le niveau de NAB utilisé.
-- **Expliquer le dernier coup** s’affiche dans une partie après le premier tour. En relecture, **Expliquer ce coup** s’applique au tour affiché. Les scores, mots croisés, cases bonus et jokers proviennent du moteur. Le modèle embarqué choisit le détail à mettre en avant. Si le modèle ne répond pas, le moteur affiche son explication dans la langue du jeu.
+- **Expliquer le dernier coup** s’affiche dans une partie après le premier tour. En relecture, **Expliquer ce coup** s’applique au tour affiché. Le moteur affiche immédiatement le score et ses détails vérifiés, dans la langue du jeu. Quand plusieurs détails sont disponibles, vous pouvez tous les lire et demander à NAB d’en mettre un en avant. L’explication chiffrée reste visible pendant l’analyse.
 - **Bilan avec NAB** est disponible en fin de partie et depuis son rejeu. NAB sélectionne jusqu’à trois tours à revoir. Alternez entre le coup joué et la proposition pour comparer leurs scores immédiats sur le même plateau. **Expliquer la comparaison** s’appuie sur les données du moteur et fonctionne hors ligne.
 - **Rejouer mes coups manqués** ouvre la position et le chevalet du tour sélectionné dans le bilan. Ce bouton apparaît quand NAB a trouvé un placement qui marque plus de points et que le journal contient le chevalet du tour. Jouez votre propre tentative ou affichez la proposition. Les exercices ne modifient ni la partie ni l’Elo.
 
 Le jeu valide les placements avec [Grammalecte 7.7](../data/fr/README.md) en français et [ENABLE2K](../data/en/README.md) en anglais. Les lettres du sac et leurs valeurs suivent la langue du jeu. Les duels anglais à deux suivent le profil de règles anglais de Lettrine. Le niveau Maître applique les poids sélectionnés lors de l’entraînement du moteur Mac quand l’empreinte du lexique correspond. Le générateur de coups Android et ses cotes locales sont propres à l’application.
 
-SmolLM2 135M Instruct quantifié en 4 bits tourne sur le processeur via llama.cpp. Le premier commentaire prépare une copie des poids dans le stockage privé de l’application. L’APK pèse environ 94 Mo et cette copie utilise environ 92 Mo supplémentaires. Le modèle reçoit les faits vérifiés par le moteur. Les explications restent disponibles en mode avion et n’affectent pas l’Elo. [Modèle, empreinte et licences](app/src/main/assets/SmolLM2-NOTICE.md)
+SmolLM2 135M Instruct quantifié en 4 bits tourne sur le processeur via llama.cpp lorsque vous demandez à NAB de choisir un détail. Le premier appel prépare une copie des poids dans le stockage privé de l’application. L’APK pèse environ 97 Mo et cette copie utilise environ 92 Mo supplémentaires. Le moteur Android calcule les placements, les scores et l’Elo local. Les explications fonctionnent en mode avion. [Modèle, empreinte et licences](app/src/main/assets/SmolLM2-NOTICE.md)
 
 En solo, le bilan se concentre sur vos tours. Les variantes sont calculées à partir du plateau et du chevalet du tour, avec le lexique de la partie. Le classement privilégie les plus grands écarts de points immédiats parmi les placements trouvés. Pour les parties Bluetooth et les anciens journaux sans chevalets, le bilan peut expliquer les coups visibles.
 
@@ -59,7 +59,7 @@ bundletool validate --bundle=android/artifacts/lettrine.aab
 
 Ce build produit un [Android App Bundle signé](artifacts/lettrine.aab) pour `fr.lettrine.game`. Sur le Mac de publication, il utilise la clé d’envoi Lettrine stockée dans `~/.android/lettrine`. Sur un autre poste, `LETTRINE_PLAY_KEYSTORE`, `LETTRINE_PLAY_PASSWORD_FILE` et `LETTRINE_PLAY_KEY_ALIAS` permettent de retrouver la même clé. Le mot de passe se lit depuis un fichier privé. Conserver une sauvegarde sécurisée des éléments de signature en dehors du dépôt.
 
-Dans la Play Console, créer la version sur le canal de test souhaité, configurer Play App Signing au premier envoi, puis importer le bundle. Le certificat SHA-256 de la clé d’envoi est `6F:7A:E3:53:5D:E5:FA:76:CE:43:0D:C2:C6:44:7B:B6:8F:6B:8F:FF:DB:75:10:24:52:90:7E:99:DF:0E:1E:2A`. Les APK distribués par Play porteront le certificat de signature de l’application affiché par la console. Android exige la même signature pour une mise à jour en place. Pour passer de l’APK direct à la version Play, installez d’abord la 0.15.1 par-dessus votre APK direct, créez une sauvegarde dans un dossier accessible, puis désinstallez l’APK direct. Restaurez cette sauvegarde dans l’édition Play. [Signature Play](https://support.google.com/googleplay/android-developer/answer/9842756) · [Préparation d’une version](https://support.google.com/googleplay/android-developer/answer/9859348)
+Dans la Play Console, créer la version sur le canal de test souhaité, configurer Play App Signing au premier envoi, puis importer le bundle. Le certificat SHA-256 de la clé d’envoi est `6F:7A:E3:53:5D:E5:FA:76:CE:43:0D:C2:C6:44:7B:B6:8F:6B:8F:FF:DB:75:10:24:52:90:7E:99:DF:0E:1E:2A`. Les APK distribués par Play porteront le certificat de signature de l’application affiché par la console. Android exige la même signature pour une mise à jour en place. Pour passer de l’APK direct à la version Play, installez d’abord cette version par-dessus votre APK direct, créez une sauvegarde dans un dossier accessible, puis désinstallez l’APK direct. Restaurez cette sauvegarde dans l’édition Play. [Signature Play](https://support.google.com/googleplay/android-developer/answer/9842756) · [Préparation d’une version](https://support.google.com/googleplay/android-developer/answer/9859348)
 
 ## Jouer avec un lexique personnel
 
@@ -168,10 +168,16 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 
 Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.
 
+## Vérification de la version 0.15.2
+
+- Les 65 tests Android et Lint passent. Le moteur embarqué a terminé 1 440 parties complètes avec Grammalecte 7.7. Tous les coups joués ont passé la validation avec le score annoncé.
+- La mise à jour depuis la 0.15.1 a conservé les fichiers de sauvegarde et d’historique contrôlés sur Android 8 et 16. L’onglet **Amis** est accessible sur Android 8 et affiche l’état du serveur. Sur Android 16 avec des pages de 16 Kio, les APK extraits du bundle signé se lancent, reprennent une partie enregistrée et permettent de poser CHATS pour 11 points dans le premier défi.
+- Le rejeu hors ligne donne le score et les détails vérifiés avant toute demande à SmolLM2. [Mesure de SmolLM2 dans les APK 0.15.1 et 0.15.2](../docs/SIMULATIONS_ANDROID.md#vérifier-wordrivet-0152-sur-android)
+
 ## Vérification de la version 0.15.1
 
 - Les 65 tests Android et l’analyse Lint passent. L’installation par-dessus la version précédente a réussi sur Android 8 et 16. Sur Android 16, la partie existante a repris avec son plateau, ses chevalets et son score.
-- Le bundle signé a été validé et ses APK fractionnés installés sur Android 16 avec des pages de 16 Kio. L’APK directe utilise le même certificat que la version précédente.
+- Le bundle signé a été validé et ses APK fractionnés installés sur Android 16 avec des pages de 16 Kio. L’APK direct utilise le même certificat que la version précédente.
 - Le lexique personnel a importé une liste de test en UTF-8 avec accents, puis les 406 312 formes de Grammalecte 7.7. L’empreinte affichée correspond au SHA-256 recalculé sur la liste normalisée. L’écran de parties d’entraînement s’ouvre avec le lexique importé. [Règlement FISF et comparaison avec Macondo](../docs/SIMULATION_FISF.md)
 
 ## Vérification de la version 0.15.0

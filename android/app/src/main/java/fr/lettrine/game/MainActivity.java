@@ -57,7 +57,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.IntFunction;
 
 public final class MainActivity extends Activity {
     private static final int BLUETOOTH_PERMISSION = 41;
@@ -139,6 +138,7 @@ public final class MainActivity extends Activity {
     private JSONObject detail;
     private int replayIndex;
     private AlertDialog explanationDialog;
+    private Future<?> explanationTask;
     private Future<?> reviewTask;
     private Runnable reviewBack;
     private Runnable practiceBack;
@@ -1087,28 +1087,26 @@ public final class MainActivity extends Activity {
         MoveExplanation explanation = MoveExplanation.create(history, moveIndex, gameLanguage);
         if (explanation == null) return;
         showExplanation(getString(R.string.move_explanation_title, moveIndex + 1),
-                explanation.facts(), explanation.options(), explanation::text);
+                explanation.summary(), explanation.facts(), explanation.options(), explanation.details());
     }
 
     private void explainReview(MatchReview.Turn turn) {
         showExplanation(getString(R.string.move_explanation_title, turn.index() + 1),
-                turn.facts(), turn.options(), turn::text);
+                turn.summary(), turn.facts(), turn.options(), turn.details());
     }
 
-    private void showExplanation(String title, String facts, List<String> options, IntFunction<String> text) {
-        if (explanationDialog != null && explanationDialog.isShowing()) return;
+    private void showExplanation(String title, String summary, String facts, List<String> options, List<String> details) {
+        if (explanationDialog != null) return;
 
         LinearLayout panel = ui.column();
         ui.inset(panel, 24, 12);
-        TextView body = ui.body(text.apply(0));
+        TextView body = ui.body(details.isEmpty() ? summary : summary + "\n\n" + details.get(0));
         body.setTextColor(ui.palette.ink());
-        body.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         panel.addView(body);
-        ui.gap(panel, 9);
-        TextView status = ui.body(getString(options.isEmpty()
-                ? R.string.move_explanation_partial : R.string.move_explanation_loading));
-        status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-        panel.addView(status);
+        if (details.isEmpty()) {
+            ui.gap(panel, 9);
+            panel.addView(ui.body(getString(R.string.move_explanation_partial)));
+        }
         ScrollView scroll = new ScrollView(this);
         scroll.addView(panel, new ScrollView.LayoutParams(-1, -2));
         AlertDialog active = dialog(title, null)
@@ -1116,8 +1114,48 @@ public final class MainActivity extends Activity {
                 .setPositiveButton(R.string.move_explanation_close, null)
                 .show();
         explanationDialog = active;
+        if (details.size() > 1) addExplanationChoices(panel, active, facts, options, details);
+        active.setOnDismissListener(ignored -> {
+            if (explanationDialog != active) return;
+            if (explanationTask != null) explanationTask.cancel(true);
+            explanationTask = null;
+            explanationDialog = null;
+        });
+    }
+
+    private void addExplanationChoices(LinearLayout panel, AlertDialog active, String facts,
+                                       List<String> options, List<String> details) {
+        ui.gap(panel, 9);
+        TextView extra = ui.body(String.join("\n\n", details.subList(1, details.size())));
+        extra.setTextColor(ui.palette.ink());
+        extra.setVisibility(View.GONE);
+        TextView toggle = ui.textButton(getString(R.string.move_explanation_more), () -> {});
+        toggle.setOnClickListener(view -> {
+            boolean expanded = extra.getVisibility() != View.VISIBLE;
+            extra.setVisibility(expanded ? View.VISIBLE : View.GONE);
+            toggle.setText(expanded ? R.string.move_explanation_less : R.string.move_explanation_more);
+        });
+        panel.addView(toggle);
+        panel.addView(extra);
+        ui.gap(panel, 9);
+        TextView status = ui.body("");
+        status.setVisibility(View.GONE);
+        status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        TextView ask = ui.textButton(getString(R.string.move_explanation_ask_model), () -> {});
+        ask.setOnClickListener(view -> {
+            ui.enabled(ask, false);
+            status.setVisibility(View.VISIBLE);
+            status.setText(R.string.move_explanation_loading);
+            chooseExplanationDetail(active, facts, options, details, ask, status);
+        });
+        panel.addView(ask);
+        panel.addView(status);
+    }
+
+    private void chooseExplanationDetail(AlertDialog active, String facts, List<String> options, List<String> details,
+                                         TextView ask, TextView status) {
         Context context = getApplicationContext();
-        Future<?> request = options.isEmpty() ? null : explanationWorker.submit(() -> {
+        explanationTask = explanationWorker.submit(() -> {
             android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
             int index = -1;
             try {
@@ -1126,20 +1164,20 @@ public final class MainActivity extends Activity {
                 Thread.currentThread().interrupt();
                 return;
             } catch (Exception | LinkageError ignored) {
-                // The verified explanation stays available if local inference fails.
+                // A failed suggestion can be retried from the dialog.
             }
             if (Thread.currentThread().isInterrupted()) return;
-            boolean modelUsed = index >= 0 && index < options.size();
-            int selected = modelUsed ? index : 0;
+            int selected = index;
             main.post(() -> {
                 if (explanationDialog != active || !active.isShowing() || isDestroyed()) return;
-                body.setText(text.apply(selected));
-                status.setText(modelUsed ? R.string.move_explanation_model : R.string.move_explanation_engine);
+                explanationTask = null;
+                if (selected >= 0 && selected < details.size()) {
+                    status.setText(getString(R.string.move_explanation_model, details.get(selected)));
+                } else {
+                    status.setText(R.string.move_explanation_engine);
+                    ui.enabled(ask, true);
+                }
             });
-        });
-        active.setOnDismissListener(ignored -> {
-            if (request != null) request.cancel(true);
-            if (explanationDialog == active) explanationDialog = null;
         });
     }
 

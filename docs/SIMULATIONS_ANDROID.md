@@ -1,5 +1,34 @@
 # Simulations de parties Android
 
+## Vérifier WordRivet 0.15.2 sur Android
+
+Les APK 0.15.1 et 0.15.2 ont rejoué les huit mêmes tours d’une partie française avec Grammalecte 7.7 sur un émulateur Android 16 arm64, en mode avion et sans réseau actif. La partie archivée fournit le plateau et le score attendus. Le contrôle recalcule les points des placements et compare le score affiché, les détails affichés et les temps d’inférence consignés par l’application.
+
+| Tour rejoué | Score | Inférence automatique 0.15.1 | Inférence sur demande 0.15.2 |
+| --- | ---: | ---: | ---: |
+| BU, lettres déjà en place | 4 | 988 ms | 945 ms |
+| Passe | 0 | 962 ms | 934 ms |
+| AVE, mots croisés et mot double | 27 | 1 524 ms | 1 473 ms |
+| TARGE, mots croisés | 16 | 1 541 ms | 1 626 ms |
+| POLY, joker et mot double | 24 | 1 416 ms | 1 560 ms |
+| SAURAIS, sept lettres, joker et mot croisé | 67 | 1 921 ms | 1 749 ms |
+| ECURE, mots croisés | 23 | 1 394 ms | 1 268 ms |
+| SAUTONS, sept lettres et étoile | 64 | 1 506 ms | 1 403 ms |
+
+En 0.15.1, le modèle a conservé les huit scores. Il a changé le détail principal cinq fois. Pour SAURAIS et SAUTONS, il a substitué les cases bonus à la prime de 50 points. Pour AVE, TARGE et ECURE, il a substitué une case bonus ou un décompte général aux mots croisés.
+
+En 0.15.2, les huit scores et le premier détail restent visibles après la suggestion. Le bouton **Voir les autres détails** affiche les faits vérifiés sans lancer le modèle. Les huit demandes explicites ont chacune fait ressortir un de ces mêmes détails. Le résultat d’une demande fermée pendant l’inférence est resté hors du dialogue rouvert. La médiane des inférences est de 1 438 ms, contre 1 461 ms en 0.15.1. Ces délais décrivent cet émulateur. L’essai ne mesure ni la compréhension des joueurs ni les performances sur téléphone physique.
+
+Les essais de mise à jour depuis la 0.15.1 ont conservé les sauvegardes et historiques contrôlés sur Android 8 et 16. Le test couvre les versions de l’APK direct et les paquets tirés du bundle avec des pages de 16 Kio. Sur ces paquets, le premier défi a accepté la sélection de S puis de la case H12. Android expose le libellé de la case et le jeu confirme CHATS pour 11 points. Sur Android 8, **Amis** s’ouvre et affiche un état explicite quand son serveur est indisponible. Les 65 tests unitaires Android et Lint passent.
+
+La régression du moteur Android sur 120 nouveaux tirages, deux sièges et six duels a terminé **1 440 parties** avec le lexique Grammalecte 7.7 et les poids Maître embarqués. Chaque coup a été validé avec le score annoncé. Cette simulation tourne sur le code Java de jeu. Le test de rejeu ci-dessus tourne dans l’APK installé.
+
+```sh
+./tools/android_gameplay/run.sh 120 20261115 6
+```
+
+## Premières mesures sur 480 parties
+
 Le 13 novembre 2026, le moteur embarqué a joué **480 parties complètes** avec le lexique Grammalecte 7.7 livré dans l’application (406 312 entrées, poids Maître promus actifs). Le scénario utilise 40 tirages déterministes, chacun joué deux fois en échangeant le chevalet et le premier tour, pour chacun des six duels. Le siège joueur est piloté par un niveau NAB fixe. Dans les deux scénarios adaptatifs, le moteur évalue la partie en cours avec un Elo de départ fixé à 1100.
 
 | Duel | Victoires · nuls · défaites du premier niveau | Scores moyens | Tours P10 · P50 · P90 | Écart moyen après 8 tours |

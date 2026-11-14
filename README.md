@@ -1,91 +1,93 @@
-<p align="center"><img src="web/assets/lettrine-mark.png" alt="Logo Lettrine" width="112"></p>
+<p align="center">
+  <img src="web/assets/lettrine-mark.png" width="88" alt="Logo de Lettrine">
+</p>
 
-# Lettrine
+<h1 align="center">WordRivet</h1>
 
-Laboratoire local de stratégie pour jeux de lettres. Le studio explore 128 000 duels en quatre langues, les archives de maîtres, les variantes de placement et la progression du bot adaptatif NAB. L’application Android, appelée WordRivet en bêta, permet de jouer et d’expliquer les coups hors ligne en français et en anglais.
+<p align="center">Le jeu de lettres de Lettrine pour Android. Affrontez NAB en français ou en anglais et revenez sur vos meilleurs coups.</p>
 
-## Ouvrir sur le Mac
+<p align="center">
+  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk">Télécharger l’APK 0.15.2</a></strong> ·
+  <a href="android/README.md">Guide Android</a> ·
+  <a href="#lettrine-studio">Studio sur Mac</a>
+</p>
 
-Avec Docker Desktop, Python 3 et `zstd` disponibles, lancer depuis ce dossier.
+<p align="center">
+  Android 8 et versions ultérieures · Jeu hors ligne en mode invité
+</p>
+
+<p align="center">
+  <img src="web/assets/lettrine-table.webp" width="690" alt="Illustration Lettrine avec un plateau de lettres et des tuiles en bois sur une table">
+</p>
+
+## Jouer sur Android
+
+- **En solo**, choisissez l’un des quatre niveaux de NAB ou laissez le mode adaptatif ajuster la difficulté pendant la partie. Le bouton **EN / FR** change les menus et le lexique. Chaque langue garde sa progression.
+- **En quelques minutes**, jouez le défi du jour, essayez de placer deux mots avec un même chevalet dans *Deux coups d’avance*, ou améliorez votre record sur les trois parcours du circuit bonus.
+- **À plusieurs**, passez le téléphone à deux, trois ou quatre ou jouez en duel Bluetooth. En ligne, ouvrez **Amis** pour rejoindre un serveur de bêta, jouer un duel à un coup chacun, demander une revanche miroir ou participer au tournoi du week-end. [Accès à la bêta et invitations](android/README.md#amis-et-duels-en-bêta)
+
+Sur le plateau, glissez une tuile ou touchez une lettre puis une case. Le jeu affiche les mots formés et les points avant validation. Agrandissez le plateau si besoin et parcourez ses cases avec TalkBack.
+
+<p align="center">
+  <img src="docs/media/wordrivet-android.webp" width="330" alt="Le Premier défi dans WordRivet sur Android. La pose du S après CHAT forme CHATS pour 11 points.">
+</p>
+
+### Revoir vos coups
+
+Dans **Historique**, rejouez la partie coup par coup, suivez votre progression Elo locale et exportez vos parties en JSON. Le **Bilan avec NAB** compare jusqu’à trois coups à une autre possibilité. Lorsque le chevalet du tour est disponible, vous pouvez rejouer la position.
+
+**Expliquer ce coup** affiche immédiatement le score et son premier détail vérifié, même en mode avion. Ouvrez les autres détails pour lire les mots croisés, les primes ou le rôle des jokers. Sur demande, SmolLM2 135M Instruct Q4_0 sélectionne un détail à mettre en avant. Le moteur Android joue les coups de NAB et calcule les scores. [Modèle, empreinte et licences](android/app/src/main/assets/SmolLM2-NOTICE.md)
+
+[Vérifications de la version 0.15.2](docs/SIMULATIONS_ANDROID.md#vérifier-wordrivet-0152-sur-android)
+
+### Garder votre progression
+
+- **Profil → Réglages → Sauvegarder et transférer** crée un fichier ZIP avec les parties, l’historique et la progression locale des deux langues. Gardez-le dans un dossier accessible pour pouvoir le restaurer sur une autre installation. [Ce que contient la sauvegarde](android/README.md#transférer-sa-progression)
+- **Profil → Réglages → Lexique personnel** importe un fichier TXT UTF-8 autorisé, puis ouvre l’entraînement contre NAB ou à plusieurs sur le même appareil. Chaque liste a son historique propre. Les parties habituelles utilisent Grammalecte 7.7 en français et ENABLE2K en anglais. [Format et fonctionnement de l’import](android/README.md#jouer-avec-un-lexique-personnel)
+
+## Lettrine Studio
+
+Le studio local permet de rejouer des parties, de comparer les placements et d’examiner les résultats de **128 000 duels de référence**, dont 100 000 en français. Le jeu web permet aussi d’ouvrir un salon privé pour deux à quatre joueurs sur le même réseau.
+
+Sur le Mac, installez Docker Desktop, Python 3 et `zstd`, puis lancez le studio depuis le dépôt.
 
 ```sh
 ./tools/start.sh
 ```
 
-Le premier démarrage charge les campagnes fournies dans PostgreSQL. L’[accueil Lettrine](http://127.0.0.1:8787/) ouvre les salons de jeu. [Lettrine Studio](http://127.0.0.1:8787/index.html) affiche les cotes, les confrontations, les mots fréquents et les archives. **Parties** permet de filtrer Expert × Expert, de rejouer coup par coup, de regarder un duel généré ou d’examiner les alternatives. **Outils** permet d’importer du JSON ou du JSONL, de télécharger les journaux et de récupérer l’APK.
+Le premier démarrage charge les campagnes fournies. [Ouvrir le studio sur le Mac](http://127.0.0.1:8787/index.html) · [Ouvrir les salons](http://127.0.0.1:8787/) · [Architecture et API](docs/ARCHITECTURE.md)
 
-Ollama tourne sur le Mac. Les deux modèles sont requis pour le commentaire de position et la recherche sémantique.
+<p align="center">
+  <img src="docs/media/duel-en-direct.png" width="570" alt="Capture de Lettrine Studio montrant un duel en cours, le plateau, les scores et la liste des coups">
+</p>
 
-```sh
-ollama pull llama3.2:3b
-ollama pull qwen3-embedding:0.6b
-```
+### Ce que le laboratoire mesure
 
-Gemma, Llama et Qwen ont été comparés sur des duels appariés. Les autres fonctions du studio restent disponibles si Ollama est arrêté. Le port Web se règle avec `LETTRINE_PORT`. Les ports PostgreSQL et Redis restent internes au projet Docker.
+Le dernier test sur **Lettres en vrac** a comparé deux réglages de NAB Recherche avancée contre Macondo v0.13.9 configuré pour maximiser le score immédiat. Chaque réglage a joué **1 000 nouvelles parties** à partir des mêmes 500 tirages, dans les deux ordres de départ. Le banc applique une pendule de 20 minutes et les procédures de contestation du Scrabble classique FISF.
 
-## Jouer sur le web
+| NAB contre Macondo | Victoires · nulles · défaites | Points de match |
+| --- | ---: | ---: |
+| Réglage de base | 630 · 1 · 369 | **63,05 %** |
+| Réglage sélectionné contre Macondo, 22 coups présélectionnés | 626 · 1 · 373 | **62,65 %** |
 
-Ouvrir [Lettrine](http://127.0.0.1:8787/) depuis le Mac. Pour jouer en solo, choisir un bot et lancer la partie. Pour jouer entre amis, choisir une table de 2 à 4 places et ajouter des bots si souhaité. Partager le lien affiché avec les autres joueurs sur le même réseau Wi-Fi ou filaire. L’hôte peut lancer la partie quand toutes les places humaines sont occupées.
+L’écart apparié est de **−0,40 point de pourcentage** (IC à 95 % de −1,73 à +0,93). L’essai ne montre pas de gain sur les tirages réservés. La mesure concerne le moteur du laboratoire. Dans WordRivet, l’Elo se calcule à partir des parties solo cotées sur l’appareil. [Protocole et résultats détaillés](docs/SIMULATION_FISF.md) · [Entraînement et Elo](docs/ENTRAINEMENT.md)
 
-Pour jouer, glisser une lettre sur le plateau ou sélectionner une lettre puis sa case. Le premier mot doit passer par l’étoile centrale. Avant de valider, l’aperçu affiche les mots formés et les points du coup, ou explique pourquoi le coup est refusé. **Indice** propose un mot, son score et les cases où poser les lettres. **Autre indice** fait défiler les autres mots trouvés. Le serveur vérifie les mots avec Grammalecte 7.7. Le bouton **Retrouver mon salon** ramène chaque joueur à sa place depuis le navigateur utilisé pour rejoindre la partie.
+## Compiler et vérifier
 
-`./tools/start.sh` détecte l’adresse réseau du Mac. Si le lien est uniquement accessible sur le Mac, relancer avec `LETTRINE_LAN_IP` défini sur son adresse IPv4 locale. Le port des salons est réglable avec `LETTRINE_LAN_PORT` (8788 par défaut). Le Mac doit rester allumé et Lettrine doit tourner pendant la partie.
-
-À la fin d’une partie jouée avec cette version, les participants peuvent télécharger le journal des coups en JSON. Dans le studio, ouvrez **Outils**, importez ce fichier, puis ouvrez **Parties → Parties importées** pour le rejeu. Les salons qui avaient déjà enregistré des coups avant cette mise à jour restent jouables et leur journal antérieur est indisponible.
-
-## WordRivet pour Android
-
-[Télécharger l’APK 0.15.1](android/artifacts/lettrine.apk) · [App Bundle pour la bêta Google Play](android/artifacts/lettrine.aab) · [Guide Android et compilation](android/README.md)
-
-**Deux coups d’avance** propose douze défis hors ligne par langue. Placez deux mots avec le même chevalet, puis rejouez une séquence guidée par NAB sur le plateau. Le bouton **EN / FR** sur l’accueil change l’interface, le lexique et les défis. Chaque langue conserve ses parties, son Elo et ses records. **Profil → Réglages → Sauvegarder et transférer** permet de restaurer les deux langues sur une autre installation.
-
-**Circuit bonus** alterne entre trois parcours de trois positions par langue. Le meilleur score reste enregistré dans chaque langue. La première entrée est offerte. Les tickets se rechargent toutes les deux heures, et les pièces gagnées en jouant peuvent débloquer des thèmes ou un ticket supplémentaire.
-
-WordRivet propose un défi par jour hors ligne et une série de jours joués. **Bats mon score** crée une carte et un lien pour inviter un ami à jouer le même défi. L’application permet de jouer en solo, à deux, trois ou quatre sur un appareil ou en duel Bluetooth. Le bilan de NAB permet de retenter un coup manqué avec son chevalet d’origine. SmolLM2 aide à expliquer les coups et les comparaisons hors ligne. L’historique affiche la progression de l’Elo et exporte les parties en JSON.
-
-**Amis** propose les duels asynchrones, les notifications de tour et un tournoi du week-end sur trois défis avec classement. Le lien HTTPS de bêta ouvre Android et propose le serveur du groupe. La bêta anglaise utilise son propre espace sur le serveur. **Profil → Collection** permet de débloquer des plateaux, tuiles et fonds de carte en jouant. [Rejoindre la bêta Android](android/README.md#amis-et-duels-en-bêta)
-
-## Laboratoire
-
-| Mesure | Résultat |
-| --- | ---: |
-| Duels de référence dans PostgreSQL | 128 000, dont 100 000 en français |
-| Expert × Expert | 10 000 |
-| Elo relatifs Découverte / Initié / Stratège / Expert | 748 / 1 016 / 1 409 / 1 627 |
-| Expert entraîné contre Expert de référence sur 12 000 duels réservés | 51,93 % des points de match · +13 Elo |
-| Réplication sur un second lot de 100 000 duels réservés | 52,08 % des points de match |
-| Recherche avancée face à l’Expert entraîné | 55,58 % des points sur 2 000 duels réservés |
-| Calibration adaptative FR et EN | 24 000 duels par langue |
-| Cotes humaines historiques sourcées | 44 relevés, échelles fédérales distinctes |
-
-L’analyse de position énumère les placements légaux puis compare les principales options sur trois demi-coups, en échantillonnant le sac et le chevalet adverse. Ollama choisit l’angle du commentaire et le moteur en fournit les chiffres. Le banc d’essai compare des modèles qui choisissent parmi des coups légaux fournis par le moteur. La recherche sémantique indexe les documents et une sélection de positions dans pgvector.
+Pour compiler l’APK sur le Mac, installez Java 17, Python 3, le SDK Android 36, le NDK `28.2.13676358`, CMake et Ninja.
 
 ```sh
-cargo test --release
-cargo run --release -- profiles
-cargo run --release -- run
-cargo run --release -- train
-cargo run --release -- benchmark-llm 6
-LETTRINE_ELITE=1 cargo run --release -- export jsonl > experts.jsonl
+./android/scripts/build.sh
+(cd android && ./gradlew :app:testDebugUnitTest :app:lintDebug)
+cargo test --locked
 ```
 
-Le moteur français embarque Grammalecte 7.7. Le comparateur fournit un audit des écarts à partir d’un fichier ODS autorisé. Les profils anglais WESPA, allemand SDeV et russe Mattel chargent leurs distributions et lexiques ouverts, avec des campagnes séparées. La variante japonaise est documentée. Les cotes sont propres au profil, au lexique et aux stratégies testés.
+[Compilation, signature et installation](android/README.md#compiler-sur-le-mac) · [Bundle Android pour la bêta Google Play](android/artifacts/lettrine.aab) · [Simulations Android](docs/SIMULATIONS_ANDROID.md)
 
-## Documentation
+### Aller plus loin
 
-- [Architecture et API](docs/ARCHITECTURE.md)
-- [Règles, lexique français et comparaison ODS](data/fr/README.md)
-- [Campagne et résultats](docs/RESULTATS.md) · [Archive des 100 000 duels](data/campaign/README.md)
-- [Simulation classique NAB contre Macondo](docs/SIMULATION_FISF.md)
-- [Entraînement, Elo et recherche](docs/ENTRAINEMENT.md)
-- [Profils de langues](docs/LANGUES.md)
-- [Archives humaines et provenance](data/expert/README.md)
-- [Comparatif Android](docs/COMPARATIF_ANDROID.md)
-- [Simulations des parties Android](docs/SIMULATIONS_ANDROID.md)
-- [Récompenses et modèle économique Android](docs/ECONOMIE_ANDROID.md)
+- [Campagnes et résultats](docs/RESULTATS.md) · [Archive des 100 000 duels français](data/campaign/README.md) · [Profils et lexiques](docs/LANGUES.md)
+- [Archives de maîtres et sources](data/expert/README.md) · [Règles et comparaison ODS](data/fr/README.md) · [Banc des modèles de langage](docs/CHOIX_MODELES.md)
+- [Comparatif Android](docs/COMPARATIF_ANDROID.md) · [Récompenses Android](docs/ECONOMIE_ANDROID.md) · [Sécurité locale](docs/SECURITE_ET_SUITE.md)
 
-- [Modèles Ollama et projet mobile](docs/CHOIX_MODELES.md)
-- [Histoire, maîtres et archives](docs/HISTOIRE_ET_MAITRES.md)
-- [Sécurité locale et suite produit](docs/SECURITE_ET_SUITE.md)
-
-Code sous [AGPL-3.0](LICENSE). Les données Grammalecte et les polices ont leurs propres notices. Lettrine est un projet indépendant.
+Lettrine est un projet indépendant sous [AGPL-3.0](LICENSE). Les lexiques, le modèle embarqué et les polices ont leurs propres licences.

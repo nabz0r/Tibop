@@ -1,0 +1,43 @@
+{
+  "schema": "lettrine.bot-policy.v1",
+  "engine": "fr-classic-v1",
+  "lexicon": "Lettres en vrac (MPL 2.0, formes de plateau normalisées)",
+  "lexicon_sha256": "4346fed90d914ecdf12db0eb8ffb0a760ced1330621f8673c8cfe3fe2a23d0dc",
+  "baseline": {
+    "blank_weight": 23,
+    "end_penalty": 3,
+    "leave_scale": 100,
+    "s_weight": 9,
+    "turnover": 0,
+    "width": 12
+  },
+  "selected": {
+    "blank_weight": 23,
+    "end_penalty": 3,
+    "leave_scale": 100,
+    "s_weight": 9,
+    "turnover": 0,
+    "width": 22
+  },
+  "candidate": "largeur-22",
+  "promoted": false,
+  "selection": "selection-macondo.json",
+  "training_opponent": "Macondo v0.13.9 max_score",
+  "training_games": 500,
+  "reference_binary_sha256": "1ff282cc1dff16ba423763f73e850c81c9ea4b4418496282cc4e2e1f0e2eb030",
+  "training_seed_ranges": [
+    {
+      "first_seed": 984530000,
+      "pairs": 100
+    },
+    {
+      "first_seed": 984540000,
+      "pairs": 150,
+      "nonbase_finalists": 3
+    }
+  ],
+  "held_out_seed_range": {
+    "first_seed": 984570000,
+    "pairs_per_policy": 500
+  }
+}

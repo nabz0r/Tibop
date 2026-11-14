@@ -32,9 +32,13 @@ final class MoveExplanation {
         };
     }
 
+    String summary() { return summary; }
+
     String facts() { return facts; }
 
     List<String> options() { return focuses.stream().map(Focus::label).collect(Collectors.toList()); }
+
+    List<String> details() { return focuses.stream().map(Focus::text).collect(Collectors.toList()); }
 
     String text(int index) {
         if (focuses.isEmpty()) return summary;

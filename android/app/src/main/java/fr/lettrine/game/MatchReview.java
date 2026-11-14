@@ -15,9 +15,9 @@ final class MatchReview {
     record Alternative(FrenchGame.Preview preview, List<FrenchGame.Tile> tiles) {}
 
     record Turn(int index, FrenchGame.Move played, char[] board, boolean[] blanks, boolean rackAvailable,
-                Alternative alternative, PracticePosition practice, String facts,
-                List<String> options, List<String> explanations) {
-        String text(int option) { return explanations.get(option); }
+                Alternative alternative, PracticePosition practice, String summary, String facts,
+                List<String> options, List<String> details) {
+        String text(int option) { return details.isEmpty() ? summary : summary + "\n\n" + details.get(option); }
     }
 
     private record RankedTurn(int index, char[] board, boolean[] blanks, List<Character> rack,
@@ -97,36 +97,35 @@ final class MatchReview {
         FrenchGame.Move played = new FrenchGame.Move(move.player(), move.type(), move.word(), move.score(),
                 List.copyOf(move.tiles()), move.exchanged(), null, -1);
         List<String> options = new ArrayList<>();
-        List<String> explanations = new ArrayList<>();
+        List<String> details = new ArrayList<>();
+        String summary;
         String facts;
         Alternative alternative = row.alternative();
         if (alternative == null) {
             MoveExplanation explanation = MoveExplanation.create(moves, row.index(), language);
             facts = explanation == null ? "Recorded move." : explanation.facts();
+            summary = explanation == null ? language.text("Détails du coup indisponibles.", "Move details are unavailable.")
+                    : explanation.summary();
             if (explanation != null) {
                 options.addAll(explanation.options());
-                for (int option = 0; option < options.size(); option++) explanations.add(explanation.text(option));
-            }
-            if (explanations.isEmpty()) {
-                explanations.add(explanation == null
-                        ? language.text("Détails du coup indisponibles.", "Move details are unavailable.") : explanation.text(0));
+                details.addAll(explanation.details());
             }
         } else {
             FrenchGame.Preview preview = alternative.preview();
             int delta = preview.score() - played.score();
             String alternativePoints = points(preview.score(), language);
             String playedPoints = points(played.score(), language);
-            String comparison = language.text("« " + preview.word() + " » rapporte " + alternativePoints + " contre "
+            summary = language.text("« " + preview.word() + " » rapporte " + alternativePoints + " contre "
                     + playedPoints + " pour le coup joué.", preview.word() + " scores " + alternativePoints
                     + ". Your move scored " + playedPoints + ".");
             facts = "Recorded " + played.type() + " " + played.word() + " for " + played.score() + " points. Legal placement "
                     + preview.word() + " scores " + preview.score() + " points on the same board with the same rack.";
             options.add("Immediate score difference " + delta + " points");
             String scoreDifference = points(Math.abs(delta), language);
-            explanations.add(comparison + "\n\n" + (delta == 0
+            details.add(delta == 0
                     ? language.text("Les deux coups ont le même score immédiat.", "Both moves score the same.")
                     : language.text("L’alternative rapporte " + scoreDifference + (delta > 0 ? " de plus." : " de moins."),
-                    "The alternative scores " + scoreDifference + (delta > 0 ? " more." : " less."))));
+                    "The alternative scores " + scoreDifference + (delta > 0 ? " more." : " less.")));
 
             int playedCount = played.tiles().size();
             int alternativeCount = alternative.tiles().size();
@@ -147,7 +146,7 @@ final class MatchReview {
                             "Before drawing, the alternative leaves " + alternativeRemaining + " on your rack. Your move leaves "
                                     + playedRemaining + ".");
                 }
-                explanations.add(comparison + "\n\n" + counts);
+                details.add(counts);
             }
             List<FrenchGame.FormedWord> words = FrenchGame.recordedWords(row.board(), row.blanks(), alternative.tiles(), language);
             if (words.size() > 1) {
@@ -156,20 +155,20 @@ final class MatchReview {
                 options.add("Alternative main word and crosswords " + breakdown);
                 String bonus = alternativeCount == FrenchGame.RACK_SIZE
                         ? language.text(" et reçoit 50 points de prime de scrabble", " and earns the 50-point bonus") : "";
-                explanations.add(comparison + "\n\n" + language.text("L’alternative forme ", "The alternative forms ") + breakdown + bonus + ".");
+                details.add(language.text("L’alternative forme ", "The alternative forms ") + breakdown + bonus + ".");
             } else if (alternativeCount == FrenchGame.RACK_SIZE) {
                 options.add("Seven-tile bonus of 50 points for the alternative");
-                explanations.add(comparison + "\n\n" + language.text("L’alternative pose sept lettres et reçoit la prime de 50 points.",
+                details.add(language.text("L’alternative pose sept lettres et reçoit la prime de 50 points.",
                         "The alternative places all seven tiles and earns the 50-point bonus."));
             }
             String cells = alternative.tiles().stream().map(tile -> cell(tile.position())).collect(Collectors.joining(", "));
             options.add("Alternative board squares " + cells);
-            explanations.add(comparison + "\n\n" + language.text("Cases où poser les nouvelles lettres. ", "Place the new tiles at ") + cells + ".");
+            details.add(language.text("Cases où poser les nouvelles lettres. ", "Place the new tiles at ") + cells + ".");
         }
         PracticePosition practice = row.gain() > 0
                 ? new PracticePosition(row.board(), row.blanks(), row.rack(), alternative, played.score()) : null;
         return new Turn(row.index(), played, row.board(), row.blanks(), !row.rack().isEmpty(),
-                alternative, practice, facts, List.copyOf(options), List.copyOf(explanations));
+                alternative, practice, summary, facts, List.copyOf(options), List.copyOf(details));
     }
 
     private static String points(int score, GameLanguage language) {

@@ -20,8 +20,8 @@
     <string name="help_scoring_copy">Add the tile values of the words you form. 2L and L3 multiply a letter. 2W and 3W multiply the word. Bonuses apply the first time you cover a square. A blank tile is worth zero. Playing all seven tiles in one move earns 50 extra points.</string>
     <string name="help_local_bot">NAB plays on your device</string>
     <string name="help_local_bot_copy">NAB is your solo opponent. Its engine looks for legal moves in the built-in dictionary. Adaptive difficulty uses your local Elo and the score difference during the game.</string>
-    <string name="help_local_model">Offline AI explains moves</string>
-    <string name="help_local_model_copy">The engine checks the move and its score. The built-in SmolLM2 model uses those facts to explain a bonus square, a crossing word, or another detail. NAB and the explanations work in airplane mode.</string>
+    <string name="help_local_model">Offline move explanations</string>
+    <string name="help_local_model_copy">The game engine checks and explains the score. When several details are available, you can read them or ask NAB to pick one using the SmolLM2 model. The explanations work in airplane mode.</string>
     <string name="help_competition">Practise with a tournament dictionary</string>
     <string name="help_competition_copy">To import a word list you have permission to use, go to Profile → Settings → Personal dictionary. Android practice validates words as you play and has no clock. FISF tournament rules use a clock and allow the opponent to challenge words after a move is played.</string>
 </resources>

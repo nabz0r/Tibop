@@ -1,0 +1,97 @@
+{
+  "schema": "wordrivet.fisf-training-comparison.v1",
+  "simulation": true,
+  "profile": "fr-classic-v1",
+  "lexicon": "Lettres en vrac (MPL 2.0, formes de plateau normalisées)",
+  "lexicon_sha256": "4346fed90d914ecdf12db0eb8ffb0a760ced1330621f8673c8cfe3fe2a23d0dc",
+  "normalized_forms": 400526,
+  "reference": {
+    "engine": "Macondo v0.13.9",
+    "policy": "max_score",
+    "protocol": "wordrivet.macondo.v1"
+  },
+  "reference_binary_sha256": "1ff282cc1dff16ba423763f73e850c81c9ea4b4418496282cc4e2e1f0e2eb030",
+  "nab_search": {
+    "candidates": 5,
+    "samples": 16,
+    "rollout_weight": 0.7,
+    "endgame_max_tiles": 14,
+    "endgame_max_states": 18000
+  },
+  "initial_clock_ms": 1200000,
+  "clock_model": "wall_time_monotonic_ms_rounded_up_includes_reference_ipc",
+  "reference_startup_deadline_ms": 30000,
+  "reference_response_grace_ms": 5000,
+  "challenge_policy": "automatically_challenge_only_words_outside_shared_lexicon_when_allowed",
+  "first_seed": 984570000,
+  "paired_deals": 500,
+  "elo_method": "400*log10(p/(1-p)); p=(match points+0.5)/(games+1)",
+  "games_per_policy": 1000,
+  "comparison": "trained_minus_base",
+  "base": {
+    "nab_policy": "base",
+    "nab_base": {
+      "leave_scale": 100,
+      "blank_weight": 23,
+      "s_weight": 9,
+      "turnover": 0,
+      "end_penalty": 3,
+      "width": 12
+    },
+    "nab_wins": 630,
+    "draws": 1,
+    "reference_wins": 369,
+    "match_score_rate": 0.6305,
+    "paired_confidence_interval_95": [
+      0.5735721053788265,
+      0.6874278946211734
+    ],
+    "mean_margin": 38.268,
+    "relative_elo": 92.73105407085569,
+    "challenged_words": 0,
+    "cancelled_placements": 0,
+    "timed_out_turns": 0
+  },
+  "trained": {
+    "nab_policy": "trained",
+    "nab_model_sha256": "5b6802a6a6082bcf166671fa4d84de88e503ba7bf605a4694d601d76a60ee490",
+    "nab_model_promoted": false,
+    "nab_base": {
+      "leave_scale": 100,
+      "blank_weight": 23,
+      "s_weight": 9,
+      "turnover": 0,
+      "end_penalty": 3,
+      "width": 22
+    },
+    "nab_wins": 626,
+    "draws": 1,
+    "reference_wins": 373,
+    "match_score_rate": 0.6265,
+    "paired_confidence_interval_95": [
+      0.5690865815942379,
+      0.683913418405762
+    ],
+    "mean_margin": 38.335,
+    "relative_elo": 89.75837545209451,
+    "challenged_words": 0,
+    "cancelled_placements": 0,
+    "timed_out_turns": 0
+  },
+  "match_score_rate_difference": {
+    "estimate": -0.004,
+    "confidence_interval_95": [
+      -0.017302050891341215,
+      0.009302050891341217
+    ]
+  },
+  "mean_score_margin_difference": {
+    "estimate": 0.067,
+    "confidence_interval_95": [
+      -2.4828620462733366,
+      2.616862046273337
+    ]
+  },
+  "descriptive_relative_elo_difference": -2.9726786187611793,
+  "confidence_interval_method": "Normal approximation using the standard error of the within-seed differences, averaged over both seats."
+}
