@@ -6,9 +6,9 @@ La bêta 0.16.6 propose un circuit solo avec trois parcours par langue. La Bouti
 
 Le joueur choisit **Regarder une vidéo** dans le circuit ou la Boutique pour gagner un ticket bonus. Le SDK doit confirmer la récompense. La limite est d’un ticket vidéo par date locale et par appareil, toutes langues confondues. Le ticket gagné reste disponible hors ligne. Une interruption, un refus de consentement ou l’absence d’annonce laissent les autres parcours accessibles.
 
-L’intégration utilise UMP avant de demander une annonce. Le lien vers les choix de confidentialité apparaît lorsque UMP le demande. La demande publicitaire ne prend aucun champ du profil Lettrine. [Documentation UMP](https://developers.google.com/admob/android/privacy) · [Règles des annonces récompensées](https://support.google.com/admob/answer/7313578)
+L’intégration utilise UMP avant de demander une annonce. Le lien vers les choix de confidentialité apparaît lorsque UMP le demande. La demande publicitaire ne prend aucun champ du profil Tibop. [Documentation UMP](https://developers.google.com/admob/android/privacy) · [Règles des annonces récompensées](https://support.google.com/admob/answer/7313578)
 
-- Pour reproduire les livrables de bêta, lancer `LETTRINE_ADMOB_TEST=1 ./android/scripts/build.sh` puis `LETTRINE_ADMOB_TEST=1 ./android/scripts/build.sh --bundle`. Les deux utilisent les identifiants de démonstration Google. [Annonces de test](https://developers.google.com/admob/android/test-ads)
+- Pour reproduire l’APK de la bêta avec les identifiants de démonstration Google, lancer `LETTRINE_ADMOB_TEST=1 ./android/scripts/build.sh`. La même variable permet de compiler un bundle local de test avec `--bundle`. [Annonces de test](https://developers.google.com/admob/android/test-ads)
 - Pour préparer une compilation publicitaire avec un compte réel, fournir `LETTRINE_ADMOB_APP_ID` et `LETTRINE_ADMOB_REWARDED_ID` lors de la compilation. Configurer les messages de confidentialité pour l’application dans AdMob, valider les obligations de déclaration et les choix d’audience du compte Play, puis vérifier le parcours sur le canal de test avant activation. [Démarrage AdMob Android](https://developers.google.com/admob/android/quick-start)
 
 ## Récompenses observées dans les jeux

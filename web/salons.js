@@ -3,7 +3,7 @@
 const byId = (id) => document.getElementById(id);
 const local = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
 const basePath = "/salons.html";
-const { premiums, tilePoints } = lettrineBoard;
+const { premiums, tilePoints } = tibopBoard;
 const bonusLabels = { tw: ["M3", "mot triple"], dw: ["M2", "mot double"], tl: ["L3", "lettre triple"], dl: ["L2", "lettre double"] };
 const sections = ["welcome", "invited", "room"];
 const forms = ["create-form", "join-form", "invite-form"].map(byId);
@@ -1196,7 +1196,7 @@ function renderGame() {
   output("turn-help", help);
   byId("replay-export").hidden = !finished;
   byId("download-replay").hidden = !game.replay_available;
-  output("replay-export-status", game.replay_available ? "Importez ce fichier dans Lettrine Studio pour revoir les coups." : "Journal complet indisponible pour cette partie.");
+  output("replay-export-status", game.replay_available ? "Importez ce fichier dans Tibop Studio pour revoir les coups." : "Journal complet indisponible pour cette partie.");
   const scores = room.players.map((player) => {
     const seat = player.seat;
     const name = element("span", "player-name", seat === room.seat && solo ? "Vous" : `${playerName(seat)}${seat === room.seat ? " (vous)" : ""}`);
@@ -1234,7 +1234,7 @@ async function downloadReplay() {
     const url = URL.createObjectURL(new Blob([JSON.stringify(replay, null, 2)], { type: "application/json" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = "lettrine-partie.json";
+    link.download = "tibop-partie.json";
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   } catch (error) {

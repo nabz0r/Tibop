@@ -47,7 +47,7 @@ Sur Android 16, l’invitation a été ouverte pendant une panne et acceptée ap
 
 Deux émulateurs Android 16 associés dans les réglages ont joué via Bluetooth classique. Une coupure radio a été provoquée pendant un brouillon puis après un passage enregistré. L’hôte a rouvert la connexion et l’invité a retrouvé le même plateau, son tour et son chevalet. Le brouillon du tour en cours est revenu et le passage enregistré n’a été compté qu’une fois. La reprise sur deux téléphones physiques reste à vérifier.
 
-## Vérifier WordRivet 0.15.2 sur Android
+## Mesures du modèle embarqué
 
 Les APK 0.15.1 et 0.15.2 ont rejoué les huit mêmes tours d’une partie française avec Grammalecte 7.7 sur un émulateur Android 16 arm64, en mode avion et sans réseau actif. La partie archivée fournit le plateau et le score attendus. Le contrôle recalcule les points des placements et compare le score affiché, les détails affichés et les temps d’inférence consignés par l’application.
 

@@ -94,7 +94,7 @@
   width: 58%;
   height: auto;
   transform: none;
-  background: linear-gradient(90deg, var(--hero) 0%, #263b2d55 27%, #1924191a 100%), url('/assets/lettrine-table.webp') 55% 51% / cover, var(--fern);
+  background: linear-gradient(90deg, var(--hero) 0%, #263b2d55 27%, #1924191a 100%), url('/assets/tibop-table.webp') 55% 51% / cover, var(--fern);
 }
 .metrics { gap: var(--section-gap); margin: var(--section-gap) 0; }
 .metric { min-height: 123px; padding: 16px var(--inset); }

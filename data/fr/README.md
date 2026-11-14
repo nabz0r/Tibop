@@ -23,7 +23,7 @@ Trois exceptions conservent un sens lexical absent des entrées retenues par le 
 La génération Android utilise la liste et les exclusions du dépôt. Pour contrôler la provenance des exclusions, comparez-les avec celles recalculées à partir de l’archive originale.
 
 ```sh
-python3 tools/lexicon.py classic --output /tmp/wordrivet-classic
+python3 tools/lexicon.py classic --output /tmp/tibop-classic
 python3 tools/lexicon.py classic-exclusions --archive /chemin/vers/grammalecte-7.7.zip | diff - data/fr/classic-exclusions.txt
 ```
 

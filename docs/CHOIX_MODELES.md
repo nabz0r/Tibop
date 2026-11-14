@@ -1,4 +1,4 @@
-# Choisir un modèle Ollama pour Lettrine
+# Choisir un modèle Ollama pour Tibop Studio
 
 Dans le studio, le modèle choisit l’angle du commentaire dans une réponse JSON. Le moteur valide ce choix et produit le texte à partir de la revue de position. En cas d’erreur, il utilise la marge simulée et le studio indique le repli. Dans le banc de jeu, Ollama choisit un placement par son indice parmi les coups que le moteur a déclarés légaux. La validation, les points, la gestion du sac et les échanges relèvent du moteur de jeu. La recherche documentaire utilise `qwen3-embedding:0.6b`.
 
@@ -15,13 +15,13 @@ Les tailles indiquent les poids distribués par Ollama ou déjà présents sur l
 | `mistral-small3.2:24b` | 15 Go, Q4_K_M | Variante de plus grande taille. Mistral documente les améliorations du suivi de consigne et de l’appel de fonctions par rapport à Small 3.1. [Fiche Mistral](https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506) · [Tags Ollama](https://ollama.com/library/mistral-small3.2/tags) |
 | `qwen3.6:27b-nvfp4` | 18,79 Go sur ce Mac | Variante MLX déjà installée, pour tester si un modèle plus grand améliore le choix des coups ou le commentaire. Empreinte locale `7abb838ab90f…`. [Poids Ollama](https://ollama.com/library/qwen3.6:27b-nvfp4) |
 
-La taille du modèle et les benchmarks de son éditeur donnent des points de départ. La décision de jeu se mesure sur Lettrine, avec le même moteur, le même lexique et les mêmes tirages. Le commentaire se juge séparément sur la fidélité aux faits.
+La taille du modèle et les benchmarks de son éditeur donnent des points de départ. Le laboratoire compare les décisions de jeu avec le même moteur, le même lexique et les mêmes tirages. Le commentaire se juge séparément sur la fidélité aux faits.
 
 ## Banc de jeu
 
 Le banc français joue chaque tirage dans les deux sièges face à l’Expert entraîné. Aux tours du modèle, le moteur ordonne les placements selon sa propre évaluation et fournit jusqu’à six choix, chacun avec le mot, le score immédiat, une coordonnée et les lettres conservées. Le modèle voit le plateau, les scores et le nombre de jetons dans le sac. Le chevalet adverse reste caché. Si la sortie est inutilisable, le moteur choisit lui-même et le rapport compte un repli. [Banc d’essai](../src/llm_benchmark.rs)
 
-L’API locale `/api/chat` reçoit un schéma dans `format`, un objet à un champ `pick` dont la valeur doit être un entier entre zéro et le dernier indice proposé. Lettrine vérifie cet indice avant de jouer. Les paramètres du banc fixent la température à zéro, un contexte de 2 048 tokens et un délai HTTP de 12 secondes par appel. Les contrôles de réflexion varient selon le modèle. Vérifier `/api/show` avant de comparer un modèle qui attend un niveau `low`, `medium` ou `high`, comme GPT-OSS. [Sorties structurées](https://docs.ollama.com/capabilities/structured-outputs) · [Contrôle de la réflexion](https://docs.ollama.com/capabilities/thinking)
+L’API locale `/api/chat` reçoit un schéma dans `format`, un objet à un champ `pick` dont la valeur doit être un entier entre zéro et le dernier indice proposé. Le moteur vérifie cet indice avant de jouer. Les paramètres du banc fixent la température à zéro, un contexte de 2 048 tokens et un délai HTTP de 12 secondes par appel. Les contrôles de réflexion varient selon le modèle. Vérifier `/api/show` avant de comparer un modèle qui attend un niveau `low`, `medium` ou `high`, comme GPT-OSS. [Sorties structurées](https://docs.ollama.com/capabilities/structured-outputs) · [Contrôle de la réflexion](https://docs.ollama.com/capabilities/thinking)
 
 ```sh
 ollama list

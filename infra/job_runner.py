@@ -1,4 +1,4 @@
-"""Redis worker and periodic vector index scheduler for the local Lettrine stack."""
+"""Redis worker and periodic vector index scheduler for the local Tibop Studio stack."""
 
 import argparse
 from dataclasses import dataclass

@@ -48,7 +48,7 @@ if [ "$with_social" -eq 1 ]; then
     docker compose -f compose.social.yaml up --build --wait --wait-timeout 180
     printf 'API Android locale disponible sur http://127.0.0.1:%s/\n' "${LETTRINE_SOCIAL_PORT:-8790}"
 fi
-printf 'Lettrine est disponible sur http://127.0.0.1:%s/\n' "${LETTRINE_PORT:-8787}"
+printf 'Tibop Studio est disponible sur http://127.0.0.1:%s/\n' "${LETTRINE_PORT:-8787}"
 if [ "${LETTRINE_LAN_IP:-127.0.0.1}" != 127.0.0.1 ]; then
     printf 'Jouer entre amis sur le même réseau : http://%s:%s/salons.html\n' "$LETTRINE_LAN_IP" "${LETTRINE_LAN_PORT:-8788}"
 fi

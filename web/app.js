@@ -546,7 +546,7 @@ function scoreLabel(game) {
 function originLabel(game) {
   const origin = game.origin ?? game.source;
   if (origin === "android") return "Android";
-  if (origin === "web") return "Lettrine Web";
+  if (origin === "web") return "Tibop Web";
   return t("Fichier");
 }
 
@@ -714,7 +714,7 @@ function setView() {
   if (changed) window.scrollTo(0, 0);
 }
 
-const { premiums, tilePoints } = lettrineBoard;
+const { premiums, tilePoints } = tibopBoard;
 const cells = Array.from({ length: 225 }, (_, index) => node("div", "board-cell" + (premiums.has(index) ? " " + premiums.get(index) : "")));
 $("board").append(...cells);
 
@@ -1553,7 +1553,7 @@ function renderLive(data) {
     state.liveFile = URL.createObjectURL(new Blob([JSON.stringify(file)], { type: "application/json" }));
     const link = $("live-export");
     link.href = state.liveFile;
-    link.download = "lettrine-duel-" + finished.seed + ".json";
+    link.download = "tibop-duel-" + finished.seed + ".json";
     link.hidden = false;
     buildReplay(state.detail, state.move);
   }

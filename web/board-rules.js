@@ -1,6 +1,6 @@
 "use strict";
 
-const lettrineBoard = (() => {
+const tibopBoard = (() => {
   const premiums = new Map();
   const premiumPositions = {
     tw: [[0, 0], [0, 7], [0, 14], [7, 0], [7, 14], [14, 0], [14, 7], [14, 14]],

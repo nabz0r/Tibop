@@ -1,8 +1,8 @@
 "use strict";
 
 const englishCopy = new Map(`
-Lettrine · Laboratoire de Scrabble|Lettrine · Scrabble Research Studio
-Lettrine, vue d’ensemble|Lettrine, overview
+Tibop · Laboratoire de Scrabble|Tibop · Scrabble Research Studio
+Tibop, vue d’ensemble|Tibop, overview
 Tableau de bord local des simulations de Scrabble francophone.|Local dashboard for Scrabble research and simulations.
 Aller au contenu|Skip to content
 Navigation principale|Main navigation
@@ -152,7 +152,7 @@ Prototype Android|Android prototype
 Le jeu et l’historique de vos parties.|Play and keep your game history.
 Télécharger Tibop pour Android|Download Tibop for Android
 Importer des parties|Import games
-Ajoutez un export Lettrine ou un fichier de parties.|Upload a Lettrine export or a game file.
+Ajoutez un export Tibop ou un fichier de parties.|Upload a Tibop export or a game file.
 Choisir un fichier|Choose a file
 Aucun fichier choisi|No file chosen
 JSON ou JSONL · 32 Mio maximum|JSON or JSONL · 32 MiB maximum
@@ -396,8 +396,8 @@ Elo des niveaux de référence|Reference-level Elo
 Meilleur coup publié|Best published play
 Jouer entre amis|Play with friends
 Jouer au Scrabble|Play Scrabble
-Lettrine Studio · Comprendre le jeu|Lettrine Studio · Explore the game
-Accueil de Lettrine Studio|Lettrine Studio home
+Tibop Studio · Comprendre le jeu|Tibop Studio · Explore the game
+Accueil de Tibop Studio|Tibop Studio home
 Rejouez des parties de Scrabble, comparez les stratégies et explorez les archives de compétition.|Replay Scrabble games, compare strategies and explore competition archives.
 Langue des parties|Game language
 Les parties à la loupe|A closer look at the game
@@ -476,7 +476,6 @@ Ouvrez le lien de la bêta Android pour rejoindre vos amis. Activez les notifica
 Terminez les trois défis d’un week-end pour débloquer ce fond de carte à partager. Retrouvez-le dans votre collection.|Finish all three challenges on a weekend to unlock this share-card background. Find it in your collection.
 Aperçu de Nocturne dorée, une carte bleu nuit avec des tuiles dorées|Preview of Nocturne dorée, a midnight-blue card with golden tiles
 APK Android|Android APK
-AAB WordRivet 0.16.4|WordRivet 0.16.4 AAB
 Version de test à installer sur un appareil Android.|Test version for Android devices.
 Télécharger l’APK|Download APK
 État de la simulation et du service|Simulation and service status

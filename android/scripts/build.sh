@@ -69,12 +69,13 @@ else
     "$gradle_bin" "$gradle_task"
 fi
 if [[ "$gradle_task" == :app:bundleRelease ]]; then
-    bundle=artifacts/lettrine.aab
+    bundle=artifacts/tibop.aab
     trap 'rm -f "$bundle.part"' EXIT
     "$jarsigner" -keystore "$upload_key" -storepass:file "$upload_password" \
         -signedjar "$bundle.part" app/build/outputs/bundle/release/app-release.aab "$upload_alias"
     "$jarsigner" -verify -strict -keystore "$upload_key" -storepass:file "$upload_password" "$bundle.part" "$upload_alias"
     mv "$bundle.part" "$bundle"
+    printf 'AAB : %s/%s\n' "$root/android" "$bundle"
 else
     printf 'APK : %s\n' "$root/android/app/build/outputs/apk/debug/app-debug.apk"
 fi

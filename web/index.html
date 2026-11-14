@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Rejouez des parties de Scrabble, comparez les stratégies et explorez les archives de compétition.">
   <meta name="theme-color" content="#f5efe4">
-  <title>Lettrine Studio · Comprendre le jeu</title>
-  <link rel="icon" href="/assets/lettrine-mark.png" type="image/png">
+  <title>Tibop Studio · Comprendre le jeu</title>
+  <link rel="icon" href="/assets/tibop-icon.png" type="image/png">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/theme.css">
   <link rel="stylesheet" href="/charts.css">
@@ -20,9 +20,9 @@
   <a class="skip-link" href="#content">Aller au contenu</a>
   <div class="layout">
     <aside class="sidebar">
-      <a href="#vue" class="brand" aria-label="Accueil de Lettrine Studio">
-        <img class="brand-tile" src="/assets/lettrine-mark.png" width="36" height="36" alt="">
-        <span class="brand-copy"><strong>Lettrine</strong><span class="brand-product">Studio</span></span>
+      <a href="#vue" class="brand" aria-label="Accueil de Tibop Studio">
+        <img class="brand-tile" src="/assets/tibop-icon.png" width="36" height="36" alt="">
+        <span class="brand-copy"><strong>Tibop</strong><span class="brand-product">Studio</span></span>
       </a>
       <a href="/salons.html" class="button play-link">Jouer au Scrabble <span aria-hidden="true">↗</span></a>
       <nav class="nav" aria-label="Navigation principale">
@@ -77,7 +77,7 @@
           <section class="panel models-panel" aria-labelledby="models-title">
             <div class="panel-head"><div><h2 id="models-title">Résultats des bots</h2><p>Duels sur des tirages réservés.</p></div></div>
             <div class="model-entry" id="trained-panel" hidden>
-              <div class="model-head"><h3>Expert entraîné</h3><a class="model-elo text-link" id="trained-elo" href="/api/models" download="lettrine-expert-fr.json"></a></div>
+              <div class="model-head"><h3>Expert entraîné</h3><a class="model-elo text-link" id="trained-elo" href="/api/models" download="tibop-expert-fr.json"></a></div>
               <p>Face à l’Expert de référence.</p>
               <div class="model-performance"><span>Score de match</span><strong id="trained-match-rate"></strong></div>
               <div id="trained-track"></div>
@@ -332,12 +332,11 @@
                 </div>
               </dl>
               <div class="export-actions">
-                <a class="button primary" href="https://github.com/nabz0r/scrabnble/releases/download/v0.16.6/Tibop-0.16.6.apk">APK Android</a>
-                <a class="button secondary" href="/download/lettrine.aab" download>AAB WordRivet 0.16.4</a>
+                <a class="button primary" href="https://github.com/nabz0r/scrabnble/releases/download/v0.16.6/Tibop-0.16.6.apk">Télécharger l’APK</a>
               </div>
             </section>
             <section class="panel" aria-labelledby="import-title">
-              <div class="panel-head"><div><h2 id="import-title">Importer des parties</h2><p>Ajoutez un export Lettrine ou un fichier de parties.</p></div></div>
+              <div class="panel-head"><div><h2 id="import-title">Importer des parties</h2><p>Ajoutez un export Tibop ou un fichier de parties.</p></div></div>
               <form id="import-form" class="import-form">
                 <input id="import-file" class="sr-only" type="file" accept=".json,.jsonl,.ndjson,application/json,application/x-ndjson" aria-labelledby="import-picker-label" aria-describedby="import-help" required>
                 <label for="import-file" class="import-picker"><span id="import-picker-label">Choisir un fichier</span><span id="import-filename">Aucun fichier choisi</span></label>

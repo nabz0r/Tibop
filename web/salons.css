@@ -62,7 +62,7 @@ main { padding-block: clamp(18px, 3.8vw, 48px) 64px; }
 .welcome-copy { z-index: 1; padding: clamp(24px, 5.1vw, 65px); }
 .welcome-head p { max-width: 40ch; margin-top: 16px; color: #e8e6d4; font-size: clamp(15px, 1.62vw, 19px); }
 .welcome-art { position: absolute; z-index: 0; inset: 0 0 0 44%; overflow: hidden; }
-.welcome-art::after { position: absolute; z-index: 1; inset: 0; content: ""; background: linear-gradient(90deg, var(--forest), transparent 41%), url("/assets/lettrine-table.webp") 55% 52% / cover no-repeat; }
+.welcome-art::after { position: absolute; z-index: 1; inset: 0; content: ""; background: linear-gradient(90deg, var(--forest), transparent 41%), url("/assets/tibop-table.webp") 55% 52% / cover no-repeat; }
 .art-board { position: absolute; width: 110%; aspect-ratio: 1; top: -27%; left: 10%; transform: rotate(-16deg); overflow: hidden; background-color: #3f5139; background-image: linear-gradient(#25392b 2px, transparent 2px), linear-gradient(90deg, #25392b 2px, transparent 2px), radial-gradient(ellipse at top, #728564, #3f5139 65%); background-size: 10% 10%, 10% 10%, 100%; box-shadow: -10px 15px 65px #14231a; }
 .art-square { position: absolute; width: 10%; height: 10%; box-shadow: inset 2px 2px #25392b; }
 .art-square-red { left: 60%; top: 30%; background: #b0654d; }
@@ -327,7 +327,7 @@ dialog::backdrop { background: #1c2b23ad; }
   .welcome-copy { padding: 24px 19px; }
   .welcome-copy p { max-width: 31ch; margin-top: 11px; }
   .welcome-art { inset-inline-start: 30%; opacity: .26; }
-  .welcome-art::after { background-image: linear-gradient(90deg, var(--forest), transparent 62%), url("/assets/lettrine-table.webp"); }
+  .welcome-art::after { background-image: linear-gradient(90deg, var(--forest), transparent 62%), url("/assets/tibop-table.webp"); }
   .art-board { left: 20%; top: 4%; }
   .head-inner { min-height: 58px; }
   .head-link { min-height: 36px; padding-inline: 9px; font-size: .78rem; }

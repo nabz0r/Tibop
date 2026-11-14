@@ -2,7 +2,7 @@
 
 Campagne terminée le 12 novembre 2026 sur le Mac. Le moteur `fr-classic-v1` a joué **100 000 duels complets**, soit **2 754 615 tours**. PostgreSQL conserve chaque partie avec sa graine, les placements, les jokers, le chevalet avant chaque coup et le décompte final. Les 10 paires de niveaux ont chacune joué 10 000 duels. Entre niveaux différents, chacun commence 5 000 fois. Chaque duel utilise une graine distincte à partir de `20261112`.
 
-La campagne utilise **Grammalecte 7.7** d’origine, soit 406 312 formes de 2 à 15 lettres après filtrage, dédoublonnage et normalisation. L’identifiant du moteur et l’empreinte du lexique figurent dans le manifeste. La liste filtrée utilisée pour les nouvelles parties classiques sur Android depuis la 0.16.0 a sa propre empreinte. [Construction et empreintes des lexiques](../data/fr/README.md) · [Règles FISF classique, septembre 2026](https://www.ffsc.fr/files/public/fichiers/reglements/classique/Reglement.international.du.Scrabble.classique.pdf)
+La campagne utilise **Grammalecte 7.7** d’origine, soit 406 312 formes de 2 à 15 lettres après filtrage, dédoublonnage et normalisation. L’identifiant du moteur et l’empreinte du lexique figurent dans le manifeste. La liste filtrée de Tibop pour les nouvelles parties classiques sur Android a sa propre empreinte. [Construction et empreintes des lexiques](../data/fr/README.md) · [Règles FISF classique, septembre 2026](https://www.ffsc.fr/files/public/fichiers/reglements/classique/Reglement.international.du.Scrabble.classique.pdf)
 
 ## Écart de niveau
 

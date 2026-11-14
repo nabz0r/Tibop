@@ -552,7 +552,7 @@ async fn export(app: App, f: Filter, imports: bool) -> ApiResult<Response> {
         .insert(header::CONTENT_TYPE, HeaderValue::from_static(mime));
     response.headers_mut().insert(
         header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(&format!("attachment; filename=lettrine-{label}.{suffix}"))
+        HeaderValue::from_str(&format!("attachment; filename=tibop-{label}.{suffix}"))
             .expect("nom fixe"),
     );
     Ok(response)
@@ -840,7 +840,7 @@ pub async fn serve(app_db: PathBuf, engine: Engine, address: String, web: PathBu
     let apk = env::var("LETTRINE_APK")
         .ok()
         .filter(|path| !path.is_empty());
-    let aab = env::var("LETTRINE_AAB").unwrap_or_else(|_| "android/artifacts/lettrine.aab".into());
+    let aab = env::var("LETTRINE_AAB").unwrap_or_else(|_| "android/artifacts/tibop.aab".into());
     let room_engine = if app.engine.profile.id == pg::FRENCH {
         Some(app.engine.clone())
     } else if let Some(profile) = app.profiles.get(pg::FRENCH)
@@ -859,12 +859,19 @@ pub async fn serve(app_db: PathBuf, engine: Engine, address: String, web: PathBu
     } else {
         Router::new()
     };
-    let downloads = match apk {
-        Some(apk) => Router::new().route_service("/download/lettrine.apk", ServeFile::new(apk)),
-        None => Router::new().route("/download/lettrine.apk", get(|| async {
-            Redirect::temporary("https://github.com/nabz0r/scrabnble/releases/download/v0.16.6/Tibop-0.16.6.apk")
-        })),
-    };
+    let mut downloads = Router::new();
+    for path in ["/download/tibop.apk", "/download/lettrine.apk"] {
+        downloads = match &apk {
+            Some(apk) => downloads.route_service(path, ServeFile::new(apk)),
+            None => downloads.route(path, get(|| async {
+                Redirect::temporary("https://github.com/nabz0r/scrabnble/releases/download/v0.16.6/Tibop-0.16.6.apk")
+            })),
+        };
+    }
+    let bundle = ServeFile::new_with_mime(aab, &"application/octet-stream".parse()?);
+    downloads = downloads
+        .route_service("/download/tibop.aab", bundle.clone())
+        .route_service("/download/lettrine.aab", bundle);
     let router = Router::new()
         .merge(rooms)
         .merge(downloads)
@@ -905,14 +912,10 @@ pub async fn serve(app_db: PathBuf, engine: Engine, address: String, web: PathBu
         .route("/api/imports", get(imports))
         .route("/api/imports/export", get(dump_imports))
         .route("/api/imports/{id}", get(imported))
-        .route_service(
-            "/download/lettrine.aab",
-            ServeFile::new_with_mime(aab, &"application/octet-stream".parse()?),
-        )
         .fallback_service(ServeDir::new(web))
         .with_state(app);
     let listener = tokio::net::TcpListener::bind(&address).await?;
-    eprintln!("Lettrine écoute sur {address}");
+    eprintln!("Tibop Studio écoute sur {address}");
     axum::serve(listener, router).await?;
     Ok(())
 }

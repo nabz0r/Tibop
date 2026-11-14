@@ -10,7 +10,7 @@
   <strong><a href="https://github.com/nabz0r/scrabnble/releases/download/v0.16.6/Tibop-0.16.6.apk">Télécharger Tibop 0.16.6</a></strong> ·
   <a href="https://nabz0r.github.io/scrabnble/">Page de la bêta</a> ·
   <a href="android/README.md">Guide Android</a> ·
-  <a href="#lettrine-studio">Studio sur Mac</a>
+  <a href="#tibop-studio">Studio sur Mac</a>
 </p>
 
 <p align="center">
@@ -38,14 +38,14 @@ En fin de partie, NAB peut mettre un coup à revoir en évidence avec les cases,
 
 **Expliquer ce coup** affiche immédiatement le score et son premier détail vérifié, même en mode avion. Ouvrez les autres détails pour lire les mots croisés, les primes ou le rôle des jokers. Sur demande, SmolLM2 135M Instruct Q4_0 sélectionne un détail à mettre en avant. Le moteur Android joue les coups de NAB et calcule les scores. [Modèle, empreinte et licences](android/app/src/main/assets/SmolLM2-NOTICE.md)
 
-[Essai sur téléphone](android/README.md#tester-la-bêta-sur-son-téléphone) · [Vérifications de Tibop 0.16.6](docs/SIMULATIONS_ANDROID.md#vérification-de-tibop-0166) · [Mesures du modèle embarqué](docs/SIMULATIONS_ANDROID.md#vérifier-wordrivet-0152-sur-android)
+[Essai sur téléphone](android/README.md#tester-la-bêta-sur-son-téléphone) · [Vérifications de Tibop 0.16.6](docs/SIMULATIONS_ANDROID.md#vérification-de-tibop-0166) · [Mesures du modèle embarqué](docs/SIMULATIONS_ANDROID.md#mesures-du-modèle-embarqué)
 
 ### Garder votre progression
 
 - **Profil → Réglages → Sauvegarder et transférer** crée un fichier ZIP avec les parties, l’historique et la progression locale des deux langues. Gardez-le dans un dossier accessible pour pouvoir le restaurer sur une autre installation. [Ce que contient la sauvegarde](android/README.md#transférer-sa-progression)
 - **Profil → Réglages → Lexique personnel** importe un fichier TXT UTF-8 autorisé, puis ouvre l’entraînement contre NAB ou à plusieurs sur le même appareil. Chaque liste a son historique propre. Le jeu anglais utilise ENABLE2K. [Format et fonctionnement de l’import](android/README.md#jouer-avec-un-lexique-personnel)
 
-## Lettrine Studio
+## Tibop Studio
 
 Le studio local permet de rejouer des parties, de comparer les placements et d’examiner les résultats de **128 000 duels de référence**, dont 100 000 en français. Le jeu web permet aussi d’ouvrir un salon privé pour deux à quatre joueurs sur le même réseau.
 
@@ -58,7 +58,7 @@ Sur le Mac, installez Docker Desktop, Python 3 et `zstd`, puis lancez le studio 
 Le premier démarrage charge les campagnes fournies. [Ouvrir le studio sur le Mac](http://127.0.0.1:8787/index.html) · [Ouvrir les salons](http://127.0.0.1:8787/) · [Architecture et API](docs/ARCHITECTURE.md)
 
 <p align="center">
-  <img src="docs/media/duel-en-direct.png" width="570" alt="Capture de Lettrine Studio montrant un duel en cours, le plateau, les scores et la liste des coups">
+  <img src="docs/media/duel-en-direct.png" width="570" alt="Capture du studio montrant un duel en cours, le plateau, les scores et la liste des coups">
 </p>
 
 ### Ce que le laboratoire mesure
@@ -82,7 +82,7 @@ Pour compiler l’APK sur le Mac, installez Java 17, Python 3, le SDK Android 36
 cargo test --locked
 ```
 
-[Compilation, signature et installation](android/README.md#compiler-sur-le-mac) · [Bundle Android 0.16.4 pour Google Play](android/artifacts/lettrine.aab) · [Simulations Android](docs/SIMULATIONS_ANDROID.md)
+[Compilation, signature et installation](android/README.md#compiler-sur-le-mac) · [Préparer un bundle Google Play](android/README.md#préparer-un-bundle-google-play) · [Simulations Android](docs/SIMULATIONS_ANDROID.md)
 
 ### Aller plus loin
 
@@ -90,4 +90,4 @@ cargo test --locked
 - [Archives de maîtres et sources](data/expert/README.md) · [Règles et comparaison ODS](data/fr/README.md) · [Banc des modèles de langage](docs/CHOIX_MODELES.md)
 - [Comparatif Android](docs/COMPARATIF_ANDROID.md) · [Récompenses Android](docs/ECONOMIE_ANDROID.md) · [Sécurité locale](docs/SECURITE_ET_SUITE.md)
 
-Lettrine est un projet indépendant sous [AGPL-3.0](LICENSE). Les lexiques, le modèle embarqué et les polices ont leurs propres licences.
+Tibop est un projet indépendant sous [AGPL-3.0](LICENSE). Les lexiques, le modèle embarqué et les polices ont leurs propres licences.
