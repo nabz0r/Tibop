@@ -34,7 +34,7 @@
           <a class="action primary" id="open">Ouvrir dans WordRivet</a>
         </div>
         <p id="invalid">Ouvre le lien complet envoyé par ton ami pour retrouver l’invitation.</p>
-        <a id="download" class="action" href="https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk">Télécharger l’APK Android</a>
+        <a id="download" class="action" href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.0/android/artifacts/lettrine.apk">Télécharger l’APK Android <span>0.16.0</span></a>
       </section>
     </article>
   </main>
@@ -44,8 +44,10 @@
     if (english) {
       document.documentElement.lang = 'en';
       document.title = "Invitation to play \u00b7 WordRivet";
-      const labels = {"h1": "Invitation to play", "intro": "Add your friend in WordRivet, then play a duel at your own pace.", "open": "Open in WordRivet", "invalid": "Open the complete link from your friend to find the invitation.", "download": "Download the Android APK"};
+      const labels = {"h1": "Invitation to play", "intro": "Add your friend in WordRivet, then play a duel at your own pace.", "open": "Open in WordRivet", "invalid": "Open the complete link from your friend to find the invitation."};
       for (const [id, text] of Object.entries(labels)) document.getElementById(id).textContent = text;
+      const download = document.getElementById("download");
+      download.textContent = "Download Android APK " + download.querySelector("span").textContent;
     }
     if (/^(?:en\/)?[0-9a-f]{32}$/.test(token)) {
       document.getElementById('open').href = 'lettrine://amis/v1/' + token;

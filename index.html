@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#252e61">
-  <meta name="description" content="Relève le défi de lettres d’un ami dans WordRivet et essaie de battre son score.">
-  <title>Bats mon score · WordRivet</title>
+  <meta name="description" content="Téléchargez la bêta Android de WordRivet et jouez une partie de lettres classique.">
+  <title>Bêta Android · WordRivet</title>
   <style>
     :root {
       color-scheme: light;
@@ -93,8 +93,8 @@
     <p class="brand"><span aria-hidden="true">L</span> WordRivet</p>
     <article>
       <header class="hero">
-        <p id="date">Défi de lettres</p>
-        <h1 id="h1">Bats mon score</h1>
+        <p id="date">WordRivet 0.16.0</p>
+        <h1 id="h1">Bêta Android</h1>
         <span class="tile" aria-hidden="true">L</span>
       </header>
       <div class="body">
@@ -103,10 +103,11 @@
           <p id="intro">Retrouve le même plateau et le même chevalet dans WordRivet.</p>
           <a class="button primary" id="open">Ouvrir dans WordRivet</a>
         </div>
-        <p id="invalid">Ouvre le lien complet qui accompagne la carte pour retrouver le défi.</p>
+        <p id="invalid">Jouez une partie de lettres classique hors ligne contre NAB ou à plusieurs sur le même appareil.</p>
         <div class="install">
-          <p id="install">Sur Android, installe WordRivet puis reviens à cette invitation.</p>
-          <a id="download" class="button" href="https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk">Télécharger l’APK Android</a>
+          <p id="install">À partir d’Android 8.</p>
+          <p id="changes">Glissez les lettres sur le chevalet pour les réordonner. Le lexique français filtré s’applique aux nouvelles parties classiques en solo ou sur le même appareil.</p>
+          <a id="download" class="button" href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.0/android/artifacts/lettrine.apk">Télécharger l’APK Android <span>0.16.0</span></a>
         </div>
       </div>
     </article>
@@ -119,8 +120,10 @@
     if (english) {
       document.documentElement.lang = 'en';
       document.title = "Beat my score \u00b7 WordRivet";
-      const labels = {"h1": "Beat my score", "date": "Word challenge", "target-label": "to beat", "intro": "Play the same board and rack in WordRivet.", "open": "Open in WordRivet", "invalid": "Open the complete link that came with the score card.", "install": "Install WordRivet on Android, then come back to this invitation.", "download": "Download the Android APK"};
+      const labels = {"h1": "Beat my score", "date": "Word challenge", "target-label": "to beat", "intro": "Play the same board and rack in WordRivet.", "open": "Open in WordRivet", "invalid": "Open the complete link that came with the score card.", "install": "Install WordRivet on Android, then come back to this invitation.", "changes": "Drag tiles to reorder them in version 0.16.0. New classic games in French on your device use the filtered dictionary."};
       for (const [id, text] of Object.entries(labels)) document.getElementById(id).textContent = text;
+      const download = document.getElementById("download");
+      download.textContent = "Download Android APK " + download.querySelector("span").textContent;
     }
     if (fields) {
       const [, year, month, day, points] = fields;
@@ -128,7 +131,10 @@
       date.setUTCFullYear(+year, +month - 1, +day);
       if (+year > 0 && date.getUTCFullYear() === +year && date.getUTCMonth() === +month - 1 && date.getUTCDate() === +day) {
         const formatter = new Intl.DateTimeFormat(english ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+        document.title = english ? 'Beat my score · WordRivet' : 'Bats mon score · WordRivet';
         document.getElementById('date').textContent = (english ? '' : 'Défi du ') + formatter.format(date);
+        document.getElementById('h1').textContent = english ? 'Beat my score' : 'Bats mon score';
+        document.getElementById('install').textContent = english ? 'Install WordRivet on Android, then come back to this invitation.' : 'Sur Android, installe WordRivet puis reviens à cette invitation.';
         document.getElementById('score').textContent = points + (+points === 1 ? ' point' : ' points');
         document.getElementById('open').href = 'lettrine://defi/' + payload;
         document.getElementById('challenge').hidden = false;
