@@ -2,7 +2,7 @@
 
 La bêta dispose de son propre projet Compose et de son volume `lettrine-beta_beta_social_data`. Le français conserve sa base SQLite. L’anglais utilise une seconde base, `social.sqlite.en` par défaut, dans le même volume. Le tunnel HTTPS vers Nginx dessert `/beta`, `/health`, `/api/social/` pour le français et `/api/social-en/` pour l’anglais. Nginx limite le débit global et par adresse, avec un plafond séparé pour les inscriptions.
 
-Pour installer la bêta, ouvrez la [page de téléchargement stable](https://nabz0r.github.io/scrabnble/). L’adresse du tunnel sert à connecter **Amis** aux duels et tournois.
+Pour installer la bêta, ouvrez la [page de téléchargement stable](https://nabz0r.github.io/Tibop/). L’adresse du tunnel sert à connecter **Amis** aux duels et tournois.
 
 ## Ouvrir une session de bêta
 
@@ -17,7 +17,9 @@ Cette adresse de test reste valable tant que le connecteur tourne. Le Mac et Doc
 
 ## Mettre à jour la bêta
 
-La publication GitHub de Tibop distribue un seul APK signé depuis `main`. Le mini-site public est servi depuis `gh-pages`. Ses pages sources se trouvent dans `android/share-site/`. La page de connexion au serveur, `/beta`, est lue depuis `web/beta/`. Les deux pages téléchargent le même APK. Le studio redirige aussi vers cet APK via `/download/tibop.apk`.
+La [publication GitHub de Tibop](https://github.com/nabz0r/Tibop/releases/tag/v0.16.6) distribue un seul APK signé depuis `main`. Le mini-site public est servi depuis `gh-pages`. Ses pages sources se trouvent dans `android/share-site/`. La page de connexion au serveur, `/beta`, est lue depuis `web/beta/`. Les deux pages téléchargent le même APK. Le studio redirige aussi vers cet APK via `/download/tibop.apk`.
+
+Le site Pages de compatibilité redirige les anciens liens `/scrabnble/`, `/scrabnble/amis/` et `/scrabnble/defi/` vers le site Tibop en conservant les paramètres des invitations générées par l’APK 0.16.6.
 
 Recompilez le service social seul pour conserver le proxy, le tunnel en service et les données des deux langues. Si la configuration Nginx évolue, vérifiez-la puis rechargez le proxy en place.
 

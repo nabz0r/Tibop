@@ -7,8 +7,8 @@
 <p align="center">Affrontez NAB, le Maine Coon, dans un jeu de lettres classique pour Android. Jouez en français ou en anglais et revenez sur vos meilleurs coups.</p>
 
 <p align="center">
-  <strong><a href="https://github.com/nabz0r/scrabnble/releases/download/v0.16.6/Tibop-0.16.6.apk">Télécharger Tibop 0.16.6</a></strong> ·
-  <a href="https://nabz0r.github.io/scrabnble/">Page de la bêta</a> ·
+  <strong><a href="https://github.com/nabz0r/Tibop/releases/download/v0.16.6/Tibop-0.16.6.apk">Télécharger Tibop 0.16.6</a></strong> ·
+  <a href="https://nabz0r.github.io/Tibop/">Page de la bêta</a> ·
   <a href="android/README.md">Guide Android</a> ·
   <a href="#tibop-studio">Studio sur Mac</a>
 </p>
@@ -18,8 +18,17 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/tibop-android.webp" width="690" alt="Accueil de Tibop avec NAB, plateau d’une partie solo et résultat du défi du jour">
+  <a href="docs/media/tibop-android.webp"><img src="docs/media/tibop-android.webp" width="760" alt="Accueil de Tibop avec NAB, plateau d’une partie solo, résultat d’un défi et boutique"></a>
 </p>
+
+## Aperçus Android
+
+<p align="center">
+  <a href="docs/media/tibop-gameplay-solo.gif"><img src="docs/media/tibop-gameplay-solo.gif" width="280" alt="Une pose en solo suivie du coup de NAB"></a>
+  <a href="docs/media/tibop-defi-quotidien.gif"><img src="docs/media/tibop-defi-quotidien.gif" width="258" alt="Un défi du jour, de la pose du mot au résultat"></a>
+</p>
+
+[Partie solo contre NAB](docs/media/tibop-gameplay-solo.gif) · [Défi du jour](docs/media/tibop-defi-quotidien.gif)
 
 ## Jouer sur Android
 
@@ -58,7 +67,7 @@ Sur le Mac, installez Docker Desktop, Python 3 et `zstd`, puis lancez le studio 
 Le premier démarrage charge les campagnes fournies. [Ouvrir le studio sur le Mac](http://127.0.0.1:8787/index.html) · [Ouvrir les salons](http://127.0.0.1:8787/) · [Architecture et API](docs/ARCHITECTURE.md)
 
 <p align="center">
-  <img src="docs/media/duel-en-direct.png" width="570" alt="Capture du studio montrant un duel en cours, le plateau, les scores et la liste des coups">
+  <a href="docs/media/duel-en-direct.png"><img src="docs/media/duel-en-direct.png" width="570" alt="Capture du studio montrant un duel en cours, le plateau, les scores et la liste des coups"></a>
 </p>
 
 ### Ce que le laboratoire mesure
