@@ -26,8 +26,8 @@ android {
         applicationId 'fr.lettrine.game'
         minSdk 26
         targetSdk 36
-        versionCode 23
-        versionName '0.16.2'
+        versionCode 24
+        versionName '0.16.3'
         buildConfigField 'String', 'SOCIAL_BASE_URL', '"' + socialUrl + '"'
         manifestPlaceholders.admobAppId = ads ? adApp : 'disabled'
         if (ads) {

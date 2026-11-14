@@ -1,10 +1,10 @@
 # WordRivet pour Android
 
-L’[APK de bêta 0.16.2](artifacts/lettrine.apk) de WordRivet fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il met à jour une installation directe qui utilise la même signature. Le [bundle 0.16.2](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK de bêta 0.16.3](artifacts/lettrine.apk) de WordRivet fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il met à jour une installation directe qui utilise la même signature. Le [bundle 0.16.3](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Tester la bêta sur son téléphone
 
-1. Sur Android, [téléchargez l’APK 0.16.2](https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.2/android/artifacts/lettrine.apk) et ouvrez-le. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Pour mettre à jour une bêta installée directement, gardez l’application en place et choisissez **Mettre à jour**.
+1. Sur Android, [téléchargez l’APK 0.16.3](https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.3/android/artifacts/lettrine.apk) et ouvrez-le. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Pour mettre à jour une bêta installée directement, gardez l’application en place et choisissez **Mettre à jour**.
 2. En français, ouvrez **Jouer contre NAB** ou **Jouer à deux ou plus** et démarrez une nouvelle partie. Faites glisser une tuile du chevalet sur une autre pour déplacer la première. Faites ensuite glisser une tuile sur le plateau. Quittez l’application en cours de tour et touchez **Reprendre ma partie** pour retrouver l’ordre des lettres et le brouillon.
 3. Pour tester le lexique, si le tirage le permet, essayez `KM` ou `KG` sur la case centrale, puis un mot courant comme `AS` ou `CHAT`. Le jeu indique le motif du refus ou le score du coup. Le filtre s’applique aux nouvelles parties classiques en français.
 4. Pour un duel avec le lexique filtré, installez tous les deux la mise à jour et ouvrez **Amis** pour vous connecter avant de lancer un nouveau duel. Les liens d’amitié déjà envoyés s’utilisent comme avant.
@@ -188,6 +188,12 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 - Sur Android 16, l’annulation de la vidéo de démonstration a laissé le solde intact. Une annonce Google terminée a crédité un ticket bonus.
 
 Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.
+
+## Vérification de la version 0.16.3
+
+- À la reprise d’une partie locale, le plateau n’affiche les tuiles en brouillon qu’après **Afficher mon chevalet**. Le même contrôle s’applique aux annonces d’accessibilité. Sur Android 16, le retour depuis l’accueil et le redémarrage ont conservé un brouillon valide à deux lettres et son score.
+- À trois et quatre, le nom s’affiche au-dessus du score. Avec les grandes polices, les cartes se répartissent sur deux colonnes.
+- Le moteur a terminé 1 200 parties à deux, trois et quatre joueurs, en français et en anglais. Chaque tour a été sauvegardé et rechargé. [Méthode, résultats et commande](../docs/SIMULATIONS_ANDROID.md#parties-locales-à-deux-trois-et-quatre-joueurs)
 
 ## Vérification de la version 0.16.2
 

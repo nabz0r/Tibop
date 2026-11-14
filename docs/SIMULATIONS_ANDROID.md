@@ -1,6 +1,25 @@
 # Simulations de parties Android
 
-Les campagnes ci-dessous utilisent Grammalecte 7.7 d’origine. Les nouvelles parties classiques françaises de WordRivet 0.16.0 utilisent le lexique filtré et les poids Maître de référence. Les contrôles du chevalet et du filtre de la bêta figurent dans le [guide Android](../android/README.md#vérification-de-la-version-0160). [Empreintes et filtres](../data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android)
+Les nouvelles parties classiques françaises utilisent le lexique filtré et les poids Maître de référence. Les campagnes historiques indiquent le lexique utilisé. [Empreintes et filtres](../data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android)
+
+## Parties locales à deux, trois et quatre joueurs
+
+Le moteur Java d’Android a terminé **1 200 parties** avec Grammalecte 7.7 · Classique en français et ENABLE2K en anglais. Chaque groupe compte 200 tirages. Un calcul indépendant a contrôlé les mots, les cases bonus, les points et la conservation des tuiles. Le test a sauvegardé et rechargé chacun des 37 935 tours et vérifié les ajustements de fin et les ex æquo. Les 39 708 actions volontairement invalides ont été refusées sans modification de l’état.
+
+| Langue | Joueurs | Tours | Poses | Échanges | Passes | Chevalet vidé | Fin par passes ou tours sans points |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Français | 2 | 6 826 | 4 798 | 1 031 | 997 | 145 | 55 |
+| Français | 3 | 6 260 | 4 343 | 906 | 1 011 | 153 | 47 |
+| Français | 4 | 5 698 | 3 849 | 803 | 1 046 | 156 | 44 |
+| Anglais | 2 | 6 845 | 4 803 | 1 054 | 988 | 141 | 59 |
+| Anglais | 3 | 6 417 | 4 474 | 934 | 1 009 | 156 | 44 |
+| Anglais | 4 | 5 889 | 4 029 | 802 | 1 058 | 156 | 44 |
+
+```sh
+./tools/android_gameplay/run-multiplayer.py 200 2026111403 7
+```
+
+En complément, six scénarios sur l’émulateur Android 8 ont vérifié la reprise avant le dernier tour, le chevalet vidé, les gagnants ex æquo et l’archivage unique. Un test de stockage concurrent a conservé 48 archives et les parties en cours.
 
 ## Vérifier WordRivet 0.15.2 sur Android
 

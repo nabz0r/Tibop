@@ -1367,7 +1367,7 @@ public final class MainActivity extends Activity {
     }
 
     private final class Arena {
-        final LinearLayout scores = ui.row();
+        final LinearLayout scores = ui.column();
         final LinearLayout rack = ui.row();
         final View[] rackTokens = new View[FrenchGame.RACK_SIZE];
         final RackDrop rackDrop = new RackDrop(ui, rack, Arrays.asList(rackTokens),
@@ -1417,6 +1417,7 @@ public final class MainActivity extends Activity {
             showMatchResult(current);
             return;
         }
+        if (mode.equals("local")) privacy = true;
         page(Screen.GAME, false);
         top(mode.equals("local") ? getString(R.string.app_local) : mode.equals("bluetooth") ? "Bluetooth" : getString(R.string.app_solo),
                 this::leaveGame, mode.equals("bluetooth") ? null : ui.textButton(getString(R.string.games_title), () -> {
@@ -1542,16 +1543,17 @@ public final class MainActivity extends Activity {
             return;
         }
         renderScores(current);
+        boolean canPlay = myTurn(current) && !analysing;
+        List<FrenchGame.Tile> visibleDraft = privacy ? List.of() : staged;
         List<FrenchGame.Tile> recent = current.history().isEmpty() ? List.of()
                 : current.history().get(current.history().size() - 1).tiles();
-        arena.board.update(current.board(), current.blanks(), staged, recent, animatedPosition);
+        arena.board.update(current.board(), current.blanks(), visibleDraft, recent, animatedPosition);
         arena.status.setText(getString(R.string.app_bag_turn, current.bagSize(), current.history().size() + 1));
         arena.rack.removeAllViews();
         Arrays.fill(arena.rackTokens, null);
 
-        boolean canPlay = myTurn(current) && !analysing;
-        FrenchGame.Preview result = evaluate(current);
         boolean draft = canPlay && !staged.isEmpty();
+        FrenchGame.Preview result = draft ? evaluate(current) : null;
         boolean legal = draft && result.valid();
         arena.preview.setBackground(ui.shape(legal ? ui.palette.ordinary() : ui.palette.paper(),
                 10, legal ? ui.palette.accent() : ui.palette.line()));
@@ -1612,23 +1614,39 @@ public final class MainActivity extends Activity {
         arena.renderedTurn = turn;
         arena.renderedScores = current.scores().clone();
         arena.scores.removeAllViews();
+        boolean stacked = current.names().length > 2;
+        int columns = stacked && getResources().getConfiguration().fontScale > 1.3f
+                ? 2 : current.names().length;
+        LinearLayout row = ui.row();
+        arena.scores.addView(row);
         for (int i = 0; i < current.names().length; i++) {
-            if (i != 0) ui.space(arena.scores, 5);
-            LinearLayout seat = ui.row();
-            ui.inset(seat, 8, 7);
+            if (i == columns) {
+                ui.gap(arena.scores, 4);
+                row = ui.row();
+                arena.scores.addView(row);
+            } else if (i != 0) ui.space(row, 5);
+            LinearLayout seat = stacked ? ui.column() : ui.row();
+            ui.inset(seat, stacked ? 6 : 8, stacked ? 3 : 7);
             boolean active = i == current.active();
             seat.setBackground(ui.shape(active ? ui.palette.deep() : ui.palette.paper(),
                     13, active ? 0 : ui.palette.line()));
             TextView name = ui.text(current.names()[i], 11, active ? ui.palette.heroInk() : ui.palette.muted(), ui.medium);
             name.setSingleLine(true);
             name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            ui.weight(seat, name);
-            ui.space(seat, 4);
+            if (stacked) seat.addView(name, new LinearLayout.LayoutParams(-1, -2));
+            else {
+                ui.weight(seat, name);
+                ui.space(seat, 4);
+            }
             TextView score = ui.text(Integer.toString(current.scores()[i]), 18,
                     active ? ui.palette.heroInk() : ui.palette.ink(), ui.medium);
             seat.addView(score);
             if (previousScores != null && previousScores[i] != current.scores()[i]) pulseMoveFeedback(score);
-            ui.weight(arena.scores, seat);
+            ui.weight(row, seat);
+        }
+        if (current.names().length % columns != 0) {
+            ui.space(row, 5);
+            ui.weight(row, new View(this));
         }
     }
 
