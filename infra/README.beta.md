@@ -2,6 +2,8 @@
 
 La bêta dispose de son propre projet Compose et de son volume `lettrine-beta_beta_social_data`. Le français conserve sa base SQLite. L’anglais utilise une seconde base, `social.sqlite.en` par défaut, dans le même volume. Le tunnel HTTPS vers Nginx dessert `/beta`, `/health`, `/api/social/` pour le français et `/api/social-en/` pour l’anglais. Nginx limite le débit global et par adresse, avec un plafond séparé pour les inscriptions.
 
+Pour installer la bêta et essayer le chevalet ou le lexique classique français, le [lien direct vers l’APK](https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk) fonctionne sans passer par le serveur social. L’adresse du tunnel sert à connecter **Amis** aux duels et tournois.
+
 ## Ouvrir une session de bêta
 
 ```sh
@@ -12,6 +14,23 @@ docker compose -f compose.social.yaml -f compose.social-beta.yaml logs beta_tunn
 Partagez l’adresse HTTPS affichée dans les journaux avec le chemin `/beta`. Le bouton ouvre Android et demande confirmation avant de changer de serveur. Une invitation française ajoute son code après `#`. Une invitation anglaise utilise `#en/` suivi du code.
 
 Cette adresse de test reste valable tant que le connecteur tourne. Le Mac et Docker doivent rester en fonctionnement. L’adresse change si le tunnel est recréé. Les données restent dans le volume et les comptes invités Android sont associés à leur adresse de serveur. Pour cette raison, le build générique accepte l’adresse via le lien de bêta. [Documentation Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/)
+
+## Mettre à jour la bêta
+
+Les fichiers de la page `/beta` sont lus depuis `web/beta/`. Recompilez le service social seul pour conserver le proxy, le tunnel en service et les données des deux langues.
+
+```sh
+docker compose -f compose.social.yaml -f compose.social-beta.yaml up -d --build --no-deps --wait social
+```
+
+Si Cloudflare ne reconnaît plus le tunnel temporaire, recréez seulement le connecteur. Relevez ensuite la nouvelle adresse HTTPS dans le journal. Sur un téléphone qui utilisait l’ancienne adresse, ouvrez le nouveau lien `/beta` pour configurer le serveur.
+
+```sh
+docker compose -f compose.social.yaml -f compose.social-beta.yaml up -d --no-deps --force-recreate beta_tunnel
+docker compose -f compose.social.yaml -f compose.social-beta.yaml logs beta_tunnel
+```
+
+`/beta` et `/health` doivent répondre HTTP 200. `/api/social/me` et `/api/social-en/me` doivent répondre HTTP 401 lorsqu’aucune session n’est fournie.
 
 ## Garder une adresse stable
 

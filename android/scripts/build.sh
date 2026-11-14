@@ -53,6 +53,12 @@ if [[ -f "$root/data/models/fr-bots-v1.json" ]]; then
     cp "$root/data/models/fr-bots-v1.json" "$generated/bot-policy.json"
 fi
 python3 scripts/prepare_words.py "$words" "$words_label" "$words_license" "$generated"
+if [[ "$words" == "$root/data/fr/words.txt" ]]; then
+    python3 "$root/tools/lexicon.py" classic --output "$generated"
+    rm "$generated/words-fr-classic.txt"
+else
+    rm -f "$generated/words-fr-classic.txt" "$generated/lexicon-fr-classic.json"
+fi
 python3 scripts/prepare_words.py "$root/data/en/words.txt" ENABLE2K 'Public domain' "$generated" en
 cp "$root/data/en/README.md" "$generated/lexicon-notice-en.md"
 cp "$root/data/en/ENABLE2K-NOTICE.txt" "$generated/ENABLE2K-NOTICE.txt"

@@ -1,0 +1,5 @@
+<resources>
+    <string name="home_classic">Classic game</string>
+    <string name="home_classic_detail">Play a full game offline.</string>
+    <string name="home_more_modes">More ways to play</string>
+</resources>

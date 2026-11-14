@@ -18,7 +18,9 @@ if (window.location.protocol === "https:") {
     document.title = "Android beta · WordRivet";
     document.querySelector(".eyebrow").textContent = "Android beta";
     document.getElementById("detail").textContent = "Install WordRivet and open this invitation again on Android.";
-    document.querySelector(".download a").textContent = "Download the Android APK";
+    document.getElementById("changes").textContent = "Drag tiles to reorder them on your rack. New classic solo or same-device games in French use the filtered dictionary.";
+    const download = document.querySelector(".download a");
+    download.textContent = "Download Android APK " + download.querySelector("span").textContent;
     button.textContent = "Open in WordRivet";
   }
   button.href = "lettrine://beta/v1/?" + params;

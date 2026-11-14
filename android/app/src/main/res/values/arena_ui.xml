@@ -1,0 +1,10 @@
+<resources>
+    <string name="arena_your_turn">À vous de jouer</string>
+    <string name="arena_active_player">Au tour de %1$s</string>
+    <string name="arena_place_hint">Glissez les lettres pour les trier ou les poser.</string>
+    <string name="arena_place_selected">Touchez une case pour poser cette lettre.</string>
+    <string name="arena_valid_preview">%1$s · %2$s · +%3$s</string>
+    <string name="arena_invalid_preview">%1$s · %2$s</string>
+    <string name="arena_last_score">Dernier coup · %1$s · %2$s</string>
+    <string name="arena_last_explain">Expliquer le dernier coup, %1$s, %2$s</string>
+</resources>

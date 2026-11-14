@@ -16,6 +16,8 @@ La FISF publie le règlement applicable depuis le 1er septembre 2026. En duel, l
 
 Le profil fournit Grammalecte 7.7 sous MPL-2.0. Sur le plateau, les accents sont neutralisés et les ligatures `Œ` et `Æ` deviennent deux lettres. Les mots avec ponctuation interne sont filtrés. L’ODS 9 reste la référence des compétitions francophones et se charge à partir d’un fichier local dont l’utilisateur dispose selon les conditions de l’éditeur. [Lexique français et comparateur](../data/fr/README.md) · [Questions ODS, FISF](https://fisf.net/lofficiel-du-scrabble/questions-reponses/)
 
+Sur Android 0.16.0, les nouvelles parties classiques françaises en solo et sur le même appareil utilisent **Grammalecte 7.7 · Classique**. Ce sous-ensemble retire 258 formes exclusivement marquées comme symboles, sigles ou abréviations typographiques. Il a sa propre empreinte. Les campagnes du studio, les défis, les duels en ligne, le Bluetooth et les parties déjà commencées utilisent Grammalecte 7.7 d’origine. Le jeu avec une liste importée reste accessible dans **Profil → Réglages → Lexique personnel**. [Méthode et exclusions](../data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android) · [Guide Android](../android/README.md#jouer-avec-un-lexique-personnel)
+
 ## Anglais international et Amérique du Nord
 
 Le profil anglais prend le duel WESPA v5.1 comme référence. Il reprend le sac de 100 jetons, la prime de 50 pour sept jetons, l’échange si le sac en contient au moins sept et six tours à zéro, y compris les passes et les échanges. À l’épuisement, il applique le décompte recommandé par WESPA. Le joueur sortant gagne le double de la valeur des lettres adverses et le score adverse reste fixe. Le règlement accepte aussi la méthode de transfert simple, qui donne le même écart de score en duel. La validation dans le moteur est automatique. [WESPA Game Rules v5.1, §§3.2 et 5](https://www.wespa.org/wp-content/uploads/2024/09/Rules-V5.1.pdf) · [Notice Hasbro](https://instructions.hasbro.com/en-us/instruction/scrabble-board-game)
@@ -51,7 +53,7 @@ LETTRINE_GAMES=1000 \
 cargo run --release -- run
 ```
 
-Le répertoire `data/profiles` contient les fiches JSON, que l’API expose à `/api/profiles`. L’application Android actuelle reste en français. Le moteur du laboratoire prend en charge les plateaux classiques 15 × 15 et un symbole Unicode par jeton. Le cyrillique et les umlauts allemands conservent leurs propres caractères. Les digrammes sur un jeton, les kana combinés et les mécaniques de variantes nécessitent une segmentation et un moteur qui les représentent explicitement.
+Le répertoire `data/profiles` contient les fiches JSON, que l’API expose à `/api/profiles`. Sur Android, **EN / FR** change la langue des menus et du jeu. Les parties et la progression sont propres à chaque langue. Le moteur du laboratoire prend en charge les plateaux classiques 15 × 15 et un symbole Unicode par jeton. Le cyrillique et les umlauts allemands conservent leurs propres caractères. Les digrammes sur un jeton, les kana combinés et les mécaniques de variantes nécessitent une segmentation et un moteur qui les représentent explicitement.
 
 ## Ajouter un profil
 

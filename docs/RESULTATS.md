@@ -2,7 +2,7 @@
 
 Campagne terminée le 12 novembre 2026 sur le Mac. Le moteur `fr-classic-v1` a joué **100 000 duels complets**, soit **2 754 615 tours**. PostgreSQL conserve chaque partie avec sa graine, les placements, les jokers, le chevalet avant chaque coup et le décompte final. Les 10 paires de niveaux ont chacune joué 10 000 duels. Entre niveaux différents, chacun commence 5 000 fois. Chaque duel utilise une graine distincte à partir de `20261112`.
 
-La campagne utilise **Grammalecte 7.7**, soit 406 312 formes de 2 à 15 lettres après filtrage, dédoublonnage et normalisation. L’identifiant du moteur et l’empreinte du lexique figurent dans le manifeste. [Construction du lexique](../data/fr/README.md) · [Règles FISF classique, septembre 2026](https://www.ffsc.fr/files/public/fichiers/reglements/classique/Reglement.international.du.Scrabble.classique.pdf)
+La campagne utilise **Grammalecte 7.7** d’origine, soit 406 312 formes de 2 à 15 lettres après filtrage, dédoublonnage et normalisation. L’identifiant du moteur et l’empreinte du lexique figurent dans le manifeste. La liste filtrée utilisée pour les nouvelles parties classiques sur Android depuis la 0.16.0 a sa propre empreinte. [Construction et empreintes des lexiques](../data/fr/README.md) · [Règles FISF classique, septembre 2026](https://www.ffsc.fr/files/public/fichiers/reglements/classique/Reglement.international.du.Scrabble.classique.pdf)
 
 ## Écart de niveau
 
@@ -40,7 +40,7 @@ Les archives humaines fournissent quatre parties de compétition et 108 tours do
 
 ### NAB Android sur les mêmes positions
 
-Le banc rejoue les 108 tours documentés et présente au niveau Maître le plateau, le chevalet du joueur et le nombre de tuiles dans le sac. Il compare 79 placements avec le lexique Grammalecte de l’APK. NAB retrouve exactement 23 coups. En points immédiats, il marque plus sur 48 positions, autant sur 26 et moins sur 5. Le banc écarte 16 placements qui forment au moins un mot absent de Grammalecte, un écart de score, 11 échanges et une tentative invalidée. [Script de mesure](../tools/android_gameplay/benchmark_experts.py)
+Le banc rejoue les 108 tours documentés et présente au niveau Maître le plateau, le chevalet du joueur et le nombre de tuiles dans le sac. Il compare 79 placements avec le lexique Grammalecte 7.7 d’origine et les poids Maître entraînés. NAB retrouve exactement 23 coups. En points immédiats, il marque plus sur 48 positions, autant sur 26 et moins sur 5. Le banc écarte 16 placements qui forment au moins un mot absent de Grammalecte, un écart de score, 11 échanges et une tentative invalidée. [Script de mesure](../tools/android_gameplay/benchmark_experts.py)
 
 ```sh
 python3 tools/android_gameplay/benchmark_experts.py

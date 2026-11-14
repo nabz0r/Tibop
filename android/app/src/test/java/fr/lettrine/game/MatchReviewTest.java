@@ -90,11 +90,32 @@ public class MatchReviewTest {
     @Test public void englishReviewExplainsAnAlternativeUsingTheEnglishScore() throws Exception {
         var english = Lexicon.read(new BufferedReader(new StringReader("AX\n")), "Test", "", "", 1,
                 GameLanguage.ENGLISH);
-        var turn = MatchReview.analyze(List.of(pass(0, "AX")), english, 0, true).get(0);
+        var review = MatchReview.review(List.of(pass(0, "AX")), english, 0, true);
+        var turn = review.turns().get(0);
         assertEquals(18, turn.alternative().preview().score());
         assertTrue(turn.text(0).contains("AX scores 18 points. Your move scored 0 points."));
         assertTrue(turn.text(0).contains("The alternative scores 18 points more."));
         assertNotNull(turn.practice());
+        assertEquals("AX scores 18 points more on this board.", review.highlight().explanation());
+    }
+
+    @Test public void highlightsAnEasyCrossingWithoutChangingDetailedReviewOrder() throws Exception {
+        var lexicon = Lexicon.read(new BufferedReader(new StringReader("AS\nAA\nSS\nZA\n")), "Test", "", "", 4);
+        var opening = new FrenchGame.Move(1, "play", "AS", 4, List.of(tile(CENTER, 0, 'A', false),
+                tile(CENTER + 1, 1, 'S', false)), 0, "AS", 90);
+        var below = new FrenchGame.Move(1, "play", "AA", 2, List.of(tile(CENTER + FrenchGame.SIZE, 0, 'A', false)),
+                0, "A", 89);
+        var moves = List.of(pass(0, "ZA"), opening, below, pass(0, "S"));
+
+        var review = MatchReview.review(moves, lexicon, 0, true);
+        assertEquals(List.of(0, 3), review.turns().stream().map(MatchReview.Turn::index).collect(Collectors.toList()));
+        var highlight = review.highlight();
+        assertEquals(3, highlight.turn().index());
+        assertEquals(List.of(CENTER + FrenchGame.SIZE + 1), highlight.cells());
+        assertTrue(highlight.explanation().contains("vous formez AS et SS"));
+        assertTrue(highlight.explanation().contains("6 points de plus"));
+        assertNotNull(highlight.turn().practice());
+        assertNull(MatchReview.review(moves, lexicon, 0, false).highlight());
     }
 
     private static Lexicon lexicon() throws Exception {

@@ -2,12 +2,12 @@
     <string name="app_back">Retour</string>
     <string name="app_play">Jouer</string>
     <string name="app_history">Historique</string>
-    <string name="app_resume">Reprendre la partie</string>
+    <string name="app_resume">Reprendre ma partie</string>
     <string name="app_new_game">NOUVELLE PARTIE</string>
-    <string name="app_vs_bot">Contre un bot</string>
-    <string name="app_vs_bot_detail">Quatre niveaux et un bot adaptatif</string>
+    <string name="app_vs_bot">Jouer contre NAB</string>
+    <string name="app_home_local">Jouer à deux ou plus</string>
     <string name="app_local">Entre amis</string>
-    <string name="app_local_detail">À tour de rôle sur cet appareil</string>
+    <string name="app_local_detail">De 2 à 4 joueurs sur cet appareil</string>
     <string name="app_bluetooth_detail">Deux appareils déjà associés</string>
     <string name="app_saved_read_error">Une sauvegarde locale n’a pas pu être lue.</string>
     <string name="app_dictionary_load_error">Le lexique intégré n’a pas pu être chargé.</string>

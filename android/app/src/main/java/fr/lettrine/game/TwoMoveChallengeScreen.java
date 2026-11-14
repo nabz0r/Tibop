@@ -136,6 +136,7 @@ final class TwoMoveChallengeScreen {
         private final TextView next;
         private final TextView nabText;
         private final LinearLayout rackRow;
+        private final RackDrop rackDrop;
         private final LinearLayout playRow;
         private TwoMoveChallenge.Position position;
         private TwoMoveChallenge.Step first;
@@ -164,6 +165,7 @@ final class TwoMoveChallengeScreen {
 
             LinearLayout tools = ui.row();
             rackRow = ui.row();
+            rackDrop = new RackDrop(ui, rackRow, rackButtons, this::canMoveRackTile, this::reorderRack);
             rackRow.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
             ui.inset(rackRow, 6, 6);
             rackRow.setBackground(ui.shape(ui.palette.ordinary(), 13));
@@ -307,7 +309,14 @@ final class TwoMoveChallengeScreen {
                 tile.setBackground(ui.rackTile(selected == i));
                 ui.enabled(tile, !blocked && !occupied);
             }
+            rackDrop.refreshActions();
         }
+
+        private boolean canMoveRackTile(int index) {
+            return index >= 0 && index < rackButtons.size() && playing() && !blocked && !used(index);
+        }
+
+        private void reorderRack(int source, int target) { rackDrop.reorderViews(source, target); }
 
         private boolean playing() { return replay < 0 && second == null; }
 

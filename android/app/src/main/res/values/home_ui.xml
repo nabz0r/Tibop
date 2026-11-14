@@ -1,0 +1,5 @@
+<resources>
+    <string name="home_classic">Partie classique</string>
+    <string name="home_classic_detail">Une partie complète, hors ligne.</string>
+    <string name="home_more_modes">Autres modes</string>
+</resources>

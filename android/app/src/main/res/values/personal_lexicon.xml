@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="classic_dictionary_summary">Liste française filtrée pour les nouvelles parties classiques en solo et sur cet appareil.</string>
     <string name="personal_lexicon_title">Lexique personnel</string>
     <string name="personal_lexicon_entry">Importer un lexique pour les parties d’entraînement hors ligne</string>
     <string name="personal_lexicon_intro">Choisissez un fichier TXT UTF-8 que vous êtes autorisé à utiliser, avec un mot de 2 à 15 lettres par ligne (12 Mio maximum). En français, les accents et ligatures sont normalisés. La liste reste sur cet appareil. Importez-la de nouveau sur un autre appareil si nécessaire.</string>

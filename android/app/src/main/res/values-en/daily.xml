@@ -1,7 +1,5 @@
 <resources>
     <string name="daily_title">Daily Puzzle</string>
-    <string name="daily_play">Play puzzle</string>
-    <string name="daily_replay">Play again</string>
     <string name="daily_home_open">One move to find</string>
     <string name="daily_goal">Extend %1$s or connect a word to it. Try for the highest score.</string>
     <string name="daily_board">Puzzle board. %1$s is on the board from %2$s to %3$s.</string>

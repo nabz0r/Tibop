@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="classic_dictionary_summary">Filtered French word list for new classic solo and same-device games.</string>
     <string name="personal_lexicon_title">Personal dictionary</string>
     <string name="personal_lexicon_entry">Import a dictionary for offline practice games</string>
     <string name="personal_lexicon_intro">Choose a UTF-8 text file you have permission to use, with one word of 2 to 15 letters per line (up to 12 MiB). In French, accents and ligatures are normalized. The list stays on this device. Import it again on another device if needed.</string>

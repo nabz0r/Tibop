@@ -1,0 +1,10 @@
+<resources>
+    <string name="arena_your_turn">Your turn</string>
+    <string name="arena_active_player">%1$s’s turn</string>
+    <string name="arena_place_hint">Drag tiles to reorder them or play them.</string>
+    <string name="arena_place_selected">Tap a square to place this tile.</string>
+    <string name="arena_valid_preview">%1$s · %2$s · +%3$s</string>
+    <string name="arena_invalid_preview">%1$s · %2$s</string>
+    <string name="arena_last_score">Last move · %1$s · %2$s</string>
+    <string name="arena_last_explain">Explain the last move, %1$s, %2$s</string>
+</resources>

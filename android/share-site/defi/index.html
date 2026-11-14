@@ -106,7 +106,8 @@
         <p id="invalid">Ouvre le lien complet qui accompagne la carte pour retrouver le défi.</p>
         <div class="install">
           <p id="install">Sur Android, installe WordRivet puis reviens à cette invitation.</p>
-          <a id="download" class="button" href="https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk">Télécharger l’APK Android</a>
+          <p id="changes">La version 0.16.0 permet de réordonner les lettres du chevalet. Les nouvelles parties classiques en français, en solo ou sur le même appareil, utilisent le lexique filtré.</p>
+          <a id="download" class="button" href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.0/android/artifacts/lettrine.apk">Télécharger l’APK Android <span>0.16.0</span></a>
         </div>
       </div>
     </article>
@@ -119,8 +120,10 @@
     if (english) {
       document.documentElement.lang = 'en';
       document.title = "Beat my score \u00b7 WordRivet";
-      const labels = {"h1": "Beat my score", "date": "Word challenge", "target-label": "to beat", "intro": "Play the same board and rack in WordRivet.", "open": "Open in WordRivet", "invalid": "Open the complete link that came with the score card.", "install": "Install WordRivet on Android, then come back to this invitation.", "download": "Download the Android APK"};
+      const labels = {"h1": "Beat my score", "date": "Word challenge", "target-label": "to beat", "intro": "Play the same board and rack in WordRivet.", "open": "Open in WordRivet", "invalid": "Open the complete link that came with the score card.", "install": "Install WordRivet on Android, then come back to this invitation.", "changes": "Drag tiles to reorder them in version 0.16.0. New classic games in French on your device use the filtered dictionary."};
       for (const [id, text] of Object.entries(labels)) document.getElementById(id).textContent = text;
+      const download = document.getElementById("download");
+      download.textContent = "Download Android APK " + download.querySelector("span").textContent;
     }
     if (fields) {
       const [, year, month, day, points] = fields;

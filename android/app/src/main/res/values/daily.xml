@@ -1,7 +1,5 @@
 <resources>
     <string name="daily_title">Défi du jour</string>
-    <string name="daily_play">Jouer le défi</string>
-    <string name="daily_replay">Rejouer le défi</string>
     <string name="daily_home_open">Un coup à trouver</string>
     <string name="daily_goal">Prolongez %1$s ou accrochez-y un mot. Cherchez le meilleur score.</string>
     <string name="daily_board">Plateau du défi. %1$s est posé de %2$s à %3$s.</string>

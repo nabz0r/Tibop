@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 public final class MainActivity extends Activity {
     private static final int BLUETOOTH_PERMISSION = 41;
@@ -70,7 +71,7 @@ public final class MainActivity extends Activity {
     private static final int PERSONAL_LEXICON_IMPORT = 49;
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
 
-    private enum Screen { HOME, GAMES, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, REVIEW, PRACTICE,
+    private enum Screen { HOME, GAMES, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, RESULT, REVIEW, PRACTICE,
         SOCIAL, SOCIAL_DUEL, PROFILE, COLLECTION, TOURNAMENT, TOURNAMENT_ROUND, HELP, TWO_MOVES, BONUS_CIRCUIT, BACKUP,
         PERSONAL_LEXICON }
 
@@ -98,6 +99,8 @@ public final class MainActivity extends Activity {
     private Object pendingTurnNavigation;
     private Lexicon lexicon;
     private Lexicon bundledLexicon;
+    private Lexicon frenchClassicLexicon;
+    private String matchLexiconHash = "";
     private GameStore bundledStore;
     private PersonalLexicon personalLexicon;
     private PersonalLexicon.Entry personalEntry;
@@ -131,6 +134,8 @@ public final class MainActivity extends Activity {
     private Arena arena;
     private FrameLayout frame;
     private LinearLayout content;
+    private LinearLayout screenShell;
+    private ScrollView screenScroll;
     private GameAudio audio;
     private RewardedPractice rewarded;
     private String export;
@@ -142,6 +147,7 @@ public final class MainActivity extends Activity {
     private AlertDialog explanationDialog;
     private Future<?> explanationTask;
     private Future<?> reviewTask;
+    private MatchReview.Review finishedReview;
     private Runnable reviewBack;
     private Runnable practiceBack;
     private Runnable pendingChallenge;
@@ -209,6 +215,7 @@ public final class MainActivity extends Activity {
         worker.submit(() -> {
             try {
                 Lexicon loaded = Lexicon.load(this, gameLanguage);
+                Lexicon classic = gameLanguage == GameLanguage.FRENCH ? Lexicon.loadFrenchClassic(this, loaded) : null;
                 String source;
                 try (InputStream stream = getAssets().open(gameLanguage.storageName("lexicon-notice") + ".md")) {
                     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -222,6 +229,7 @@ public final class MainActivity extends Activity {
                 main.post(() -> {
                     if (isDestroyed()) return;
                     bundledLexicon = loaded;
+                    frenchClassicLexicon = classic;
                     if (personalSession) return;
                     lexicon = loaded;
                     notice = sourceNotice;
@@ -444,7 +452,7 @@ public final class MainActivity extends Activity {
                 if (backupRecoveryFailed) finish();
                 else if (!backupInProgress) showSettings();
             }
-            case GAME -> leaveGame();
+            case GAME, RESULT -> leaveGame();
             case SOLO, LOCAL -> leaveGameSetup();
             case BLUETOOTH -> {
                 if (link != null && state() == null) closeLink();
@@ -501,8 +509,10 @@ public final class MainActivity extends Activity {
             return insets;
         });
         LinearLayout shell = ui.column();
+        screenShell = shell;
         frame.addView(shell, new FrameLayout.LayoutParams(-1, -1));
         ScrollView scroll = new ScrollView(this);
+        screenScroll = scroll;
         scroll.setFillViewport(false);
         scroll.setClipToPadding(false);
         scroll.setVerticalScrollBarEnabled(false);
@@ -510,7 +520,7 @@ public final class MainActivity extends Activity {
         FrameLayout centered = new FrameLayout(this);
         scroll.addView(centered, new ScrollView.LayoutParams(-1, -2));
         content = ui.column();
-        int margin = next == Screen.PRACTICE || next == Screen.TOURNAMENT_ROUND
+        int margin = next == Screen.GAME || next == Screen.PRACTICE || next == Screen.TOURNAMENT_ROUND
                 || next == Screen.SOCIAL_DUEL || next == Screen.TWO_MOVES || next == Screen.BONUS_CIRCUIT ? 10 : 17;
         content.setPadding(ui.dp(margin), ui.dp(7), ui.dp(margin), ui.dp(16));
         centered.addView(content, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_HORIZONTAL));
@@ -523,26 +533,36 @@ public final class MainActivity extends Activity {
             }
         });
         if (navigation) {
+            View divider = new View(this);
+            divider.setBackgroundColor(ui.palette.line());
+            divider.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            shell.addView(divider, new LinearLayout.LayoutParams(-1, ui.dp(1)));
             LinearLayout nav = ui.row();
+            nav.setGravity(Gravity.CENTER);
             nav.setBackgroundColor(ui.palette.paper());
-            nav.setPadding(ui.dp(10), ui.dp(2), ui.dp(10), ui.dp(2));
-            ui.weight(nav, navItem(getString(R.string.app_play), next == Screen.HOME, this::showHome));
-            ui.weight(nav, navItem(getString(R.string.social_navigation_friends), next == Screen.SOCIAL, this::showSocial));
-            ui.weight(nav, navItem(getString(R.string.app_history), next == Screen.HISTORY, this::showHistory));
-            ui.weight(nav, navItem(getString(R.string.social_navigation_profile), next == Screen.PROFILE, this::showProfile));
-            shell.addView(nav, new LinearLayout.LayoutParams(-1, -2));
+            nav.setPadding(ui.dp(8), ui.dp(2), ui.dp(8), ui.dp(2));
+            ui.weight(nav, GameNavigation.item(ui, GameNavigation.Tab.PLAY, getString(R.string.app_play),
+                    next == Screen.HOME, this::showHome));
+            ui.weight(nav, GameNavigation.item(ui, GameNavigation.Tab.FRIENDS,
+                    getString(R.string.social_navigation_friends), next == Screen.SOCIAL, this::showSocial));
+            ui.weight(nav, GameNavigation.item(ui, GameNavigation.Tab.HISTORY, getString(R.string.app_history),
+                    next == Screen.HISTORY, this::showHistory));
+            ui.weight(nav, GameNavigation.item(ui, GameNavigation.Tab.PROFILE,
+                    getString(R.string.social_navigation_profile), next == Screen.PROFILE, this::showProfile));
+            FrameLayout navFrame = new FrameLayout(this);
+            navFrame.setBackgroundColor(ui.palette.paper());
+            navFrame.addView(nav, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_HORIZONTAL));
+            navFrame.addOnLayoutChangeListener((view, left, top, right, bottom, a, b, c, d) -> {
+                int width = Math.min(right - left, ui.dp(530));
+                if (width > 0 && nav.getLayoutParams().width != width) {
+                    nav.getLayoutParams().width = width;
+                    nav.requestLayout();
+                }
+            });
+            shell.addView(navFrame, new LinearLayout.LayoutParams(-1, -2));
         }
         setContentView(frame);
         frame.requestApplyInsets();
-    }
-
-    private TextView navItem(String name, boolean active, Runnable action) {
-        TextView tab = ui.textButton(name, action);
-        tab.setMinHeight(ui.dp(49));
-        ui.inset(tab, 1, 7);
-        tab.setTextColor(active ? ui.palette.ink() : ui.palette.muted());
-        tab.setBackground(ui.touch(active ? ui.palette.ordinary() : ui.palette.paper(), 10, 0));
-        return tab;
     }
 
     private void top(String label, Runnable back, TextView extra) {
@@ -561,9 +581,10 @@ public final class MainActivity extends Activity {
             TextView badge = ui.text(getString(R.string.app_name).substring(0, 1), 18,
                     ui.palette.heroInk(), ui.serif);
             badge.setGravity(Gravity.CENTER);
-            badge.setBackground(ui.shape(ui.palette.deep(), 8));
-            row.addView(badge, new LinearLayout.LayoutParams(ui.dp(29), ui.dp(29)));
-            ui.space(row, 9);
+            badge.setBackground(ui.shape(ui.palette.deep(), 10));
+            badge.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            row.addView(badge, new LinearLayout.LayoutParams(ui.dp(34), ui.dp(32)));
+            ui.space(row, 10);
         }
         ui.weight(row, ui.text(label, 16, ui.palette.ink(), ui.medium));
         if (extra != null) row.addView(extra);
@@ -571,7 +592,7 @@ public final class MainActivity extends Activity {
             ui.space(row, 5);
             row.addView(secondExtra);
         }
-        row.setMinimumHeight(ui.dp(43));
+        row.setMinimumHeight(ui.dp(44));
         content.addView(row);
     }
 
@@ -598,48 +619,70 @@ public final class MainActivity extends Activity {
         language.setContentDescription(getString(english ? R.string.locale_use_french : R.string.locale_use_english));
         top(getString(R.string.app_name), null, rating, language);
         ui.gap(content, 8);
-        content.addView(TwoMoveHomeCard.create(ui, () -> openChallenge(this::openTwoMoves)));
-        ui.gap(content, 9);
-        content.addView(ui.option("◇", getString(R.string.bonus_home_title), getString(R.string.bonus_home_detail),
-                () -> openChallenge(this::openBonusCircuit)));
-        ui.gap(content, 10);
+        MatchCodec.State ongoing = state();
+        boolean canResume = ongoing != null && ongoing.end() == null && (!mode.equals("bluetooth") || bluetoothReady);
+        String savedId = canResume ? "" : savedGameToResume();
+        Runnable playSolo = () -> {
+            if (ready()) openSolo(Screen.HOME);
+        };
+        boolean hasGameToResume = canResume || !savedId.isEmpty();
+        content.addView(PlayHome.classic(ui, getString(hasGameToResume ? R.string.app_resume : R.string.app_vs_bot), () -> {
+            if (canResume) {
+                if (ready()) showGame();
+            } else if (!savedId.isEmpty()) resumeMatch(savedId, Screen.HOME);
+            else playSolo.run();
+        }));
+        ui.gap(content, 8);
+        content.addView(PlayHome.local(ui, () -> {
+            if (ready()) openLocal(Screen.HOME);
+        }));
+        ui.gap(content, 13);
         DailyProgress.Snapshot today = dailyProgress.snapshot(homeDate);
         boolean completed = today.bestScore() != null;
         String status = completed ? DailyResult.bestLabel(ui, today.bestScore()) : getString(R.string.daily_home_open);
-        content.addView(DailyChallengeCard.create(ui, DailyResult.dateLabel(ui, homeDate), status,
-                DailyResult.streakLabel(ui, today.streak()), getString(completed ? R.string.daily_replay : R.string.daily_play),
+        content.addView(PlayHome.daily(ui, DailyResult.dateLabel(ui, homeDate), status,
+                today.streak() == 0 ? "" : DailyResult.streakLabel(ui, today.streak()),
                 () -> openChallenge(() -> openDailyChallenge(null))));
-        MatchCodec.State ongoing = state();
-        if (ongoing != null && ongoing.end() == null && (!mode.equals("bluetooth") || bluetoothReady)) {
-            ui.gap(content, 13);
-            content.addView(ui.button(getString(R.string.app_resume), true, this::showGame));
+        if (hasGameToResume) {
+            ui.gap(content, 4);
+            content.addView(ui.textButton(getString(R.string.games_new_solo), playSolo));
         }
-        ui.gap(content, 9);
-        content.addView(ui.option("✦", getString(R.string.practice_first), getString(R.string.practice_first_home),
-                () -> openChallenge(() -> openFirstChallenge(this::showHome, false))));
         ui.gap(content, 9);
         content.addView(ui.option("▤", getString(R.string.games_title), getString(R.string.games_home_detail),
                 this::showGames));
-        ui.gap(content, 19);
-        content.addView(ui.micro(getString(R.string.app_new_game), ui.palette.accent()));
-        ui.gap(content, 8);
-        content.addView(ui.option("✦", getString(R.string.app_vs_bot), getString(R.string.app_vs_bot_detail), () -> {
-            if (ready()) openSolo(Screen.HOME);
-        }));
-        ui.gap(content, 8);
-        content.addView(ui.option("2–4", getString(R.string.app_local), getString(R.string.app_local_detail), () -> {
-            if (ready()) openLocal(Screen.HOME);
-        }));
+        ui.gap(content, 16);
+        content.addView(PlayHome.moreModes(ui));
         ui.gap(content, 8);
         content.addView(ui.option("↔", "Bluetooth", getString(R.string.app_bluetooth_detail), () -> {
             if (ready()) showBluetooth();
         }));
+        ui.gap(content, 9);
+        content.addView(ui.option("↝", getString(R.string.two_move_title), getString(R.string.two_move_home),
+                () -> openChallenge(this::openTwoMoves)));
+        ui.gap(content, 9);
+        content.addView(ui.option("◇", getString(R.string.bonus_home_title), getString(R.string.bonus_home_detail),
+                () -> openChallenge(this::openBonusCircuit)));
+        ui.gap(content, 9);
+        content.addView(ui.option("✦", getString(R.string.practice_first), getString(R.string.practice_first_home),
+                () -> openChallenge(() -> openFirstChallenge(this::showHome, false))));
         ui.gap(content, 8);
         content.addView(ui.option("?", getString(R.string.help_title), getString(R.string.help_entry), this::showHelp));
         if (lexicon == null) {
             ui.gap(content, 11);
             content.addView(ui.body(lexiconError == null ? getString(R.string.app_dictionary_loading) : lexiconError));
         }
+    }
+
+    private String savedGameToResume() {
+        if (store == null) return "";
+        try {
+            for (JSONObject saved : store.savedGames()) {
+                if (saved.isNull("end") && !saved.optString("id").isEmpty()) return saved.optString("id");
+            }
+        } catch (java.io.IOException | JSONException exception) {
+            android.util.Log.w("WordRivetGames", "Lecture des parties en cours", exception);
+        }
+        return "";
     }
 
     private String moveCount(int count) {
@@ -660,6 +703,24 @@ public final class MainActivity extends Activity {
         if (lexicon != null) return true;
         toast(lexiconError == null ? getString(R.string.app_dictionary_loading_notice) : lexiconError);
         return false;
+    }
+
+    private Lexicon newClassicLexicon() {
+        return personalSession || frenchClassicLexicon == null ? lexicon : frenchClassicLexicon;
+    }
+
+    private Lexicon matchLexicon() {
+        return frenchClassicLexicon != null && frenchClassicLexicon.hash.equals(matchLexiconHash)
+                ? frenchClassicLexicon : lexicon;
+    }
+
+    private Lexicon archivedLexicon(JSONObject match) {
+        String hash = match.optString("lexicon_sha256");
+        if (!personalSession && frenchClassicLexicon != null && frenchClassicLexicon.hash.equals(hash)) {
+            return frenchClassicLexicon;
+        }
+        boolean matches = hash.isEmpty() ? lexicon.label.equals(match.optString("lexicon")) : lexicon.hash.equals(hash);
+        return matches ? lexicon : null;
     }
 
     private void openChallenge(Runnable action) {
@@ -698,7 +759,7 @@ public final class MainActivity extends Activity {
         }
         showPractice(getString(tutorial ? R.string.help_tutorial_intro : R.string.practice_first),
                 getString(tutorial ? R.string.help_tutorial_copy : R.string.practice_first_goal),
-                position, true, tutorial, back);
+                position, lexicon, true, tutorial, back);
     }
 
     private void showHelp() {
@@ -745,14 +806,15 @@ public final class MainActivity extends Activity {
                 } : null).view());
     }
 
-    private void practiceReviewedTurn(MatchReview.Turn turn) {
+    private void practiceReviewedTurn(MatchReview.Turn turn, Lexicon dictionary) {
         PracticePosition position = turn.practice();
         if (position == null || !ready()) return;
+        Screen previousScreen = screen;
         FrameLayout reviewFrame = frame;
         LinearLayout reviewContent = content;
         showPractice(getString(R.string.practice_retry_title, turn.index() + 1),
-                getString(R.string.practice_retry_goal), position, false, false, () -> {
-                    screen = Screen.REVIEW;
+                getString(R.string.practice_retry_goal), position, dictionary, false, false, () -> {
+                    screen = previousScreen;
                     frame = reviewFrame;
                     content = reviewContent;
                     setContentView(frame);
@@ -760,13 +822,13 @@ public final class MainActivity extends Activity {
                 });
     }
 
-    private void showPractice(String title, String goal, PracticePosition position, boolean first,
+    private void showPractice(String title, String goal, PracticePosition position, Lexicon dictionary, boolean first,
                               boolean tutorial, Runnable back) {
         page(Screen.PRACTICE, false);
         practiceBack = back;
         top(first ? getString(R.string.app_name) : getString(R.string.match_review), this::leavePractice, null);
         heading(title, goal);
-        content.addView(new PracticePanel(ui, position, lexicon, first, tutorial).view());
+        content.addView(new PracticePanel(ui, position, dictionary, first, tutorial).view());
     }
 
     private void leavePractice() {
@@ -800,7 +862,7 @@ public final class MainActivity extends Activity {
                 if (match.end() != null) summary += " · " + getString(R.string.games_pending_archive);
                 else if (solo && match.active() == 0) summary += " · " + getString(R.string.games_your_turn);
                 LinearLayout card = ui.card();
-                card.addView(ui.option(solo ? "✦" : "2–4", title, summary, () -> resumeMatch(match.id())));
+                card.addView(ui.option(solo ? "✦" : "2–4", title, summary, () -> resumeMatch(match.id(), Screen.GAMES)));
                 if (match.end() == null) {
                     card.addView(ui.textButton(getString(R.string.games_abandon), () -> abandonMatch(match.id(), title)));
                 }
@@ -839,7 +901,7 @@ public final class MainActivity extends Activity {
 
     private void openLocal(Screen origin) {
         setupBack = origin;
-        showLocal(2, null);
+        showLocal();
     }
 
     private void leaveGameSetup() {
@@ -853,11 +915,11 @@ public final class MainActivity extends Activity {
         else showHome();
     }
 
-    private void resumeMatch(String id) {
+    private void resumeMatch(String id, Screen origin) {
         if (!ready()) return;
         if (game != null && id.equals(game.id)) {
             archiveIfFinished();
-            gameBack = Screen.GAMES;
+            gameBack = origin;
             showGame();
             return;
         }
@@ -870,7 +932,7 @@ public final class MainActivity extends Activity {
                 }
                 restoreMatch(saved);
                 archiveIfFinished();
-                gameBack = Screen.GAMES;
+                gameBack = origin;
                 showGame();
             } catch (Exception exception) {
                 toast(getString(R.string.games_read_error));
@@ -893,61 +955,121 @@ public final class MainActivity extends Activity {
     }
 
     private void showSolo(int selection) {
-        if (soloSelection != selection) {
-            soloSelection = selection;
-            preferences.edit().putInt("solo_level", selection).apply();
-        }
         page(Screen.SOLO, false);
-        top(getString(R.string.app_solo), this::leaveGameSetup, null);
-        heading(getString(R.string.app_choose_bot), personalSession ? getString(R.string.personal_lexicon_game_context)
-                : getString(R.string.app_level_elo_note, currentRating()));
+        top(getString(R.string.app_solo), this::leaveGameSetup,
+                personalSession ? null : setupBadge(getString(R.string.app_elo_badge, currentRating())));
+        heading(getString(R.string.setup_solo_title), personalSession ? getString(R.string.personal_lexicon_game_context) : "");
+        List<LinearLayout> levels = new ArrayList<>(Bot.ADAPTIVE);
+        String[] marks = {"", "◔", "◑", "◕", "●", "✦"};
         for (int level = 1; level <= Bot.ADAPTIVE; level++) {
             int id = level;
-            String description = level == 4 && lexicon.trained
+            String description = level == 4 && newClassicLexicon().trained
                     ? getString(R.string.app_bot_trained) : getResources().getStringArray(R.array.bot_difficulties_detail)[level];
             String caption = personalSession || level == Bot.ADAPTIVE ? description
                     : getString(R.string.app_level_elo, Bot.RATINGS[level], description);
-            LinearLayout card = ui.option(level == selection ? "✓" : "·", botName(level), caption,
-                    () -> showSolo(id));
-            if (level == selection) card.setBackground(ui.touch(ui.palette.ordinary(), 16, ui.palette.accent()));
+            LinearLayout card = ui.option(marks[level], botName(level), caption, () -> {
+                soloSelection = id;
+                preferences.edit().putInt("solo_level", id).apply();
+                updateLevelCards(levels, id);
+            });
+            levels.add(card);
             content.addView(card);
             ui.gap(content, 8);
         }
+        updateLevelCards(levels, selection);
         ui.gap(content, 7);
-        content.addView(ui.button(getString(R.string.app_start_game), true, () -> switchMatch(() ->
-                newMatch("solo", new String[]{getString(R.string.app_you), botName(selection)}, new int[]{0, selection}))));
+        content.addView(ui.button(getString(R.string.app_start_game), true, () -> {
+            int level = soloSelection;
+            switchMatch(() -> newMatch("solo", new String[]{getString(R.string.app_you), botName(level)},
+                    new int[]{0, level}));
+        }));
+    }
+
+    private TextView setupBadge(String label) {
+        TextView badge = ui.text(label, 12, ui.palette.deep(), ui.medium);
+        ui.inset(badge, 10, 6);
+        badge.setBackground(ui.shape(ui.palette.ordinary(), 13));
+        return badge;
+    }
+
+    private void updateLevelCards(List<LinearLayout> levels, int level) {
+        for (int i = 0; i < levels.size(); i++) {
+            LinearLayout card = levels.get(i);
+            boolean selected = i + 1 == level;
+            card.setSelected(selected);
+            card.setBackground(ui.touch(selected ? ui.palette.ordinary() : ui.palette.paper(), 18,
+                    selected ? ui.palette.deep() : ui.palette.line()));
+            TextView mark = (TextView) card.getChildAt(0);
+            mark.setTextColor(selected ? ui.palette.heroInk() : ui.palette.ink());
+            mark.setBackground(ui.shape(selected ? ui.palette.deep() : ui.palette.ordinary(), 12));
+        }
     }
 
     private String botName(int level) { return getResources().getStringArray(R.array.bot_difficulties)[level]; }
 
-    private void showLocal(int count, String[] previous) {
+    private void showLocal() {
         page(Screen.LOCAL, false);
         top(getString(R.string.app_local_game), this::leaveGameSetup, null);
-        heading(getString(R.string.app_local), getString(R.string.app_local_privacy));
+        heading(getString(R.string.app_home_local), getString(R.string.app_local_privacy));
         LinearLayout counts = ui.row();
-        List<EditText> names = new ArrayList<>();
-        for (int number = 2; number <= 4; number++) {
-            int next = number;
-            if (number > 2) ui.space(counts, 8);
-            ui.weight(counts, ui.button(getString(R.string.app_players, number), count == number, () -> showLocal(next, getNames(names))));
+        LinearLayout players = ui.card();
+        List<LinearLayout> slots = new ArrayList<>(4);
+        List<EditText> names = new ArrayList<>(4);
+        for (int index = 0; index < 4; index++) {
+            String fallback = getString(R.string.app_player, index + 1);
+            EditText name = input(fallback, "");
+            names.add(name);
+            LinearLayout slot = ui.row();
+            TextView tile = ui.text(Integer.toString(index + 1), 14, ui.palette.deep(), ui.medium);
+            tile.setGravity(Gravity.CENTER);
+            tile.setBackground(ui.shape(ui.palette.ordinary(), 10));
+            tile.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            slot.addView(tile, new LinearLayout.LayoutParams(ui.dp(33), ui.dp(33)));
+            ui.space(slot, 10);
+            name.setMinHeight(ui.dp(46));
+            ui.weight(slot, name);
+            LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
+            if (index > 0) layout.topMargin = ui.dp(8);
+            players.addView(slot, layout);
+            slots.add(slot);
         }
+        List<TextView> choices = new ArrayList<>(3);
+        for (int number = 2; number <= 4; number++) {
+            int size = number;
+            if (number > 2) ui.space(counts, 8);
+            TextView choice = ui.button(Integer.toString(number), false, () -> showPlayerSlots(choices, slots, size));
+            choice.setContentDescription(getString(R.string.app_players, number));
+            choices.add(choice);
+            ui.weight(counts, choice);
+        }
+        showPlayerSlots(choices, slots, 2);
         content.addView(counts);
         ui.gap(content, 16);
-        for (int index = 0; index < count; index++) {
-            String fallback = getString(R.string.app_player, index + 1);
-            EditText name = input(fallback, previous != null && previous.length > index ? previous[index] : "");
-            names.add(name);
-            content.addView(name, new LinearLayout.LayoutParams(-1, ui.dp(48)));
-            ui.gap(content, 8);
-        }
-        ui.gap(content, 9);
+        content.addView(players);
+        ui.gap(content, 12);
         content.addView(ui.button(getString(R.string.app_start_game), true, () -> switchMatch(() -> {
-            String[] entered = getNames(names);
-            for (int i = 0; i < entered.length; i++) if (entered[i].isEmpty()) entered[i] = getString(R.string.app_player, i + 1);
+            int count = (int) slots.stream().filter(slot -> slot.getVisibility() == View.VISIBLE).count();
+            String[] entered = new String[count];
+            for (int i = 0; i < count; i++) {
+                String name = names.get(i).getText().toString().trim();
+                entered[i] = name.isEmpty() ? getString(R.string.app_player, i + 1) : name;
+            }
             newMatch("local", entered, new int[entered.length]);
         })));
         content.setFocusableInTouchMode(true);
         content.requestFocus();
+    }
+
+    private void showPlayerSlots(List<TextView> choices, List<LinearLayout> slots, int count) {
+        for (int i = 0; i < choices.size(); i++) {
+            TextView choice = choices.get(i);
+            boolean active = i + 2 == count;
+            choice.setSelected(active);
+            choice.setTextColor(active ? ui.palette.heroInk() : ui.palette.ink());
+            choice.setBackground(ui.touch(active ? ui.palette.deep() : ui.palette.paper(), 15,
+                    active ? 0 : ui.palette.line()));
+        }
+        for (int i = 0; i < slots.size(); i++) slots.get(i).setVisibility(i < count ? View.VISIBLE : View.GONE);
     }
 
     private EditText input(String hint, String value) {
@@ -962,10 +1084,6 @@ public final class MainActivity extends Activity {
         field.setBackground(ui.shape(ui.palette.paper(), 12, ui.palette.line()));
         ui.inset(field, 12, 7);
         return field;
-    }
-
-    private static String[] getNames(List<EditText> names) {
-        return names.stream().map(field -> field.getText().toString().trim()).toArray(String[]::new);
     }
 
     private void switchMatch(Runnable next) {
@@ -986,8 +1104,11 @@ public final class MainActivity extends Activity {
         if (!ready() || store == null) return;
         FrenchGame next = new FrenchGame(names, levels, gameLanguage);
         int rating = currentRating();
+        String dictionaryHash = newClassicLexicon().hash;
         try {
-            store.saveGame(MatchCodec.saved(next, newMode, rating, 0, 0, false));
+            JSONObject saved = MatchCodec.saved(next, newMode, rating, 0, 0, false);
+            MatchCodec.put(saved, "lexicon_sha256", dictionaryHash);
+            store.saveGame(saved);
         } catch (Exception exception) {
             toast(getString(R.string.games_write_error));
             return;
@@ -995,6 +1116,7 @@ public final class MainActivity extends Activity {
         resetMatch();
         game = next;
         mode = newMode;
+        matchLexiconHash = dictionaryHash;
         startRating = rating;
         privacy = mode.equals("local");
         gameBack = setupBack;
@@ -1009,6 +1131,7 @@ public final class MainActivity extends Activity {
         resetMatch();
         game = restored;
         mode = savedMode;
+        matchLexiconHash = saved.optString("lexicon_sha256");
         startRating = saved.optInt("start_rating", DEFAULT_RATING);
         botLevelSum = saved.optInt("level_sum");
         botLevelCount = saved.optInt("level_count");
@@ -1016,6 +1139,7 @@ public final class MainActivity extends Activity {
         privacy = mode.equals("local") && game.end == null;
         MatchCodec.State current = state();
         if (current.end() != null) return;
+        restoreRackOrder(saved.optJSONArray("rack_order"), current);
         for (FrenchGame.Tile tile : tiles) {
             if (tile.rackIndex() < 0 || tile.rackIndex() >= current.rack().size()
                     || current.board()[tile.position()] != 0 || stagedAt(tile.position()) >= 0
@@ -1023,6 +1147,19 @@ public final class MainActivity extends Activity {
             char letter = current.rack().get(tile.rackIndex());
             if (tile.blank() ? letter == FrenchGame.JOKER : letter == tile.letter()) staged.add(tile);
         }
+    }
+
+    private void restoreRackOrder(JSONArray savedOrder, MatchCodec.State current) {
+        int count = current.rack().size();
+        if (savedOrder == null || savedOrder.length() != count) return;
+        List<Integer> order = new ArrayList<>(count);
+        for (int slot = 0; slot < count; slot++) {
+            int index = savedOrder.optInt(slot, -1);
+            if (index < 0 || index >= count || order.contains(index)) return;
+            order.add(index);
+        }
+        rackOrder.addAll(order);
+        lastRackTurn = current.history().size();
     }
 
     private MatchCodec.State state() {
@@ -1046,8 +1183,11 @@ public final class MainActivity extends Activity {
         mode = "";
         game = null;
         guestState = null;
+        finishedReview = null;
+        matchLexiconHash = "";
         privacy = botThinking = analysing = assisted = waiting = false;
         lastRackTurn = -1;
+        rackOrder.clear();
         clearStaged();
     }
 
@@ -1064,13 +1204,23 @@ public final class MainActivity extends Activity {
 
     private JSONObject savedMatch() {
         JSONObject saved = MatchCodec.saved(game, mode, startRating, botLevelSum, botLevelCount, assisted);
+        if (!matchLexiconHash.isEmpty()) MatchCodec.put(saved, "lexicon_sha256", matchLexiconHash);
         if (!staged.isEmpty()) MatchCodec.put(saved, "draft", MatchCodec.tiles(staged, true));
+        if (lastRackTurn == game.history.size()) {
+            for (int slot = 0; slot < rackOrder.size(); slot++) {
+                if (rackOrder.get(slot) != slot) {
+                    MatchCodec.put(saved, "rack_order", new JSONArray(rackOrder));
+                    break;
+                }
+            }
+        }
         return saved;
     }
 
     private void archiveIfFinished() {
         MatchCodec.State finished = state();
-        if (finished == null || finished.end() == null || store == null || lexicon == null) return;
+        Lexicon dictionary = matchLexicon();
+        if (finished == null || finished.end() == null || store == null || dictionary == null) return;
         int opponent = 0;
         if (!personalSession && mode.equals("solo") && !assisted) {
             int level = finished.levels()[1];
@@ -1079,8 +1229,8 @@ public final class MainActivity extends Activity {
                     : Bot.RATINGS[level];
         }
         try {
-            JSONObject archived = MatchCodec.finished(finished, mode, lexicon.label, game == null ? null : game.seed);
-            MatchCodec.put(archived, "lexicon_sha256", lexicon.hash);
+            JSONObject archived = MatchCodec.finished(finished, mode, dictionary.label, game == null ? null : game.seed);
+            MatchCodec.put(archived, "lexicon_sha256", dictionary.hash);
             if (assisted) MatchCodec.put(archived, "assisted", true);
             store.archive(archived, opponent, Integer.compare(finished.scores()[0], finished.scores()[1]));
             if (!personalSession) skinStore.refresh(store, dailyProgress);
@@ -1198,19 +1348,29 @@ public final class MainActivity extends Activity {
         final LinearLayout scores = ui.row();
         final LinearLayout rack = ui.row();
         final View[] rackTokens = new View[FrenchGame.RACK_SIZE];
-        final TextView status = ui.body("");
+        final RackDrop rackDrop = new RackDrop(ui, rack, Arrays.asList(rackTokens),
+                MainActivity.this::rackTileCanMove, MainActivity.this::reorderRack);
+        final TextView status = ui.text("", 12, ui.palette.muted(), ui.medium);
+        final TextView turn = ui.text("", 12, ui.palette.ink(), ui.medium);
         final TextView preview = ui.text("", 14, ui.palette.ink(), ui.medium);
         final TextView confirm = ui.button(getString(R.string.practice_ready), true, MainActivity.this::commit);
         final TextView recall = ui.textButton(getString(R.string.app_recall_tiles), () -> {
+            if (!staged.isEmpty()) arena.recall.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
             clearStaged();
             updateDraft(-1);
         });
+        final TextView shuffle = ui.textButton("⤨", () -> {
+            arena.shuffle.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+            shuffleRack();
+        });
         final TextView tools = ui.textButton(getString(R.string.app_turn_tools), MainActivity.this::turnOptions);
-        final TextView review = ui.button(getString(R.string.match_review), true, MainActivity.this::reviewFinishedGame);
-        final TextView explain = ui.button(getString(R.string.move_explanation_last), false, () -> {
+        final TextView explain = ui.textButton(getString(R.string.move_explanation_last), () -> {
             MatchCodec.State current = state();
             if (current != null) explainMove(current.history(), current.history().size() - 1);
         });
+        int renderedTurn = -1;
+        int[] renderedScores;
+        int previewScore = -1;
         final BoardView board = new BoardView(ui, new BoardView.Interaction() {
             @Override public void tap(int position) { boardTap(position); }
             @Override public boolean canTap(int position) {
@@ -1225,9 +1385,14 @@ public final class MainActivity extends Activity {
     }
 
     private void showGame() {
-        if (state() == null) {
+        MatchCodec.State current = state();
+        if (current == null) {
             if (personalSession) showGames();
             else showHome();
+            return;
+        }
+        if (current.end() != null) {
+            showMatchResult(current);
             return;
         }
         page(Screen.GAME, false);
@@ -1238,81 +1403,140 @@ public final class MainActivity extends Activity {
         if (personalSession) content.addView(ui.body(getString(R.string.personal_lexicon_game_context)));
         arena = new Arena();
         content.addView(arena.scores);
-        ui.gap(content, 8);
-        LinearLayout.LayoutParams reviewPosition = new LinearLayout.LayoutParams(-1, -2);
-        reviewPosition.bottomMargin = ui.dp(8);
-        content.addView(arena.review, reviewPosition);
-        content.addView(arena.board, new LinearLayout.LayoutParams(-1, -2));
-        LinearLayout controls = ui.row();
+        ui.gap(content, 3);
+        LinearLayout.LayoutParams boardBox = new LinearLayout.LayoutParams(-1, -2);
+        boardBox.gravity = Gravity.CENTER_HORIZONTAL;
+        Arena opened = arena;
+        LinearLayout scrollContent = content;
+        ScrollView scroll = screenScroll;
+        Runnable fitBoard = () -> {
+            if (arena != opened || opened.board.getHeight() == 0) return;
+            Configuration config = getResources().getConfiguration();
+            int width = scrollContent.getWidth() - scrollContent.getPaddingLeft() - scrollContent.getPaddingRight();
+            int available = dockArenaTray(config) ? scroll.getHeight() - opened.board.getTop() - ui.dp(4)
+                    : config.orientation == Configuration.ORIENTATION_LANDSCAPE ? ui.dp(config.screenHeightDp - 84) : width;
+            int side = Math.min(width, Math.max(ui.dp(208), available));
+            if (side > 0 && boardBox.width != side) {
+                boardBox.width = side;
+                opened.board.requestLayout();
+            }
+        };
+        scrollContent.addOnLayoutChangeListener((view, l, t, r, b, ol, ot, or, ob) -> scroll.post(fitBoard));
+        scroll.addOnLayoutChangeListener((view, l, t, r, b, ol, ot, or, ob) -> scroll.post(fitBoard));
+        LinearLayout boardTools = ui.row();
         TextView minus = ui.textButton("−", () -> arena.board.zoomBy(0.8f));
         minus.setContentDescription(getString(R.string.practice_zoom_out));
         TextView plus = ui.textButton("+", () -> arena.board.zoomBy(1.25f));
         plus.setContentDescription(getString(R.string.practice_zoom));
         TextView reset = ui.textButton("", () -> arena.board.resetZoom());
-        arena.board.onZoom(zoom -> reset.setText(getString(R.string.practice_zoom_percent, Math.round(zoom * 100))));
         reset.setContentDescription(getString(R.string.practice_zoom_reset));
-        ui.weight(controls, arena.status);
-        controls.addView(minus);
-        controls.addView(reset);
-        controls.addView(plus);
-        content.addView(controls);
-        content.addView(arena.rack);
-        ui.gap(content, 11);
-        ui.inset(arena.preview, 12, 10);
-        arena.preview.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-        content.addView(arena.preview, new LinearLayout.LayoutParams(-1, -2));
-        ui.gap(content, 10);
-        LinearLayout actions = ui.row();
-        ui.weight(actions, arena.confirm);
-        ui.space(actions, 7);
-        actions.addView(arena.recall);
-        actions.addView(arena.tools);
-        content.addView(actions);
-        LinearLayout.LayoutParams explanationPosition = new LinearLayout.LayoutParams(-1, -2);
-        explanationPosition.topMargin = ui.dp(7);
-        content.addView(arena.explain, explanationPosition);
+        for (TextView control : List.of(minus, reset, plus)) {
+            control.setMinimumHeight(ui.dp(39));
+            control.setMinHeight(ui.dp(39));
+        }
+        arena.board.onZoom(zoom -> {
+            reset.setText(getString(R.string.practice_zoom_percent, Math.round(zoom * 100)));
+            ui.enabled(minus, zoom > 1.001f);
+            ui.enabled(plus, zoom < 3.499f);
+        });
+        ui.weight(boardTools, arena.status);
+        boardTools.addView(minus);
+        boardTools.addView(reset);
+        boardTools.addView(plus);
+        content.addView(boardTools);
+        ui.gap(content, 3);
+        content.addView(arena.board, boardBox);
+        content.addView(arena.explain);
+        addArenaTray(opened);
         updateArena(-1);
         startBotIfNeeded();
+    }
+
+    private boolean dockArenaTray(Configuration config) {
+        return config.orientation == Configuration.ORIENTATION_PORTRAIT && config.screenHeightDp >= 580
+                && config.fontScale <= 1.3f;
+    }
+
+    private void addArenaTray(Arena opened) {
+        LinearLayout tray = ui.column();
+        ui.inset(tray, 10, 7);
+        tray.setBackground(ui.shape(ui.palette.paper(), 16, ui.palette.line()));
+        tray.setElevation(ui.dp(3));
+        opened.rack.setClipChildren(false);
+        LinearLayout rackTools = ui.row();
+        opened.shuffle.setContentDescription(getString(R.string.app_shuffle_rack));
+        ui.weight(rackTools, opened.turn);
+        rackTools.addView(opened.shuffle);
+        tray.addView(rackTools);
+        tray.addView(opened.rack);
+        ui.gap(tray, 6);
+        ui.inset(opened.preview, 9, 6);
+        opened.preview.setMinHeight(ui.dp(47));
+        opened.preview.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        tray.addView(opened.preview, new LinearLayout.LayoutParams(-1, -2));
+        ui.gap(tray, 6);
+        LinearLayout actions = ui.row();
+        ui.weight(actions, opened.confirm);
+        ui.space(actions, 5);
+        actions.addView(opened.recall);
+        actions.addView(opened.tools);
+        tray.addView(actions);
+        LinearLayout scrollContent = content;
+        LinearLayout shell = screenShell;
+        LinearLayout footer = ui.row();
+        footer.setGravity(Gravity.CENTER);
+        footer.setPadding(ui.dp(10), ui.dp(2), ui.dp(10), ui.dp(5));
+        Runnable fit = () -> {
+            if (arena != opened) return;
+            Configuration config = getResources().getConfiguration();
+            if (dockArenaTray(config)) {
+                int width = ui.dp(Math.min(510, config.screenWidthDp - 20));
+                if (tray.getParent() != footer) {
+                    scrollContent.removeView(tray);
+                    footer.addView(tray, new LinearLayout.LayoutParams(width, -2));
+                    shell.addView(footer, new LinearLayout.LayoutParams(-1, -2));
+                } else if (tray.getLayoutParams().width != width) {
+                    tray.getLayoutParams().width = width;
+                    tray.requestLayout();
+                }
+            } else if (tray.getParent() != scrollContent) {
+                footer.removeView(tray);
+                shell.removeView(footer);
+                scrollContent.addView(tray, new LinearLayout.LayoutParams(-1, -2));
+            }
+        };
+        fit.run();
+        shell.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) shell.post(fit);
+        });
     }
 
     private void updateArena(int animatedPosition) {
         if (arena == null || screen != Screen.GAME) return;
         MatchCodec.State current = state();
         if (current == null) return;
-        arena.scores.removeAllViews();
-        for (int i = 0; i < current.names().length; i++) {
-            if (i != 0) ui.space(arena.scores, 5);
-            LinearLayout seat = ui.column();
-            ui.inset(seat, 8, 7);
-            boolean active = current.end() == null && i == current.active();
-            seat.setBackground(ui.shape(active ? ui.palette.ordinary() : ui.palette.paper(),
-                    11, active ? ui.palette.accent() : ui.palette.line()));
-            TextView name = ui.text(current.names()[i], 11, ui.palette.muted(), ui.medium);
-            name.setSingleLine(true);
-            name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            seat.addView(name);
-            ui.gap(seat, 4);
-            seat.addView(ui.title(Integer.toString(current.scores()[i]), 21));
-            ui.weight(arena.scores, seat);
+        if (current.end() != null) {
+            showMatchResult(current);
+            return;
         }
-
+        renderScores(current);
         List<FrenchGame.Tile> recent = current.history().isEmpty() ? List.of()
                 : current.history().get(current.history().size() - 1).tiles();
         arena.board.update(current.board(), current.blanks(), staged, recent, animatedPosition);
-        arena.status.setText(current.end() != null ? moveCount(current.history().size())
-                : getString(R.string.app_bag_turn, current.bagSize(), current.history().size() + 1));
+        arena.status.setText(getString(R.string.app_bag_turn, current.bagSize(), current.history().size() + 1));
         arena.rack.removeAllViews();
         Arrays.fill(arena.rackTokens, null);
 
         boolean canPlay = myTurn(current) && !analysing;
         FrenchGame.Preview result = evaluate(current);
         boolean draft = canPlay && !staged.isEmpty();
-        arena.preview.setBackground(ui.shape(draft && result.valid() ? ui.palette.ordinary() : ui.palette.paper(),
-                12, draft && result.valid() ? ui.palette.accent() : ui.palette.line()));
-        if (current.end() != null) {
-            ui.weight(arena.rack, ui.button(getString(R.string.app_view_history), true, this::showHistory));
-            arena.preview.setText(resultTitle(current));
-        } else if (privacy) {
+        boolean legal = draft && result.valid();
+        arena.preview.setBackground(ui.shape(legal ? ui.palette.ordinary() : ui.palette.paper(),
+                10, legal ? ui.palette.accent() : ui.palette.line()));
+        arena.turn.setText(canPlay ? getString(R.string.arena_your_turn)
+                : getString(R.string.arena_active_player, current.names()[current.active()]));
+        ui.enabled(arena.shuffle, canPlay && current.rack().size() > 1);
+        if (privacy) {
             ui.weight(arena.rack, ui.button(getString(R.string.app_show_rack), true, () -> {
                 privacy = false;
                 updateArena(-1);
@@ -1321,24 +1545,81 @@ public final class MainActivity extends Activity {
         } else if (mode.equals("bluetooth") && !bluetoothReady) {
             arena.preview.setText(R.string.bluetooth_disconnected);
         } else if (!myTurn(current)) {
+            if (mode.equals("solo")) renderRack(current, false);
             arena.preview.setText(waiting ? getString(R.string.app_host_validating)
                     : getString(botThinking ? R.string.app_thinking : R.string.app_playing, current.names()[current.active()]));
         } else {
-            renderRack(current);
-            arena.preview.setText(analysing ? getString(R.string.app_analyzing) : staged.isEmpty()
-                    ? getString(R.string.practice_guide)
-                    : result.valid() ? getString(R.string.practice_status_valid) + "  ·  " + result.word()
-                    + "  ·  " + points(result.score())
-                    : getString(R.string.practice_status_invalid) + "\n" + result.error());
+            renderRack(current, canPlay);
+            if (analysing) {
+                arena.preview.setText(R.string.app_analyzing);
+            } else if (staged.isEmpty()) {
+                arena.preview.setText(selected < 0 ? R.string.arena_place_hint : R.string.arena_place_selected);
+            } else if (legal) {
+                String value = points(result.score());
+                String label = getString(R.string.arena_valid_preview, getString(R.string.practice_status_valid),
+                        result.word(), value);
+                android.text.SpannableString scored = new android.text.SpannableString(label);
+                scored.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
+                        label.length() - value.length(), label.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                arena.preview.setText(scored);
+            } else {
+                arena.preview.setText(getString(R.string.arena_invalid_preview,
+                        getString(R.string.practice_status_invalid), result.error()));
+            }
         }
-        ui.enabled(arena.confirm, canPlay && result.valid());
+        if (legal && result.score() != arena.previewScore && animatedPosition >= 0) pulseMoveFeedback(arena.preview);
+        arena.previewScore = legal ? result.score() : -1;
+        ui.enabled(arena.confirm, legal);
         ui.enabled(arena.recall, canPlay && !staged.isEmpty());
         ui.enabled(arena.tools, canPlay);
         arena.explain.setVisibility(current.history().isEmpty() ? View.GONE : View.VISIBLE);
-        arena.review.setVisibility(current.end() == null ? View.GONE : View.VISIBLE);
+        if (!current.history().isEmpty()) {
+            FrenchGame.Move last = current.history().get(current.history().size() - 1);
+            arena.explain.setText(last.type().equals("play")
+                    ? getString(R.string.arena_last_score, last.word(), points(last.score()))
+                    : getString(R.string.move_explanation_last));
+            arena.explain.setContentDescription(last.type().equals("play") ? getString(R.string.arena_last_explain,
+                    last.word(), points(last.score())) : null);
+        }
     }
 
-    private void renderRack(MatchCodec.State current) {
+    private void renderScores(MatchCodec.State current) {
+        int turn = current.history().size();
+        if (arena.renderedTurn == turn && Arrays.equals(arena.renderedScores, current.scores())) return;
+        int[] previousScores = arena.renderedScores;
+        arena.renderedTurn = turn;
+        arena.renderedScores = current.scores().clone();
+        arena.scores.removeAllViews();
+        for (int i = 0; i < current.names().length; i++) {
+            if (i != 0) ui.space(arena.scores, 5);
+            LinearLayout seat = ui.row();
+            ui.inset(seat, 8, 7);
+            boolean active = i == current.active();
+            seat.setBackground(ui.shape(active ? ui.palette.deep() : ui.palette.paper(),
+                    13, active ? 0 : ui.palette.line()));
+            TextView name = ui.text(current.names()[i], 11, active ? ui.palette.heroInk() : ui.palette.muted(), ui.medium);
+            name.setSingleLine(true);
+            name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            ui.weight(seat, name);
+            ui.space(seat, 4);
+            TextView score = ui.text(Integer.toString(current.scores()[i]), 18,
+                    active ? ui.palette.heroInk() : ui.palette.ink(), ui.medium);
+            seat.addView(score);
+            if (previousScores != null && previousScores[i] != current.scores()[i]) pulseMoveFeedback(score);
+            ui.weight(arena.scores, seat);
+        }
+    }
+
+    private void pulseMoveFeedback(View view) {
+        if (!android.animation.ValueAnimator.areAnimatorsEnabled()) return;
+        view.animate().cancel();
+        view.setAlpha(0.72f);
+        view.setScaleX(0.98f);
+        view.setScaleY(0.98f);
+        view.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(175).start();
+    }
+
+    private void renderRack(MatchCodec.State current, boolean canPlay) {
         int turn = current.history().size();
         if (lastRackTurn != turn || rackOrder.size() != current.rack().size()) {
             rackOrder.clear();
@@ -1357,7 +1638,7 @@ public final class MainActivity extends Activity {
             char letter = current.rack().get(index);
             LinearLayout token = ui.column();
             token.setGravity(Gravity.CENTER);
-            token.setMinimumHeight(ui.dp(49));
+            token.setMinimumHeight(ui.dp(47));
             updateRackSelection(token, index);
             TextView glyph = ui.text(occupied[index] ? " " : String.valueOf(letter),
                     22, ui.tileInk(), ui.medium);
@@ -1372,8 +1653,10 @@ public final class MainActivity extends Activity {
                 token.addView(value);
                 token.setContentDescription(letter == FrenchGame.JOKER ? getString(R.string.practice_joker)
                         : getString(R.string.board_accessibility_tile, letter, points(tilePoints)));
-                token.setOnClickListener(view -> selectRackTile(index));
-                ui.dragTile(token, index, letter, () -> !analysing && myTurn(state()));
+                if (canPlay) {
+                    token.setOnClickListener(view -> selectRackTile(index));
+                    ui.dragTile(token, index, letter, () -> !analysing && myTurn(state()));
+                } else token.setAlpha(0.74f);
             } else {
                 token.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
                 token.setAlpha(0.42f);
@@ -1381,6 +1664,29 @@ public final class MainActivity extends Activity {
             arena.rackTokens[index] = token;
             ui.weight(arena.rack, token);
         }
+        arena.rackDrop.refreshActions();
+    }
+
+    private boolean rackTileCanMove(int index) {
+        return !analysing && arena != null && myTurn(state()) && rackOrder.contains(index)
+                && staged.stream().noneMatch(tile -> tile.rackIndex() == index);
+    }
+
+    private void reorderRack(int source, int target) {
+        if (!rackTileCanMove(source)) return;
+        int from = rackOrder.indexOf(source);
+        int to = rackOrder.indexOf(target);
+        if (to < 0 || from == to) return;
+        rackOrder.add(to, rackOrder.remove(from));
+        arena.rack.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        updateDraft(-1);
+    }
+
+    private void shuffleRack() {
+        selected = -1;
+        Collections.shuffle(rackOrder);
+        updateDraft(-1);
+        pulseMoveFeedback(arena.rack);
     }
 
     private void selectRackTile(int index) {
@@ -1389,6 +1695,8 @@ public final class MainActivity extends Activity {
         selected = selected == index ? -1 : index;
         if (previous >= 0) updateRackSelection(arena.rackTokens[previous], previous);
         if (selected >= 0) updateRackSelection(arena.rackTokens[selected], selected);
+        if (selected >= 0) arena.rackTokens[selected].performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        if (staged.isEmpty()) arena.preview.setText(selected < 0 ? R.string.arena_place_hint : R.string.arena_place_selected);
         arena.board.refreshCellActions();
     }
 
@@ -1396,13 +1704,15 @@ public final class MainActivity extends Activity {
         boolean active = index == selected;
         token.setSelected(active);
         token.setBackground(ui.rackTile(active));
+        token.setTranslationY(active ? -ui.dp(3) : 0);
         androidx.core.view.ViewCompat.setStateDescription(token,
                 active ? getString(R.string.practice_rack_selected) : null);
     }
 
     private FrenchGame.Preview evaluate(MatchCodec.State current) {
-        if (lexicon == null || staged.isEmpty()) return FrenchGame.Preview.invalid(getString(R.string.app_place_tiles));
-        return FrenchGame.preview(current.board(), current.blanks(), current.rack(), lexicon, staged);
+        Lexicon dictionary = matchLexicon();
+        if (dictionary == null || staged.isEmpty()) return FrenchGame.Preview.invalid(getString(R.string.app_place_tiles));
+        return FrenchGame.preview(current.board(), current.blanks(), current.rack(), dictionary, staged);
     }
 
     private void boardTap(int position) {
@@ -1411,6 +1721,7 @@ public final class MainActivity extends Activity {
         int index = stagedAt(position);
         if (index >= 0) {
             selected = staged.remove(index).rackIndex();
+            arena.board.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
             updateDraft(-1);
             return;
         }
@@ -1429,6 +1740,7 @@ public final class MainActivity extends Activity {
         if (index < 0) return;
         FrenchGame.Tile tile = staged.get(index);
         staged.set(index, new FrenchGame.Tile(to, tile.rackIndex(), tile.letter(), tile.blank()));
+        arena.board.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
         audio.tile();
         updateDraft(to);
     }
@@ -1442,11 +1754,9 @@ public final class MainActivity extends Activity {
         }
         char letter = current.rack().get(rackIndex);
         if (letter == FrenchGame.JOKER) {
-            String[] letters = new String[26];
-            for (int i = 0; i < letters.length; i++) letters[i] = Character.toString((char) ('A' + i));
-            dialog(getString(R.string.practice_joker_choice), null)
-                    .setItems(letters, (ignored, index) -> stage(position, rackIndex, (char) ('A' + index), true))
-                    .setNegativeButton(getString(R.string.social_cancel), null).show();
+            new TurnMenu(ui, R.string.practice_joker_choice).chooseJoker(chosen -> {
+                if (stillPlayingTurn(current)) stage(position, rackIndex, chosen, true);
+            });
         } else stage(position, rackIndex, letter, false);
     }
 
@@ -1469,6 +1779,10 @@ public final class MainActivity extends Activity {
         if (!myTurn(current)) return;
         FrenchGame.Preview preview = evaluate(current);
         if (!preview.valid()) { toast(preview.error()); return; }
+        if (arena != null) {
+            arena.confirm.performHapticFeedback(Build.VERSION.SDK_INT >= 30
+                    ? HapticFeedbackConstants.CONFIRM : HapticFeedbackConstants.CLOCK_TICK);
+        }
         action("play", List.copyOf(staged), List.of());
     }
 
@@ -1494,7 +1808,7 @@ public final class MainActivity extends Activity {
         try {
             switch (type) {
                 case "play" -> {
-                    FrenchGame.Preview preview = game.play(tiles, lexicon);
+                    FrenchGame.Preview preview = game.play(tiles, matchLexicon());
                     if (!preview.valid()) return preview.error();
                 }
                 case "pass" -> game.pass();
@@ -1530,8 +1844,9 @@ public final class MainActivity extends Activity {
     }
 
     private void startBotIfNeeded() {
+        Lexicon dictionary = matchLexicon();
         if (game == null || !mode.equals("solo") || game.end != null || game.active != 1
-                || botThinking || lexicon == null) return;
+                || botThinking || dictionary == null) return;
         botThinking = true;
         updateArena(-1);
         FrenchGame snapshot = game;
@@ -1540,7 +1855,7 @@ public final class MainActivity extends Activity {
         worker.submit(() -> {
             Bot.Choice result;
             try {
-                result = Bot.choose(snapshot, lexicon, snapshot.levels[1], rating);
+                result = Bot.choose(snapshot, dictionary, snapshot.levels[1], rating);
             } catch (RuntimeException exception) {
                 result = new Bot.Choice(List.of(), List.of(), 2, 0);
             }
@@ -1559,35 +1874,41 @@ public final class MainActivity extends Activity {
 
     private void turnOptions() {
         MatchCodec.State current = state();
-        if (!myTurn(current)) return;
-        String[] choices = {getString(R.string.app_shuffle_rack), getString(R.string.app_exchange_tiles), getString(R.string.app_pass_turn), getString(R.string.app_find_move)};
-        dialog(getString(R.string.app_turn_options), null).setItems(choices, (ignored, choice) -> {
-            switch (choice) {
-                case 0 -> { Collections.shuffle(rackOrder); updateArena(-1); }
-                case 1 -> exchangeDialog(current);
-                case 2 -> dialog(getString(R.string.app_pass_confirm), getString(R.string.app_keep_tiles))
-                        .setNegativeButton(getString(R.string.social_cancel), null)
-                        .setPositiveButton(getString(R.string.app_pass_turn), (view, button) -> action("pass", List.of(), List.of())).show();
-                case 3 -> analyzeCurrent(current);
-                default -> { }
-            }
-        }).show();
+        if (!myTurn(current) || privacy || analysing) return;
+        TurnMenu menu = new TurnMenu(ui, R.string.app_turn_options);
+        boolean exchangeAvailable = current.bagSize() >= FrenchGame.RACK_SIZE;
+        boolean solo = mode.equals("solo");
+        menu.option("↻", R.string.app_shuffle_rack, R.string.turn_shuffle_help, () -> {
+            if (!stillPlayingTurn(current)) return;
+            shuffleRack();
+        });
+        menu.option("⇄", R.string.app_exchange_tiles,
+                exchangeAvailable ? R.string.turn_exchange_help : R.string.app_exchange_minimum,
+                exchangeAvailable ? () -> exchangeDialog(current) : null);
+        menu.option("→", R.string.app_pass_turn, R.string.turn_pass_help, () -> {
+            if (!stillPlayingTurn(current)) return;
+            new TurnMenu(ui, R.string.app_pass_confirm).confirmPass(() -> {
+                if (stillPlayingTurn(current)) action("pass", List.of(), List.of());
+            });
+        });
+        menu.option("✦", R.string.app_find_move,
+                solo ? R.string.turn_hint_help : R.string.app_hint_solo, solo ? () -> {
+                    if (stillPlayingTurn(current)) analyzeCurrent(current);
+                } : null);
+        menu.show();
     }
 
     private void exchangeDialog(MatchCodec.State current) {
-        if (current.bagSize() < FrenchGame.RACK_SIZE) { toast(getString(R.string.app_exchange_minimum)); return; }
-        String[] labels = new String[current.rack().size()];
-        for (int i = 0; i < labels.length; i++) labels[i] = Character.toString(current.rack().get(i));
-        boolean[] checked = new boolean[labels.length];
-        dialog(getString(R.string.app_exchange_selected), null)
-                .setMultiChoiceItems(labels, checked, (view, index, value) -> checked[index] = value)
-                .setNegativeButton(getString(R.string.social_cancel), null)
-                .setPositiveButton(getString(R.string.app_exchange), (view, button) -> {
-                    List<Integer> exchange = new ArrayList<>();
-                    for (int i = 0; i < checked.length; i++) if (checked[i]) exchange.add(i);
-                    if (exchange.isEmpty()) toast(getString(R.string.app_exchange_empty));
-                    else action("exchange", List.of(), exchange);
-                }).show();
+        if (!stillPlayingTurn(current)) return;
+        new TurnMenu(ui, R.string.app_exchange_tiles).selectTiles(current.rack(), gameLanguage, exchange -> {
+            if (stillPlayingTurn(current)) action("exchange", List.of(), exchange);
+        });
+    }
+
+    private boolean stillPlayingTurn(MatchCodec.State openedFor) {
+        MatchCodec.State current = state();
+        return screen == Screen.GAME && myTurn(current) && !privacy && !analysing
+                && current.id().equals(openedFor.id()) && current.history().size() == openedFor.history().size();
     }
 
     private void analyzeCurrent(MatchCodec.State current) {
@@ -1597,12 +1918,13 @@ public final class MainActivity extends Activity {
         }
         analysing = true;
         FrenchGame gameAtRequest = game;
+        Lexicon dictionary = matchLexicon();
         updateArena(-1);
         worker.submit(() -> {
             Bot.Choice candidate;
             try {
                 candidate = Bot.choose(current.board().clone(), current.blanks().clone(), List.copyOf(current.rack()),
-                        current.bagSize(), lexicon, 4, 0);
+                        current.bagSize(), dictionary, 4, 0);
             } catch (RuntimeException exception) {
                 candidate = null;
             }
@@ -1632,6 +1954,9 @@ public final class MainActivity extends Activity {
         List<String> winners = new ArrayList<>();
         for (int i = 0; i < current.scores().length; i++) {
             if (current.scores()[i] == maximum) winners.add(current.names()[i]);
+        }
+        if (mode.equals("solo") && current.scores()[0] > current.scores()[1]) {
+            return getString(R.string.match_result_solo_win);
         }
         return winners.size() == 1 ? getString(R.string.app_winner, winners.get(0))
                 : getString(R.string.app_draw, String.join(", ", winners));
@@ -1961,6 +2286,13 @@ public final class MainActivity extends Activity {
         if (lexicon != null) {
             ui.gap(content, 8);
             String label = lexicon.label;
+            if (!personalSession && frenchClassicLexicon != null) {
+                content.addView(ui.option("Aa", frenchClassicLexicon.label, getString(R.string.classic_dictionary_summary),
+                        () -> dialog(frenchClassicLexicon.label, getString(R.string.classic_dictionary_summary)
+                                + "\n\n" + getString(R.string.app_dictionary_hash, frenchClassicLexicon.hash))
+                                .setPositiveButton(R.string.move_explanation_close, null).show()));
+                ui.gap(content, 8);
+            }
             content.addView(ui.option("Aa", label, getString(R.string.app_dictionary_license), () -> dialog(label,
                     (notice == null || notice.trim().isEmpty() ? getString(R.string.app_dictionary_bundled) : notice)
                             + "\n\n" + getString(R.string.app_dictionary_hash, lexicon.hash)).setPositiveButton(getString(R.string.move_explanation_close), null).show()));
@@ -2539,12 +2871,99 @@ public final class MainActivity extends Activity {
     private void reviewFinishedGame() {
         MatchCodec.State finished = state();
         if (finished == null || finished.end() == null || !ready()) return;
-        String summary = resultTitle(finished);
-        showReview(List.copyOf(finished.history()), mode, summary, true, this::showGame);
+        showReview(finished.history(), mode, resultTitle(finished), matchLexicon(), this::showGame, finishedReview);
+    }
+
+    private void showMatchResult(MatchCodec.State finished) {
+        page(Screen.RESULT, false);
+        top(getString(R.string.app_game_finished), this::leaveGame, null);
+        List<String> scores = new ArrayList<>();
+        for (int i = 0; i < finished.names().length; i++) {
+            scores.add(finished.names()[i] + " " + finished.scores()[i]);
+        }
+        ui.gap(content, 6);
+        content.addView(ui.title(resultTitle(finished), 28));
+        ui.gap(content, 5);
+        content.addView(ui.body(String.join("  ·  ", scores)));
+        ui.gap(content, 12);
+
+        content.addView(ui.button(getString(R.string.match_result_new_game), true, () -> {
+            if (mode.equals("bluetooth")) {
+                resetMatch();
+                showBluetooth();
+            } else {
+                setupBack = gameBack;
+                newMatch(mode, finished.names(), finished.levels());
+            }
+        }));
+        ui.gap(content, 10);
+        LinearLayout featured = ui.column();
+        content.addView(featured);
+        content.addView(ui.button(getString(R.string.match_review), false, this::reviewFinishedGame));
+        content.addView(ui.textButton(getString(R.string.app_view_history), this::showHistory));
+
+        Lexicon dictionary = matchLexicon();
+        if (mode.equals("bluetooth") || dictionary == null) {
+            showResultBoard(featured, finished);
+        } else if (finishedReview != null) {
+            showFeaturedMove(featured, finished, finishedReview.highlight(), dictionary);
+        } else {
+            TextView status = ui.body(getString(R.string.match_review_loading));
+            status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+            featured.addView(status);
+            ui.gap(featured, 12);
+            analyzeReview(finished.history(), mode.equals("solo") ? 0 : -1, dictionary, review -> {
+                finishedReview = review;
+                showFeaturedMove(featured, finished, review.highlight(), dictionary);
+            }, () -> showFeaturedMove(featured, finished, null, dictionary));
+        }
+    }
+
+    private void showFeaturedMove(LinearLayout panel, MatchCodec.State finished, MatchReview.Highlight highlight,
+                                  Lexicon dictionary) {
+        panel.removeAllViews();
+        if (highlight == null) {
+            showResultBoard(panel, finished);
+            return;
+        }
+        MatchReview.Turn turn = highlight.turn();
+        LinearLayout lesson = ui.card();
+        TextView title = ui.title(getString(R.string.match_result_highlight, turn.index() + 1), 20);
+        lesson.addView(title);
+        ui.gap(lesson, 4);
+        lesson.addView(ui.body(highlight.explanation()));
+        ui.gap(lesson, 8);
+        lesson.addView(ui.button(getString(R.string.match_result_replay), false,
+                () -> practiceReviewedTurn(turn, dictionary)));
+        ui.gap(lesson, 8);
+        BoardView board = new BoardView(ui, null);
+        char[] letters = turn.board().clone();
+        boolean[] blanks = turn.blanks().clone();
+        MatchReview.Alternative alternative = turn.alternative();
+        for (FrenchGame.Tile tile : alternative.tiles()) {
+            letters[tile.position()] = tile.letter();
+            blanks[tile.position()] = tile.blank();
+        }
+        board.update(letters, blanks, List.of(), alternative.tiles(), -1);
+        board.highlightSquares(highlight.cells());
+        var preview = alternative.preview();
+        board.setContentDescription(getResources().getQuantityString(R.plurals.match_review_board,
+                preview.score(), getString(R.string.match_review_alternative), preview.word(), preview.score()));
+        lesson.addView(board, new LinearLayout.LayoutParams(-1, -2));
+        panel.addView(lesson);
+        ui.gap(panel, 10);
+        title.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    }
+
+    private void showResultBoard(LinearLayout panel, MatchCodec.State finished) {
+        BoardView board = new BoardView(ui, null);
+        board.update(finished.board(), finished.blanks(), List.of(), List.of(), -1);
+        panel.addView(board, new LinearLayout.LayoutParams(-1, -2));
+        ui.gap(panel, 10);
     }
 
     private void showReview(List<FrenchGame.Move> moves, String gameMode, String summary,
-                            boolean compatible, Runnable back) {
+                            Lexicon dictionary, Runnable back, MatchReview.Review cached) {
         reviewBack = back;
         page(Screen.REVIEW, false);
         top(getString(R.string.match_review), back, null);
@@ -2553,36 +2972,48 @@ public final class MainActivity extends Activity {
         TextView status = ui.body(getString(R.string.match_review_loading));
         status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         content.addView(status);
-        FrameLayout reviewFrame = frame;
         boolean bluetooth = gameMode.equals("bluetooth");
+        boolean compatible = dictionary != null;
         int seat = gameMode.equals("solo") ? 0 : -1;
-        Lexicon dictionary = lexicon;
+        Consumer<MatchReview.Review> display = review -> {
+            if (review.turns().isEmpty()) {
+                status.setText(R.string.match_review_empty);
+                return;
+            }
+            if (bluetooth || !compatible) {
+                status.setText(bluetooth ? R.string.match_review_bluetooth : R.string.match_review_lexicon);
+                ui.gap(content, 10);
+            } else {
+                content.removeView(status);
+            }
+            content.addView(new MatchReviewPanel(ui, review.turns(), compatible && !bluetooth,
+                    this::explainReview, turn -> practiceReviewedTurn(turn, dictionary)).view());
+        };
+        if (cached != null) display.accept(cached);
+        else analyzeReview(moves, seat, bluetooth ? null : dictionary, display,
+                () -> status.setText(R.string.match_review_error));
+    }
+
+    private void analyzeReview(List<FrenchGame.Move> moves, int seat, Lexicon dictionary,
+                               Consumer<MatchReview.Review> display, Runnable showError) {
+        FrameLayout reviewFrame = frame;
+        List<FrenchGame.Move> history = List.copyOf(moves);
+        Lexicon reviewDictionary = dictionary == null ? lexicon : dictionary;
         reviewTask = reviewWorker.submit(() -> {
             android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
             try {
-                List<MatchReview.Turn> turns = MatchReview.analyze(moves, dictionary, seat, compatible && !bluetooth);
+                MatchReview.Review review = MatchReview.review(history, reviewDictionary, seat, dictionary != null);
                 main.post(() -> {
                     if (frame != reviewFrame || isDestroyed()) return;
                     reviewTask = null;
-                    if (turns.isEmpty()) {
-                        status.setText(R.string.match_review_empty);
-                        return;
-                    }
-                    if (bluetooth || !compatible) {
-                        status.setText(bluetooth ? R.string.match_review_bluetooth : R.string.match_review_lexicon);
-                        ui.gap(content, 10);
-                    } else {
-                        content.removeView(status);
-                    }
-                    content.addView(new MatchReviewPanel(ui, turns, compatible && !bluetooth, this::explainReview,
-                            this::practiceReviewedTurn).view());
+                    display.accept(review);
                 });
             } catch (RuntimeException exception) {
                 if (Thread.currentThread().isInterrupted()) return;
                 main.post(() -> {
                     if (frame != reviewFrame || isDestroyed()) return;
                     reviewTask = null;
-                    status.setText(R.string.match_review_error);
+                    showError.run();
                 });
             }
         });
@@ -2604,10 +3035,8 @@ public final class MainActivity extends Activity {
         if (!moves.isEmpty()) {
             content.addView(ui.button(getString(R.string.match_review), true, () -> {
                 if (!ready()) return;
-                String digest = replayed.optString("lexicon_sha256");
-                boolean compatible = digest.isEmpty()
-                        ? lexicon.label.equals(replayed.optString("lexicon")) : lexicon.hash.equals(digest);
-                showReview(moves, replayed.optString("mode"), scoreText(replayed), compatible, this::showDetail);
+                showReview(moves, replayed.optString("mode"), scoreText(replayed),
+                        archivedLexicon(replayed), this::showDetail, null);
             }));
             ui.gap(content, 9);
         }

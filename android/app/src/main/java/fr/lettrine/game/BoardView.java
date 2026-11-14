@@ -62,6 +62,7 @@ final class BoardView extends View {
     private boolean[] blanks = new boolean[FrenchGame.CELLS];
     private final FrenchGame.Tile[] pending = new FrenchGame.Tile[FrenchGame.CELLS];
     private final boolean[] highlights = new boolean[FrenchGame.CELLS];
+    private final boolean[] lessonSquares = new boolean[FrenchGame.CELLS];
     private final int[] cellColors = new int[FrenchGame.CELLS];
     private final int tileRim;
     private final int freshRim;
@@ -80,6 +81,7 @@ final class BoardView extends View {
     private ValueAnimator animator;
     private boolean endedScale;
     private int movingTile = -1;
+    private int rackDropTarget = -1;
     private boolean tileDragged;
     private float touchX;
     private float touchY;
@@ -160,11 +162,12 @@ final class BoardView extends View {
         java.util.Arrays.fill(highlights, false);
         for (FrenchGame.Tile tile : staged) pending[tile.position()] = tile;
         for (FrenchGame.Tile tile : recent) highlights[tile.position()] = true;
-        if (animatePosition >= 0) {
+        if (animatePosition >= 0 && ValueAnimator.areAnimatorsEnabled()) {
             if (animator != null) animator.cancel();
             animated = animatePosition;
-            animator = ValueAnimator.ofFloat(0.6f, 1f);
-            animator.setDuration(220);
+            animation = 0.76f;
+            animator = ValueAnimator.ofFloat(0.76f, 1.07f, 1f);
+            animator.setDuration(190);
             animator.setInterpolator(new DecelerateInterpolator());
             animator.addUpdateListener(value -> {
                 animation = (Float) value.getAnimatedValue();
@@ -182,6 +185,13 @@ final class BoardView extends View {
             float y = gridStart() + (guided / FrenchGame.SIZE + 0.5f) * unit();
             zoomAt(zoom * multiplier, x, y);
         } else zoomAt(zoom * multiplier, side * 0.5f, side * 0.5f);
+    }
+
+    void highlightSquares(List<Integer> squares) {
+        java.util.Arrays.fill(lessonSquares, false);
+        for (int square : squares) lessonSquares[square] = true;
+        invalidate();
+        accessibility.invalidateRoot();
     }
 
     void guide(int square) {
@@ -281,8 +291,8 @@ final class BoardView extends View {
         super.onDraw(canvas);
         float unit = unit();
         float start = gridStart();
-        float inset = unit * 0.051f;
-        float rounding = unit * 0.17f;
+        float inset = unit * 0.055f;
+        float rounding = unit * 0.23f;
         canvas.save();
         canvas.clipPath(frameClip);
         paint.setShader(frameShading);
@@ -290,7 +300,7 @@ final class BoardView extends View {
         paint.setShader(null);
         canvas.translate(offsetX, offsetY);
         canvas.scale(zoom, zoom);
-        int target = tileDragged ? position(touchX, touchY) : -1;
+        int target = tileDragged ? position(touchX, touchY) : rackDropTarget;
         for (int i = 0; i < FrenchGame.SIZE; i++) {
             label(canvas, String.valueOf(i + 1), start + (i + 0.5f) * unit, start * 0.53f,
                     unit * 0.36f, coordinates, regular);
@@ -300,7 +310,7 @@ final class BoardView extends View {
         for (int i = 0; i < FrenchGame.CELLS; i++) {
             float x = start + i % FrenchGame.SIZE * unit;
             float y = start + i / FrenchGame.SIZE * unit;
-            if (i == animated && animation < 1) {
+            if (i == animated && animation != 1) {
                 canvas.save();
                 canvas.scale(animation, animation, x + unit * 0.5f, y + unit * 0.5f);
             }
@@ -329,7 +339,10 @@ final class BoardView extends View {
                     canvas.drawCircle(x + unit * 0.22f, y + unit * 0.72f, unit * 0.048f, paint);
                 }
             } else {
-                paint.setColor(cellColors[i]);
+                int cellColor = cellColors[i];
+                if (i == FrenchGame.CENTER) cellColor = blend(cellColor, focus, 0.24f);
+                if (target == i) cellColor = blend(cellColor, freshFace, 0.68f);
+                paint.setColor(cellColor);
                 canvas.drawRoundRect(rectangle, rounding, rounding, paint);
                 String mark = i == FrenchGame.CENTER ? "✦"
                         : FrenchGame.WORD_MULTIPLIER[i] > 1 ? wordBonuses[FrenchGame.WORD_MULTIPLIER[i]]
@@ -340,7 +353,7 @@ final class BoardView extends View {
                 }
             }
             if ((isFocused() && focused == i) || accessibility.getAccessibilityFocusedVirtualViewId() == i
-                    || (guided == i && tile == null) || (target == i && board[i] == 0)) {
+                    || (guided == i && tile == null) || (target == i && board[i] == 0) || lessonSquares[i]) {
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeWidth(unit * 0.10f);
                 paint.setColor(coordinates);
@@ -351,7 +364,7 @@ final class BoardView extends View {
                 canvas.drawRoundRect(rectangle, rounding, rounding, paint);
                 paint.setStyle(Paint.Style.FILL);
             }
-            if (i == animated && animation < 1) canvas.restore();
+            if (i == animated && animation != 1) canvas.restore();
         }
         canvas.restore();
         if (tileDragged && pending[movingTile] != null) {
@@ -458,16 +471,32 @@ final class BoardView extends View {
 
     @Override public boolean onDragEvent(DragEvent event) {
         if (interaction == null) return false;
-        if (event.getAction() == DragEvent.ACTION_DRAG_STARTED) {
-            return event.getClipDescription() != null && event.getClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)
-                    && event.getLocalState() instanceof Integer;
-        }
-        if (event.getAction() == DragEvent.ACTION_DROP) {
-            int position = position(event.getX(), event.getY());
-            if (position < 0) return false;
-            interaction.drop(position, (Integer) event.getLocalState());
+        switch (event.getAction()) {
+            case DragEvent.ACTION_DRAG_STARTED -> {
+                return event.getClipDescription() != null
+                        && event.getClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)
+                        && event.getLocalState() instanceof Integer;
+            }
+            case DragEvent.ACTION_DRAG_LOCATION -> {
+                int square = position(event.getX(), event.getY());
+                setRackDropTarget(square >= 0 && board[square] == 0 && pending[square] == null ? square : -1);
+            }
+            case DragEvent.ACTION_DRAG_EXITED, DragEvent.ACTION_DRAG_ENDED -> setRackDropTarget(-1);
+            case DragEvent.ACTION_DROP -> {
+                setRackDropTarget(-1);
+                int square = position(event.getX(), event.getY());
+                if (square < 0 || board[square] != 0 || pending[square] != null) return false;
+                interaction.drop(square, (Integer) event.getLocalState());
+            }
+            default -> { }
         }
         return true;
+    }
+
+    private void setRackDropTarget(int square) {
+        if (rackDropTarget == square) return;
+        rackDropTarget = square;
+        invalidate();
     }
 
     @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -550,6 +579,9 @@ final class BoardView extends View {
         }
         if (guided == square && staged == null) {
             detail = detail + ". " + context.getString(R.string.board_accessibility_guided);
+        }
+        if (lessonSquares[square]) {
+            detail = detail + ". " + context.getString(R.string.match_result_highlight_cell);
         }
         return context.getString(R.string.board_accessibility_cell, coordinate, detail);
     }

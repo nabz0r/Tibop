@@ -1,5 +1,7 @@
 # Simulations de parties Android
 
+Les campagnes ci-dessous utilisent Grammalecte 7.7 d’origine. Les nouvelles parties classiques françaises de WordRivet 0.16.0 utilisent le lexique filtré et les poids Maître de référence. Les contrôles du chevalet et du filtre de la bêta figurent dans le [guide Android](../android/README.md#vérification-de-la-version-0160). [Empreintes et filtres](../data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android)
+
 ## Vérifier WordRivet 0.15.2 sur Android
 
 Les APK 0.15.1 et 0.15.2 ont rejoué les huit mêmes tours d’une partie française avec Grammalecte 7.7 sur un émulateur Android 16 arm64, en mode avion et sans réseau actif. La partie archivée fournit le plateau et le score attendus. Le contrôle recalcule les points des placements et compare le score affiché, les détails affichés et les temps d’inférence consignés par l’application.

@@ -144,15 +144,16 @@ final class ViewKit {
     }
 
     Drawable touch(int color, int radius, int outline) {
-        return new RippleDrawable(ColorStateList.valueOf(0x26346149), shape(color, radius, outline), null);
+        return new RippleDrawable(ColorStateList.valueOf((palette.accent() & 0x00ffffff) | 0x26000000),
+                shape(color, radius, outline), null);
     }
 
     TextView button(String content, boolean primary, Runnable run) {
         TextView button = text(content, 14, primary ? palette.heroInk() : palette.ink(), medium);
         button.setGravity(Gravity.CENTER);
-        button.setMinimumHeight(dp(46));
+        button.setMinimumHeight(dp(48));
         inset(button, 12, 8);
-        button.setBackground(touch(primary ? palette.deep() : palette.paper(), 12, primary ? 0 : palette.line()));
+        button.setBackground(touch(primary ? palette.deep() : palette.paper(), 15, primary ? 0 : palette.line()));
         button.setOnClickListener(view -> run.run());
         return button;
     }
@@ -175,14 +176,15 @@ final class ViewKit {
 
     LinearLayout card() {
         LinearLayout card = column();
-        card.setBackground(shape(palette.paper(), 16, palette.line()));
+        card.setBackground(shape(palette.paper(), 18, palette.line()));
         inset(card, 16, 15);
         return card;
     }
 
     LinearLayout option(String mark, String title, String detail, Runnable action) {
         LinearLayout option = row();
-        option.setBackground(touch(palette.paper(), 16, palette.line()));
+        option.setBackground(action == null ? shape(palette.page(), 18, palette.line())
+                : touch(palette.paper(), 18, palette.line()));
         inset(option, 13, 13);
         TextView icon = text(mark, 20, palette.ink(), serif);
         icon.setGravity(Gravity.CENTER);
@@ -196,11 +198,13 @@ final class ViewKit {
             content.addView(text(detail, 12, palette.muted(), regular));
         }
         weight(option, content);
-        TextView arrow = text("›", 23, palette.accent(), serif);
-        arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        option.addView(arrow);
         icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        option.setOnClickListener(view -> action.run());
+        if (action != null) {
+            TextView arrow = text("›", 23, palette.accent(), serif);
+            arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            option.addView(arrow);
+            option.setOnClickListener(view -> action.run());
+        }
         return option;
     }
 

@@ -1,0 +1,12 @@
+<resources>
+    <string name="turn_shuffle_help">Rearrange the tiles on your rack.</string>
+    <string name="turn_exchange_help">Choose which tiles to replace. This uses your turn.</string>
+    <string name="turn_pass_help">Keep your tiles and end your turn.</string>
+    <string name="turn_hint_help">NAB suggests a move. This game stops counting toward your rating.</string>
+    <string name="turn_exchange_blank">Blank tile, 0 points</string>
+    <string name="turn_exchange_none">No tiles selected</string>
+    <plurals name="turn_exchange_count">
+        <item quantity="one">%d tile selected</item>
+        <item quantity="other">%d tiles selected</item>
+    </plurals>
+</resources>

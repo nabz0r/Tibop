@@ -30,6 +30,7 @@ final class PracticePanel {
     private final List<Character> rack;
     private final List<FrenchGame.Tile> staged = new ArrayList<>();
     private final List<TextView> rackButtons = new ArrayList<>();
+    private final RackDrop rackDrop;
     private final LinearLayout panel;
     private final LinearLayout result;
     private final LinearLayout playControls;
@@ -172,6 +173,7 @@ final class PracticePanel {
 
         playControls = ui.column();
         LinearLayout hand = ui.row();
+        rackDrop = new RackDrop(ui, hand, rackButtons, this::canMoveRackTile, this::reorderRack);
         ui.gap(playControls, 8);
         hand.setBackground(ui.shape(ui.palette.ordinary(), 16));
         ui.inset(hand, 6, 6);
@@ -323,6 +325,12 @@ final class PracticePanel {
         return false;
     }
 
+    private boolean canMoveRackTile(int index) {
+        return index >= 0 && index < rack.size() && !finished && !submitting && !used(index);
+    }
+
+    private void reorderRack(int source, int target) { rackDrop.reorderViews(source, target); }
+
     private void renderAttempt(int animated) {
         board.update(letters, blanks, staged, List.of(), animated);
         String description = dailyResult == null ? label(first ? R.string.practice_board_first_description
@@ -339,6 +347,7 @@ final class PracticePanel {
             tile.setBackground(ui.rackTile(i == selected || tutorial && staged.isEmpty() && selected < 0 && letter == 'S'));
             ui.enabled(tile, !submitting && !occupied);
         }
+        rackDrop.refreshActions();
         FrenchGame.Preview move = staged.isEmpty() ? null : position.preview(staged, lexicon);
         boolean canSubmit = move != null && move.valid() && (!tutorial || tutorialMove());
         updateValidation(canSubmit, move != null);

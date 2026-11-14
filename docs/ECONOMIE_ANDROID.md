@@ -1,6 +1,6 @@
 # Économie de WordRivet Android
 
-La bêta 0.14 ajoute un circuit solo de trois positions par langue et un solde de pièces et de tickets sur l’appareil. Le défi du jour, le solo, le bilan NAB, les duels et le tournoi restent en accès libre. La bêta ne propose ni paiement ni achat de monnaie virtuelle.
+La bêta 0.16.0 propose un circuit solo avec trois parcours par langue et un solde de pièces et de tickets sur l’appareil. La partie classique, le défi du jour, le bilan NAB, les duels et le tournoi restent en accès libre. Les achats en argent réel sont désactivés.
 
 ## Publicité choisie par le joueur
 
@@ -24,11 +24,11 @@ Lettrine débloque déjà Porcelaine après un jour de défi quotidien, Marée a
 
 Terminer les trois manches d’un même week-end débloque **Nocturne dorée**, un fond à choisir pour les cartes **Bats mon score**. Le tournoi montre l’aperçu et confirme le déblocage.
 
-## Règles de la bêta 0.14
+## Règles du circuit
 
 ### Tickets pour un circuit solo
 
-La 0.15 propose trois parcours de trois positions par langue. Chaque nouvelle entrée après une réussite ouvre le parcours suivant. Le score courant et le meilleur score de la langue restent visibles, et NAB peut rejouer chaque position. La première entrée est offerte sur l’appareil. Les suivantes utilisent un ticket qui couvre les trois positions et la reprise du parcours. Le défi du jour, le catalogue de 12 défis par langue, le solo classique, le bilan NAB, les duels et les trois manches classées du week-end sont accessibles librement.
+Le circuit propose trois parcours de trois positions par langue. Chaque nouvelle entrée après une réussite ouvre le parcours suivant. Le score courant et le meilleur score de la langue restent visibles, et NAB peut rejouer chaque position. La première entrée est offerte sur l’appareil. Les suivantes utilisent un ticket qui couvre les trois positions et la reprise du parcours. Le catalogue de 12 défis par langue et les trois manches classées du week-end restent en accès libre.
 
 La réserve de trois tickets gratuits récupère un ticket toutes les deux heures. Le circuit affiche le solde et le temps avant la prochaine recharge. Les tickets bonus restent en réserve quand les tickets gratuits se rechargent. Les tentatives supplémentaires servent uniquement au circuit solo.
 

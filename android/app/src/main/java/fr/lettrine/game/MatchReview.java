@@ -20,14 +20,32 @@ final class MatchReview {
         String text(int option) { return details.isEmpty() ? summary : summary + "\n\n" + details.get(option); }
     }
 
+    record Highlight(Turn turn, String explanation, List<Integer> cells) {}
+
+    record Review(List<Turn> turns, Highlight highlight) {}
+
+    private record Lesson(int priority, String explanation, List<Integer> cells) {}
+
     private record RankedTurn(int index, char[] board, boolean[] blanks, List<Character> rack,
-                              Alternative alternative, int gain, int publicInterest) {}
+                              Alternative alternative, int gain, int publicInterest) {
+        RankedTurn snapshot() {
+            return new RankedTurn(index, board.clone(), blanks.clone(), rack, alternative, gain, publicInterest);
+        }
+    }
 
     static List<Turn> analyze(List<FrenchGame.Move> moves, Lexicon lexicon, int focusSeat,
                               boolean compatibleLexicon) {
+        return review(moves, lexicon, focusSeat, compatibleLexicon).turns();
+    }
+
+    static Review review(List<FrenchGame.Move> moves, Lexicon lexicon, int focusSeat,
+                         boolean compatibleLexicon) {
         char[] board = new char[FrenchGame.CELLS];
         boolean[] blanks = new boolean[FrenchGame.CELLS];
         List<RankedTurn> ranked = new ArrayList<>();
+        GameLanguage language = lexicon == null ? GameLanguage.FRENCH : lexicon.language;
+        RankedTurn featured = null;
+        Lesson featuredLesson = null;
         for (int index = 0; index < moves.size(); index++) {
             if (Thread.currentThread().isInterrupted()) throw new CancellationException();
             FrenchGame.Move move = moves.get(index);
@@ -39,9 +57,16 @@ final class MatchReview {
                 int publicInterest = move.type().equals("play") ? move.score() : -1;
                 RankedTurn candidate = new RankedTurn(index, board, blanks, rack, alternative,
                         gain, publicInterest);
+                if (gain > 0) {
+                    Lesson lesson = lesson(candidate, language);
+                    if (featuredLesson == null || lesson.priority() > featuredLesson.priority()
+                            || (lesson.priority() == featuredLesson.priority() && gain > featured.gain())) {
+                        featured = candidate.snapshot();
+                        featuredLesson = lesson;
+                    }
+                }
                 if (ranked.size() < TURN_LIMIT || REVIEW_ORDER.compare(candidate, ranked.get(TURN_LIMIT - 1)) < 0) {
-                    ranked.add(new RankedTurn(index, board.clone(), blanks.clone(), rack, alternative,
-                            gain, publicInterest));
+                    ranked.add(candidate.snapshot());
                     ranked.sort(REVIEW_ORDER);
                     if (ranked.size() > TURN_LIMIT) ranked.remove(TURN_LIMIT);
                 }
@@ -51,8 +76,72 @@ final class MatchReview {
                 blanks[tile.position()] = tile.blank();
             }
         }
-        GameLanguage language = lexicon == null ? GameLanguage.FRENCH : lexicon.language;
-        return ranked.stream().map(row -> turn(moves, row, language)).collect(Collectors.toList());
+        List<Turn> turns = ranked.stream().map(row -> turn(moves, row, language)).collect(Collectors.toList());
+        Highlight highlight = null;
+        if (featured != null) {
+            int featuredIndex = featured.index();
+            RankedTurn featuredRow = featured;
+            Turn featuredTurn = turns.stream().filter(turn -> turn.index() == featuredIndex).findFirst()
+                    .orElseGet(() -> turn(moves, featuredRow, language));
+            highlight = new Highlight(featuredTurn, featuredLesson.explanation(), featuredLesson.cells());
+        }
+        return new Review(turns, highlight);
+    }
+
+    private static Lesson lesson(RankedTurn row, GameLanguage language) {
+        Alternative alternative = row.alternative();
+        List<FrenchGame.Tile> tiles = alternative.tiles();
+        List<String> words = alternative.preview().words();
+        String gain = points(row.gain(), language);
+        String extra = language.text(" Ce placement rapporte " + gain + " de plus.",
+                " This placement scores " + gain + " more.");
+        if (tiles.size() == 1 && words.size() == 2) {
+            FrenchGame.Tile tile = tiles.get(0);
+            String message = language.text("En posant « " + tile.letter() + " » ici, vous formez "
+                    + words.get(0) + " et " + words.get(1) + ".",
+                    "Placing " + tile.letter() + " here forms " + words.get(0) + " and " + words.get(1) + ".");
+            return new Lesson(4, message + extra, List.of(tile.position()));
+        }
+        List<Integer> cells = tiles.stream().map(FrenchGame.Tile::position).collect(Collectors.toList());
+        if (words.size() > 1) {
+            boolean horizontal = cells.get(0) / FrenchGame.SIZE == cells.get(1) / FrenchGame.SIZE;
+            int across = horizontal ? FrenchGame.SIZE : 1;
+            List<Integer> crossings = cells.stream().filter(square -> {
+                int before = FrenchGame.step(square, across, -1);
+                int after = FrenchGame.step(square, across, 1);
+                return (before >= 0 && row.board()[before] != 0) || (after >= 0 && row.board()[after] != 0);
+            }).collect(Collectors.toList());
+            String message = language.text("Vous formez " + words.size() + " mots à la fois et marquez "
+                    + gain + " de plus.", "Forming " + words.size() + " words at once scores " + gain + " more.");
+            return new Lesson(3, message, crossings);
+        }
+        if (tiles.size() == FrenchGame.RACK_SIZE) {
+            String message = language.text("Poser les sept lettres ajoute la prime de 50 points.",
+                    "Placing all seven tiles earns the 50-point bonus.");
+            return new Lesson(2, message + extra, cells);
+        }
+        for (FrenchGame.Tile tile : tiles) {
+            int square = tile.position();
+            if (square == FrenchGame.CENTER) continue;
+            int word = FrenchGame.WORD_MULTIPLIER[square];
+            int letter = FrenchGame.LETTER_MULTIPLIER[square];
+            if (word > 1) {
+                String message = language.text(word == 2 ? "Cette case double le mot." : "Cette case triple le mot.",
+                        word == 2 ? "This square doubles the word score." : "This square triples the word score.");
+                return new Lesson(1, message + extra, List.of(square));
+            }
+            if (letter > 1 && !tile.blank()) {
+                String message = language.text(letter == 2 ? "Cette case double la valeur de la lettre « " + tile.letter() + " »."
+                                : "Cette case triple la valeur de la lettre « " + tile.letter() + " ».",
+                        letter == 2 ? "This square doubles the value of " + tile.letter() + "."
+                                : "This square triples the value of " + tile.letter() + ".");
+                return new Lesson(1, message + extra, List.of(square));
+            }
+        }
+        String word = alternative.preview().word();
+        String message = language.text("« " + word + " » rapporte " + gain + " de plus sur ce plateau.",
+                word + " scores " + gain + " more on this board.");
+        return new Lesson(0, message, cells);
     }
 
     private static List<Character> originalRack(String recorded) {

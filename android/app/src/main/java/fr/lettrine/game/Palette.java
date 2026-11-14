@@ -4,9 +4,9 @@ record Palette(int name, int page, int paper, int ink, int muted, int line, int 
                int deep, int heroInk, int tile, int tileEdge, int fresh, int ordinary,
                int doubleLetter, int tripleLetter, int doubleWord, int tripleWord) {
     static final Palette[] THEMES = {
-            new Palette(R.string.theme_rivet, 0xfff3efe6, 0xfffffcf6, 0xff1c2440, 0xff535a70,
-                    0xffdcd9d2, 0xffb83224, 0xff252e61, 0xfffff7e9, 0xfff4e8d1,
-                    0xff9d8e80, 0xffffb19c, 0xffe2e2ea, 0xffd1d3ed, 0xffb9bcf1, 0xffffd1bd, 0xffeea58e),
+            new Palette(R.string.theme_rivet, 0xfff7f3ec, 0xfffffcf8, 0xff201c3d, 0xff5e566c,
+                    0xffded8e7, 0xffa83933, 0xff29214f, 0xfffff8ee, 0xffffefd0,
+                    0xff968277, 0xffffa68f, 0xffeae4f7, 0xffddd4f8, 0xffc6b7f1, 0xffffd6c6, 0xfff6a38d),
             new Palette(R.string.theme_dusk, 0xfff4eef0, 0xfffffaff, 0xff412944, 0xff70596d,
                     0xffe4d5e1, 0xff775071, 0xff3b2a48, 0xfffff1fb, 0xffefdbd3,
                     0xffac8297, 0xffebc9dc, 0xffe8e2ee, 0xffc6d8e4, 0xffaebedb, 0xffe9c8db, 0xffd5a9c8),

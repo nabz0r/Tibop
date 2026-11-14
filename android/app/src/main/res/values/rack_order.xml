@@ -1,0 +1,6 @@
+<resources>
+    <item name="rack_move_left" type="id" />
+    <item name="rack_move_right" type="id" />
+    <string name="rack_move_left">Déplacer à gauche</string>
+    <string name="rack_move_right">Déplacer à droite</string>
+</resources>

@@ -4,10 +4,10 @@
     <string name="app_history">History</string>
     <string name="app_resume">Resume game</string>
     <string name="app_new_game">NEW GAME</string>
-    <string name="app_vs_bot">Against NAB</string>
-    <string name="app_vs_bot_detail">Four levels plus adaptive difficulty</string>
+    <string name="app_vs_bot">Play against NAB</string>
+    <string name="app_home_local">Play together</string>
     <string name="app_local">Pass and Play</string>
-    <string name="app_local_detail">Take turns on this device</string>
+    <string name="app_local_detail">2–4 players on this device</string>
     <string name="app_bluetooth_detail">Two paired devices</string>
     <string name="app_saved_read_error">Couldn’t read a local save.</string>
     <string name="app_dictionary_load_error">Couldn’t load the built-in dictionary.</string>

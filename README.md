@@ -7,7 +7,8 @@
 <p align="center">Le jeu de lettres de Lettrine pour Android. Affrontez NAB en français ou en anglais et revenez sur vos meilleurs coups.</p>
 
 <p align="center">
-  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk">Télécharger l’APK 0.15.3</a></strong> ·
+  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.0/android/artifacts/lettrine.apk">Télécharger l’APK 0.16.0</a></strong> ·
+  <a href="https://nabz0r.github.io/scrabnble/">Page de la bêta</a> ·
   <a href="android/README.md">Guide Android</a> ·
   <a href="#lettrine-studio">Studio sur Mac</a>
 </p>
@@ -22,28 +23,30 @@
 
 ## Jouer sur Android
 
-- **En solo**, choisissez l’un des quatre niveaux de NAB ou laissez le mode adaptatif ajuster la difficulté pendant la partie. Le bouton **EN / FR** change les menus et le lexique. Chaque langue garde sa progression.
-- **En quelques minutes**, jouez le défi du jour, essayez de placer deux mots avec un même chevalet dans *Deux coups d’avance*, ou améliorez votre record sur les trois parcours du circuit bonus.
+- **Partie classique** lance une partie solo contre NAB ou reprend celle en cours. Choisissez l’un des quatre niveaux fixes ou laissez le mode adaptatif ajuster la difficulté pendant la partie. Le bouton **EN / FR** change les menus et le lexique. Chaque langue garde sa progression.
 - **À plusieurs**, passez le téléphone à deux, trois ou quatre ou jouez en duel Bluetooth. En ligne, ouvrez **Amis** pour rejoindre un serveur de bêta, jouer un duel à un coup chacun, demander une revanche miroir ou participer au tournoi du week-end. [Accès à la bêta et invitations](android/README.md#amis-et-duels-en-bêta)
+- **En quelques minutes**, jouez le défi du jour, essayez de placer deux mots avec un même chevalet dans *Deux coups d’avance*, ou améliorez votre record sur les trois parcours du circuit bonus.
 
-Sur le plateau, glissez une tuile ou touchez une lettre puis une case. Le jeu affiche les mots formés et les points avant validation. Agrandissez le plateau si besoin et parcourez ses cases avec TalkBack.
+Glissez les tuiles de gauche à droite dans le chevalet pour essayer un mot. Pour le jouer, glissez les tuiles sur le plateau ou touchez une lettre puis une case. Le jeu affiche les mots formés et les points avant validation. Agrandissez le plateau si besoin et parcourez ses cases avec TalkBack.
+
+Les nouvelles parties françaises en solo et sur le même appareil utilisent **Grammalecte 7.7 · Classique**. Cette version filtre 258 formes attestées uniquement comme symboles, sigles ou abréviations typographiques, dont `KM`, `KG` et `HLM`. Les parties déjà commencées, les défis, les duels en ligne et le Bluetooth utilisent le lexique français d’origine. [Lexique français et exclusions](data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android)
 
 <p align="center">
-  <img src="docs/media/wordrivet-android.webp" width="330" alt="Le Premier défi dans WordRivet sur Android. La pose du S après CHAT forme CHATS pour 11 points.">
+  <img src="docs/media/wordrivet-android.webp" width="330" alt="Partie classique à deux dans WordRivet sur Android. Le placement d’AS affiche quatre points avant validation.">
 </p>
 
 ### Revoir vos coups
 
-Dans **Historique**, rejouez la partie coup par coup, suivez votre progression Elo locale et exportez vos parties en JSON. Le **Bilan avec NAB** compare jusqu’à trois coups à une autre possibilité. Lorsque le chevalet du tour est disponible, vous pouvez rejouer la position.
+En fin de partie, NAB peut mettre un coup à revoir en évidence avec les cases, le gain de points et le chevalet d’origine. **Nouvelle partie** relance le même mode. Dans **Historique**, revenez à chaque tour, suivez votre Elo local ou exportez vos parties en JSON. Le **Bilan avec NAB** compare jusqu’à trois tours à d’autres placements.
 
 **Expliquer ce coup** affiche immédiatement le score et son premier détail vérifié, même en mode avion. Ouvrez les autres détails pour lire les mots croisés, les primes ou le rôle des jokers. Sur demande, SmolLM2 135M Instruct Q4_0 sélectionne un détail à mettre en avant. Le moteur Android joue les coups de NAB et calcule les scores. [Modèle, empreinte et licences](android/app/src/main/assets/SmolLM2-NOTICE.md)
 
-[Essai de bout en bout sur Android](android/README.md#vérification-de-la-version-0153) · [Mesures du modèle embarqué](docs/SIMULATIONS_ANDROID.md#vérifier-wordrivet-0152-sur-android)
+[Essai sur téléphone et vérifications](android/README.md#tester-la-bêta-sur-son-téléphone) · [Mesures du modèle embarqué](docs/SIMULATIONS_ANDROID.md#vérifier-wordrivet-0152-sur-android)
 
 ### Garder votre progression
 
 - **Profil → Réglages → Sauvegarder et transférer** crée un fichier ZIP avec les parties, l’historique et la progression locale des deux langues. Gardez-le dans un dossier accessible pour pouvoir le restaurer sur une autre installation. [Ce que contient la sauvegarde](android/README.md#transférer-sa-progression)
-- **Profil → Réglages → Lexique personnel** importe un fichier TXT UTF-8 autorisé, puis ouvre l’entraînement contre NAB ou à plusieurs sur le même appareil. Chaque liste a son historique propre. Les parties habituelles utilisent Grammalecte 7.7 en français et ENABLE2K en anglais. [Format et fonctionnement de l’import](android/README.md#jouer-avec-un-lexique-personnel)
+- **Profil → Réglages → Lexique personnel** importe un fichier TXT UTF-8 autorisé, puis ouvre l’entraînement contre NAB ou à plusieurs sur le même appareil. Chaque liste a son historique propre. Le jeu anglais utilise ENABLE2K. [Format et fonctionnement de l’import](android/README.md#jouer-avec-un-lexique-personnel)
 
 ## Lettrine Studio
 

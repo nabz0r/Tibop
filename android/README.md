@@ -1,9 +1,16 @@
 # WordRivet pour Android
 
-L’[APK 0.15.3](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). WordRivet est la bêta Android de Lettrine. L’identifiant Android et la signature de l’APK permettent de mettre à jour une installation directe. Le [bundle 0.15.3](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK de bêta 0.16.0](artifacts/lettrine.apk) de WordRivet fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il met à jour une installation directe qui utilise la même signature. Le [bundle 0.16.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+
+## Tester la bêta sur son téléphone
+
+1. Sur Android, [téléchargez l’APK 0.16.0](https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.0/android/artifacts/lettrine.apk) et ouvrez-le. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Pour mettre à jour une bêta installée directement, gardez l’application en place et choisissez **Mettre à jour**.
+2. En français, ouvrez **Jouer contre NAB** ou **Jouer à deux ou plus** et démarrez une nouvelle partie. Faites glisser une tuile du chevalet sur une autre pour déplacer la première. Faites ensuite glisser une tuile sur le plateau. Quittez l’application en cours de tour et touchez **Reprendre ma partie** pour retrouver l’ordre des lettres et le brouillon.
+3. Pour tester le lexique, si le tirage le permet, essayez `KM` ou `KG` sur la case centrale, puis un mot courant comme `AS` ou `CHAT`. Le jeu indique le motif du refus ou le score du coup. Le filtre s’applique aux nouvelles parties classiques en français.
 
 ## Jouer
 
+- La carte **Partie classique** affiche **Reprendre ma partie** lorsqu’une partie est en cours, ou **Jouer contre NAB**. **Jouer à deux ou plus** et le **Défi du jour** suivent. Bluetooth, **Deux coups d’avance**, le circuit et le tutoriel sont accessibles depuis **Autres modes**.
 - **EN / FR** sur l’accueil ou **Profil → Réglages → Langue du jeu** change la langue des menus et celle du plateau. Le français est la langue initiale. Les sauvegardes, historiques, cotes, séries, records et sessions sociales sont propres à chaque langue. Les parties françaises précédentes sont accessibles en français.
 - **Défi du jour** propose une nouvelle position selon la date locale, même en mode avion. Validez un coup légal pour compter la journée dans votre série. Vous pouvez rejouer pour améliorer le record du jour.
 - **Deux coups d’avance / Two Moves Ahead** ouvre douze positions hors ligne par langue. Le premier placement reste sur le plateau et vous jouez le second avec les tuiles restantes. Le résultat cumule les deux coups. NAB donne un indice et rejoue une séquence en deux temps sur le plateau. Le record de chaque défi est enregistré sur l’appareil.
@@ -23,16 +30,17 @@ L’[APK 0.15.3](artifacts/lettrine.apk) fonctionne en invité hors ligne à par
 - **Mes parties** permet de garder plusieurs solos et parties à tour de rôle sur l’appareil. Chaque partie reprend avec son score, son tour et ses tuiles en brouillon. Un abandon demande confirmation. Une connexion Bluetooth active reste liée à une seule partie.
 - **Entre amis** accueille deux à quatre joueurs sur le même appareil. Le chevalet est masqué à chaque changement de joueur. Les parties solo et locales en cours sont sauvegardées après chaque tour.
 - **Bluetooth** relie deux appareils préalablement associés dans Android. L’un choisit **Héberger** et l’autre choisit l’appareil hôte. Les deux APK doivent embarquer le même lexique. Une coupure interrompt la partie.
-- **Contre un bot** propose quatre niveaux et un niveau adaptatif. La première partie propose Promeneur et l’application mémorise ensuite le niveau choisi. L’adaptatif lit l’Elo local et ajuste sa difficulté pendant la partie en fonction de l’écart de score. Les parties avec aide au placement restent dans l’historique et sont exclues de l’Elo.
-- En partie, glissez une lettre depuis le chevalet ou touchez une lettre puis une case. Déplacez les tuiles encore en brouillon directement sur le plateau. Le jeu affiche la validité, le score ou la raison du refus avant la validation. Pincez pour zoomer, ou utilisez les boutons du plateau.
+- **Jouer contre NAB** propose quatre niveaux et un niveau adaptatif. La première partie propose Promeneur et l’application mémorise ensuite le niveau choisi. L’adaptatif lit l’Elo local et ajuste sa difficulté pendant la partie en fonction de l’écart de score. Les parties avec aide au placement restent dans l’historique et sont exclues de l’Elo.
+- Glissez une lettre dans le chevalet pour la réordonner et essayer un mot. Pour la poser, glissez-la sur le plateau ou touchez la lettre puis la case. Le jeu conserve l’ordre du chevalet au retour dans une partie classique en cours, jusqu’au tour suivant. Déplacez les tuiles en brouillon directement sur le plateau et consultez le score ou la raison du refus avant de valider.
+- En partie, le joueur actif et le zoom sont visibles au-dessus du plateau. La case visée s’allume pendant le glissement. En portrait, le chevalet reste en bas sur les écrans assez hauts avec une taille de texte standard. Dans **Options**, mélangez les lettres, sélectionnez celles à échanger ou confirmez une passe. Le joker se choisit dans une grille de 26 lettres.
 - Dans **Profil → Réglages**, choisissez une ambiance originale et son volume, et activez séparément les sons de tuiles. Les sons se jouent hors ligne.
 - **Historique** présente les résultats, les statistiques et la relecture coup par coup. Exporter une partie ou tout l’historique en JSON, puis déposer le fichier dans l’administration du studio Lettrine.
 - **Évolution de l’Elo** se trouve dans l’historique. Elle suit la cote de départ puis les parties solo cotées. Sélectionnez un point pour retrouver la cote, sa variation et le niveau de NAB utilisé.
-- **Expliquer le dernier coup** s’affiche dans une partie après le premier tour. En relecture, **Expliquer ce coup** s’applique au tour affiché. Le moteur affiche immédiatement le score et ses détails vérifiés, dans la langue du jeu. Quand plusieurs détails sont disponibles, vous pouvez tous les lire et demander à NAB d’en mettre un en avant. L’explication chiffrée reste visible pendant l’analyse.
-- **Bilan avec NAB** est disponible en fin de partie et depuis son rejeu. NAB sélectionne jusqu’à trois tours à revoir. Alternez entre le coup joué et la proposition pour comparer leurs scores immédiats sur le même plateau. **Expliquer la comparaison** s’appuie sur les données du moteur et fonctionne hors ligne.
+- Touchez le dernier coup sous le plateau pour l’expliquer. En relecture, **Expliquer ce coup** s’applique au tour affiché. Le moteur affiche immédiatement le score et ses détails vérifiés dans la langue du jeu. Vous pouvez consulter les autres détails et demander à NAB d’en mettre un en avant.
+- La fin de partie affiche le résultat et permet de relancer le même mode avec **Nouvelle partie**. Lorsqu’un autre coup rapporte davantage, NAB présente une tactique et surligne les cases utiles. **Rejouer ce coup** replace le plateau et le chevalet avant le tour. **Bilan avec NAB** affiche jusqu’à trois comparaisons détaillées, également accessibles depuis l’historique.
 - **Rejouer mes coups manqués** ouvre la position et le chevalet du tour sélectionné dans le bilan. Ce bouton apparaît quand NAB a trouvé un placement qui marque plus de points et que le journal contient le chevalet du tour. Jouez votre propre tentative ou affichez la proposition. Les exercices ne modifient ni la partie ni l’Elo.
 
-Le jeu valide les placements avec [Grammalecte 7.7](../data/fr/README.md) en français et [ENABLE2K](../data/en/README.md) en anglais. Les lettres du sac et leurs valeurs suivent la langue du jeu. Les duels anglais à deux suivent le profil de règles anglais de Lettrine. Le niveau Maître applique les poids sélectionnés lors de l’entraînement du moteur Mac quand l’empreinte du lexique correspond. Le générateur de coups Android et ses cotes locales sont propres à l’application.
+Les nouvelles parties classiques en français, en solo ou sur le même appareil, utilisent [Grammalecte 7.7 · Classique](../data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android). Ce filtre retire 258 formes et conserve 406 054 formes, dont 78 de deux lettres. Les parties françaises déjà commencées, les défis, le jeu social et le Bluetooth utilisent leur liste Grammalecte 7.7 d’origine. Le jeu anglais utilise [ENABLE2K](../data/en/README.md). Les lettres et leurs valeurs suivent la langue. Pour le lexique filtré, le niveau Maître applique ses poids de référence. Les poids entraînés s’activent pour le lexique français d’origine à l’empreinte correspondante.
 
 SmolLM2 135M Instruct quantifié en 4 bits tourne sur le processeur via llama.cpp lorsque vous demandez à NAB de choisir un détail. Le premier appel prépare une copie des poids dans le stockage privé de l’application. L’APK pèse environ 97 Mo et cette copie utilise environ 92 Mo supplémentaires. Le moteur Android calcule les placements, les scores et l’Elo local. Les explications fonctionnent en mode avion. [Modèle, empreinte et licences](app/src/main/assets/SmolLM2-NOTICE.md)
 
@@ -46,7 +54,7 @@ Installer le SDK Android 36, le NDK `28.2.13676358`, Java 17, Python 3, CMake 3.
 ./android/scripts/build.sh
 ```
 
-Sur un poste où les dépendances sont en cache, `LETTRINE_GRADLE_OFFLINE=1` compile sans téléchargement. `ANDROID_NDK_HOME` permet de sélectionner le NDK. Pour tester un autre lexique autorisé, définir `LETTRINE_WORDS` avec un chemin de fichier UTF-8 contenant un mot par ligne et `LETTRINE_WORDS_LABEL` avec le nom de l’édition. Les poids entraînés du bot s’activent si leur empreinte correspond au lexique de l’APK.
+Sur un poste où les dépendances sont en cache, `LETTRINE_GRADLE_OFFLINE=1` compile sans téléchargement. `ANDROID_NDK_HOME` permet de sélectionner le NDK. Le script fabrique les métadonnées du lexique classique à partir des [exclusions versionnées](../data/fr/classic-exclusions.txt). Pour tester un autre lexique autorisé, définissez `LETTRINE_WORDS` avec un chemin de fichier UTF-8 contenant un mot par ligne et `LETTRINE_WORDS_LABEL` avec le nom de l’édition. Une compilation avec une liste fournie utilise cette liste sans le filtre Classique.
 
 Les livrables de la bêta utilisent les annonces de démonstration Google. Pour les reproduire, préfixez les commandes de compilation par `LETTRINE_ADMOB_TEST=1`. Sans cet indicateur et sans identifiants AdMob configurés, la compilation ne contient pas le SDK publicitaire. [Configuration et récompenses](../docs/ECONOMIE_ANDROID.md) · [Simulations du moteur Android](../docs/SIMULATIONS_ANDROID.md)
 
@@ -167,6 +175,13 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 - Sur Android 16, l’annulation de la vidéo de démonstration a laissé le solde intact. Une annonce Google terminée a crédité un ticket bonus.
 
 Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.
+
+## Vérification de la version 0.16.0
+
+- Sur émulateurs Android 8 et 16, glisser une lettre dans le chevalet change sa position et la lettre peut ensuite être posée sur le plateau. Un arrêt forcé pendant un tour sauvegardé conserve l’ordre, le plateau et le brouillon. Le défi du jour accepte aussi le réarrangement des tuiles.
+- Sur émulateur Android 16, `KM` est refusé et `AS` accepté dans une nouvelle partie locale française. Une sauvegarde ancienne conserve le lexique qui acceptait `KM`. Les tests vérifient que NAB et la validation des coups appliquent les mêmes exclusions.
+- Sur écran compact, les essais couvrent la priorité des parties complètes à l’accueil, le plateau et son zoom, l’échange de tuiles, l’annulation d’une passe et le choix du joker. Le bilan affiché à la fin d’une partie locale ouvre le rejeu et permet de relancer une nouvelle partie.
+- Les 69 tests Android et Lint passent. L’installation de l’APK signé par-dessus la 0.15.3 a réussi sur un émulateur Android 16 à pages de 16 Kio. Le bundle signé passe le contrôle de `bundletool`. Les gestes restent à tester sur téléphone physique.
 
 ## Vérification de la version 0.15.3
 

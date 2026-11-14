@@ -14,6 +14,19 @@ python3 tools/lexicon.py build
 
 L’option `--archive` permet d’utiliser une copie locale de l’archive. Le générateur vérifie son empreinte, écarte les formes avec majuscule, les noms propres signalés, les catégories non lexicales, les graphies archaïques et les extensions expérimentales. Il conserve les variantes orthographiques modernes des sous-dictionnaires classique et réformé. Il replie les accents et les ligatures françaises, garde les chaînes de 2 à 15 lettres A–Z et élimine les doublons en gardant la fréquence maximale. Les formes composées avec espace, tiret ou apostrophe restent hors liste. Le manifeste associe au résultat une empreinte SHA-256 et les effectifs par longueur.
 
+## Lexique des nouvelles parties classiques sur Android
+
+Le profil `fr-grammalecte-7.7-classic-v1` retire 258 formes de la liste du laboratoire, dont 71 mots de deux lettres. Il conserve 406 054 formes, dont 78 de deux lettres. La colonne `Notes` de Grammalecte identifie les symboles (`symb`), les abréviations typographiques (`abty`) et les sigles (`sig`). Une forme reste jouable lorsqu’une autre entrée lui donne un sens lexical. BU reste ainsi jouable comme participe de « boire » et PI comme lettre grecque. Les troncations lexicalisées comme VÉLO et PHOTO restent également jouables.
+
+Trois exceptions conservent un sens lexical absent des entrées retenues par le générateur. BA désigne une composante de la personne dans l’Égypte ancienne, DAL un plat indien et IN signifie « à la mode ». [BA dans la liste de la FFSc](https://www.ffsc.fr/initiation.php?page=mots-2-lettres) · [DAL dans Le Robert](https://dictionnaire.lerobert.com/definition/dal) · [IN dans Larousse](https://www.larousse.fr/dictionnaires/francais/in/42086)
+
+La génération Android utilise la liste et les exclusions du dépôt. Pour contrôler la provenance des exclusions, comparez-les avec celles recalculées à partir de l’archive originale.
+
+```sh
+python3 tools/lexicon.py classic --output /tmp/wordrivet-classic
+python3 tools/lexicon.py classic-exclusions --archive /chemin/vers/grammalecte-7.7.zip | diff - data/fr/classic-exclusions.txt
+```
+
 ## Officiel du Scrabble et comparaison locale
 
 La 9e édition de l’Officiel du Scrabble (ODS 9) sert de référence aux compétitions francophones depuis le 1er janvier 2024. Larousse indique environ 69 000 entrées et fournit les indications nécessaires pour obtenir les formes fléchies admissibles. La FISF annonce l’ODS 10 pour le 1er janvier 2028 en compétition. La FISF indique que Larousse exploite les droits patrimoniaux de l’ODS et demande un accord préalable écrit pour diffuser des extraits. [FAQ de la FISF](https://fisf.net/lofficiel-du-scrabble/questions-reponses/) · [Éditions Larousse](https://www.editions-larousse.fr/livre/lofficiel-du-scrabble-9e-ed-9782036026377/)

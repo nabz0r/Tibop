@@ -1,0 +1,12 @@
+<resources>
+    <string name="turn_shuffle_help">Changez l’ordre de vos lettres.</string>
+    <string name="turn_exchange_help">Choisissez les lettres à remplacer. Cela compte pour un tour.</string>
+    <string name="turn_pass_help">Gardez vos lettres et laissez la main.</string>
+    <string name="turn_hint_help">NAB propose une pose. La partie ne compte plus pour votre cote.</string>
+    <string name="turn_exchange_blank">Joker, 0 point</string>
+    <string name="turn_exchange_none">Aucune lettre sélectionnée</string>
+    <plurals name="turn_exchange_count">
+        <item quantity="one">%d lettre sélectionnée</item>
+        <item quantity="other">%d lettres sélectionnées</item>
+    </plurals>
+</resources>

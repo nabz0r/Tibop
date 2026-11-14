@@ -1,5 +1,10 @@
 <resources>
     <string name="match_review">Bilan avec NAB</string>
+    <string name="match_result_highlight">Un coup à revoir · Tour %1$d</string>
+    <string name="match_result_highlight_cell">Case mise en évidence par NAB</string>
+    <string name="match_result_replay">Rejouer ce coup</string>
+    <string name="match_result_new_game">Nouvelle partie</string>
+    <string name="match_result_solo_win">Vous remportez la partie.</string>
     <string name="match_review_heading">Les coups à revoir</string>
     <string name="match_review_loading">NAB analyse les coups sur cet appareil…</string>
     <string name="match_review_empty">Cette partie ne contient aucun coup à revoir.</string>

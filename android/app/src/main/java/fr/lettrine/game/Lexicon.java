@@ -4,20 +4,26 @@ import android.content.Context;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
+import java.util.List;
 
 final class Lexicon {
     private static final int ROOT = 1;
-    private int[] first = new int[16384];
-    private int[] sibling = new int[16384];
-    private int[] frequency = new int[16384];
-    private byte[] character = new byte[16384];
+    private int[] first;
+    private int[] sibling;
+    private int[] frequency;
+    private byte[] character;
     private int nodes = ROOT;
     private int[] childBase;
     private int[] childMask;
     private int[] wordRank;
+    private BitSet excludedNodes;
     final String label;
     final String license;
     final String hash;
@@ -35,19 +41,8 @@ final class Lexicon {
     }
 
     static Lexicon load(Context context, GameLanguage language) throws Exception {
-        StringBuilder metadata = new StringBuilder();
         String metadataFile = language == GameLanguage.FRENCH ? "lexicon.json" : "lexicon-en.json";
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                context.getAssets().open(metadataFile), StandardCharsets.UTF_8))) {
-            for (String line; (line = reader.readLine()) != null; ) metadata.append(line);
-        }
-        JSONObject meta = new JSONObject(metadata.toString());
-        Lexicon dictionary;
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                context.getAssets().open("words-" + language.code + ".txt"), StandardCharsets.US_ASCII), 65536)) {
-            dictionary = read(reader, meta.getString("label"), meta.getString("license"),
-                    meta.getString("sha256"), meta.getInt("count"), language);
-        }
+        Lexicon dictionary = loadAssets(context, language, metadataFile, "words-" + language.code + ".txt");
         if (language != GameLanguage.FRENCH) return dictionary;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 context.getAssets().open("bot-policy.json"), StandardCharsets.UTF_8))) {
@@ -69,6 +64,62 @@ final class Lexicon {
         return dictionary;
     }
 
+    static Lexicon loadFrenchClassic(Context context, Lexicon base) throws Exception {
+        JSONObject metadata;
+        try {
+            metadata = readMetadata(context, "lexicon-fr-classic.json");
+        } catch (FileNotFoundException absent) {
+            // Builds with a supplied French list omit the curated edition.
+            return null;
+        }
+        if (base.language != GameLanguage.FRENCH || !base.hash.equals(metadata.getString("base_sha256"))) {
+            throw new IOException("Le lexique classique ne correspond pas au lexique de base.");
+        }
+        var rawExclusions = metadata.getJSONArray("excluded");
+        List<String> excluded = new ArrayList<>(rawExclusions.length());
+        for (int i = 0; i < rawExclusions.length(); i++) excluded.add(rawExclusions.getString(i));
+        if (base.size - excluded.size() != metadata.getInt("count")) {
+            throw new IOException("Liste classique incomplète.");
+        }
+        return base.filtered(metadata.getString("label"), metadata.getString("sha256"), excluded);
+    }
+
+    Lexicon filtered(String label, String hash, List<String> exclusions) throws IOException {
+        Lexicon filtered = new Lexicon(label, license, hash, size - exclusions.size(), language);
+        // A filtered edition shares the immutable trie and masks only excluded word endings.
+        filtered.childBase = childBase;
+        filtered.childMask = childMask;
+        filtered.wordRank = wordRank;
+        filtered.excludedNodes = excludedNodes == null ? new BitSet() : (BitSet) excludedNodes.clone();
+        for (String word : exclusions) {
+            int node = findNode(word);
+            if (rank(node) == 0 || filtered.excludedNodes.get(node)) {
+                throw new IOException("Exclusion invalide dans le lexique classique.");
+            }
+            filtered.excludedNodes.set(node);
+        }
+        return filtered;
+    }
+
+    private static Lexicon loadAssets(Context context, GameLanguage language, String metadataFile, String wordsFile)
+            throws Exception {
+        JSONObject meta = readMetadata(context, metadataFile);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                context.getAssets().open(wordsFile), StandardCharsets.US_ASCII), 65536)) {
+            return read(reader, meta.getString("label"), meta.getString("license"),
+                    meta.getString("sha256"), meta.getInt("count"), language);
+        }
+    }
+
+    private static JSONObject readMetadata(Context context, String metadataFile) throws Exception {
+        StringBuilder metadata = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                context.getAssets().open(metadataFile), StandardCharsets.UTF_8))) {
+            for (String line; (line = reader.readLine()) != null; ) metadata.append(line);
+        }
+        return new JSONObject(metadata.toString());
+    }
+
     static Lexicon read(BufferedReader reader, String label, String license, String hash, int size)
             throws java.io.IOException {
         return read(reader, label, license, hash, size, GameLanguage.FRENCH);
@@ -77,6 +128,10 @@ final class Lexicon {
     static Lexicon read(BufferedReader reader, String label, String license, String hash, int size,
                         GameLanguage language) throws java.io.IOException {
         Lexicon dictionary = new Lexicon(label, license, hash, size, language);
+        dictionary.first = new int[16384];
+        dictionary.sibling = new int[16384];
+        dictionary.frequency = new int[16384];
+        dictionary.character = new byte[16384];
         int rank = 0;
         for (String word; (word = reader.readLine()) != null; ) dictionary.add(word, ++rank);
         if (rank != size) throw new IllegalStateException("Liste incomplète");
@@ -144,16 +199,20 @@ final class Lexicon {
         return (mask & bit) == 0 ? 0 : childBase[node] + Integer.bitCount(mask & (bit - 1));
     }
 
-    int rank(int node) { return wordRank[node]; }
+    int rank(int node) {
+        return excludedNodes != null && excludedNodes.get(node) ? 0 : wordRank[node];
+    }
 
-    boolean contains(String word) {
+    boolean contains(String word) { return rank(findNode(word)) != 0; }
+
+    private int findNode(String word) {
         int node = ROOT;
         for (int i = 0; i < word.length(); i++) {
             int letter = word.charAt(i) - 'A';
-            if (letter < 0 || letter >= 26) return false;
+            if (letter < 0 || letter >= 26) return 0;
             node = child(node, letter);
-            if (node == 0) return false;
+            if (node == 0) return 0;
         }
-        return rank(node) != 0;
+        return node;
     }
 }

@@ -1,5 +1,10 @@
 <resources>
     <string name="match_review">Review with NAB</string>
+    <string name="match_result_highlight">A move to revisit · Turn %1$d</string>
+    <string name="match_result_highlight_cell">Square highlighted by NAB</string>
+    <string name="match_result_replay">Replay this move</string>
+    <string name="match_result_new_game">New game</string>
+    <string name="match_result_solo_win">You win.</string>
     <string name="match_review_heading">Moves to revisit</string>
     <string name="match_review_loading">NAB is analyzing moves on this device…</string>
     <string name="match_review_empty">This game has no moves to review.</string>
