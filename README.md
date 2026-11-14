@@ -18,17 +18,30 @@
 </p>
 
 <p align="center">
-  <a href="docs/media/tibop-android.webp"><img src="docs/media/tibop-android.webp" width="760" alt="Accueil de Tibop avec NAB, plateau d’une partie solo, résultat d’un défi et boutique"></a>
+  <a href="docs/media/tibop-android.webp"><img src="docs/media/tibop-android.webp" width="760" alt="Tibop 0.16.7 avec l’accueil, la Collection, les skins en partie et le résultat du défi du jour"></a>
 </p>
 
 ## Aperçus Android
 
+Captures et animations enregistrées dans Tibop **0.16.7**.
+
+### Partie solo avec des skins
+
+Le plateau et les tuiles **Aurore** sont équipés avec le chevalet **Érable**. Le GIF montre la pose, la validation du coup et la réponse de NAB. [Voir les skins en pleine partie](docs/media/tibop-skins-en-partie.webp)
+
 <p align="center">
-  <a href="docs/media/tibop-gameplay-solo.gif"><img src="docs/media/tibop-gameplay-solo.gif" width="280" alt="Une pose en solo suivie du coup de NAB"></a>
-  <a href="docs/media/tibop-defi-quotidien.gif"><img src="docs/media/tibop-defi-quotidien.gif" width="258" alt="Un défi du jour, de la pose du mot au résultat"></a>
+  <a href="docs/media/tibop-gameplay-solo.gif"><img src="docs/media/tibop-gameplay-solo.gif" width="340" alt="Partie solo avec les skins Aurore et Érable, de la pose du mot à la réponse de NAB"></a>
 </p>
 
-[Partie solo contre NAB](docs/media/tibop-gameplay-solo.gif) · [Défi du jour](docs/media/tibop-defi-quotidien.gif)
+### Ajouter puis jouer `OK`
+
+Dans **Lexique personnel**, ajoutez `OK`, puis ouvrez **Jouer avec mes mots**. Sur ce tirage d’exemple, la pose rapporte **22 points** en entraînement local. [Voir le coup validé](docs/media/tibop-ok-en-partie.webp)
+
+<p align="center">
+  <a href="docs/media/tibop-ajouter-jouer-ok.gif"><img src="docs/media/tibop-ajouter-jouer-ok.gif" width="340" alt="Saisie de OK dans le lexique personnel, pose sur le plateau et validation à 22 points"></a>
+</p>
+
+[Défi du jour en animation](docs/media/tibop-defi-quotidien.gif)
 
 ## Jouer sur Android
 
