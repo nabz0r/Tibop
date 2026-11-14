@@ -2,7 +2,7 @@
 
 La bêta dispose de son propre projet Compose et de son volume `lettrine-beta_beta_social_data`. Le français conserve sa base SQLite. L’anglais utilise une seconde base, `social.sqlite.en` par défaut, dans le même volume. Le tunnel HTTPS vers Nginx dessert `/beta`, `/health`, `/api/social/` pour le français et `/api/social-en/` pour l’anglais. Nginx limite le débit global et par adresse, avec un plafond séparé pour les inscriptions.
 
-Pour installer la bêta et essayer le chevalet ou le lexique classique français, le [lien direct vers l’APK](https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk) fonctionne sans passer par le serveur social. L’adresse du tunnel sert à connecter **Amis** aux duels et tournois.
+Pour installer la bêta, ouvrez la [page de téléchargement stable](https://nabz0r.github.io/scrabnble/). L’adresse du tunnel sert à connecter **Amis** aux duels et tournois.
 
 ## Ouvrir une session de bêta
 
@@ -22,6 +22,8 @@ Les fichiers de la page `/beta` sont lus depuis `web/beta/`. Recompilez le servi
 ```sh
 docker compose -f compose.social.yaml -f compose.social-beta.yaml up -d --build --no-deps --wait social
 ```
+
+Le service ajoute ses tables SQLite de prise en charge du lexique filtré dans le volume existant. Les duels déjà créés et les invitations précédentes gardent leurs identifiants. Chaque nouveau duel français choisit ses règles lors de sa création. La date de bascule du tournoi est enregistrée dans la base et préserve le tournoi de la semaine en cours. Sauvegardez les bases française et anglaise avant la mise à jour et conservez le même domaine pour que les liens envoyés continuent d’ouvrir le bon serveur.
 
 Si Cloudflare ne reconnaît plus le tunnel temporaire, recréez seulement le connecteur. Relevez ensuite la nouvelle adresse HTTPS dans le journal. Sur un téléphone qui utilisait l’ancienne adresse, ouvrez le nouveau lien `/beta` pour configurer le serveur.
 

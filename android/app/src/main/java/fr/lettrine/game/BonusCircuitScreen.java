@@ -16,12 +16,14 @@ final class BonusCircuitScreen {
 
     private final ViewKit ui;
     private final Lexicon lexicon;
+    private final Lexicon legacyLexicon;
     private final BonusEconomy economy;
     private final BooleanSupplier videoAvailable;
     private final Consumer<LocalDate> requestVideo;
     private final Runnable openFriends;
     private final LinearLayout panel;
     private final List<TwoMoveChallenge.BonusSet> circuits;
+    private final List<TwoMoveChallenge.BonusSet> legacyCircuits;
     private TwoMoveChallengeScreen play;
     private TextView balance;
     private TextView refill;
@@ -30,16 +32,18 @@ final class BonusCircuitScreen {
     private TextView video;
     private final Runnable refreshBalance = this::refresh;
 
-    BonusCircuitScreen(ViewKit ui, Lexicon lexicon, BonusEconomy economy,
+    BonusCircuitScreen(ViewKit ui, Lexicon lexicon, Lexicon legacyLexicon, BonusEconomy economy,
                        BooleanSupplier videoAvailable, Consumer<LocalDate> requestVideo, Runnable openFriends) {
         this.ui = ui;
         this.lexicon = lexicon;
+        this.legacyLexicon = legacyLexicon;
         this.economy = economy;
         this.videoAvailable = videoAvailable;
         this.requestVideo = requestVideo;
         this.openFriends = openFriends;
         panel = ui.column();
         circuits = TwoMoveChallenge.bonusCircuits(lexicon);
+        legacyCircuits = lexicon == legacyLexicon ? circuits : TwoMoveChallenge.bonusCircuits(legacyLexicon);
         panel.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
             @Override public void onViewAttachedToWindow(View view) { refresh(); }
             @Override public void onViewDetachedFromWindow(View view) { panel.removeCallbacks(refreshBalance); }
@@ -98,7 +102,7 @@ final class BonusCircuitScreen {
         panel.addView(intro);
         ui.gap(panel, 10);
         BonusEconomy.Circuit run = economy.active(ui.language);
-        if (circuits.isEmpty() || run != null && !run.complete() && puzzlesFor(run).isEmpty()) {
+        if (run != null && !run.complete() ? puzzlesFor(run).isEmpty() : circuits.isEmpty()) {
             panel.addView(ui.body(label(R.string.bonus_unavailable)));
             scrollToStart();
             return;
@@ -157,7 +161,7 @@ final class BonusCircuitScreen {
 
     private void startOrResume() {
         List<String> ids = circuits.stream().map(TwoMoveChallenge.BonusSet::id).toList();
-        BonusEconomy.Circuit run = economy.start(ui.language, ids, System.currentTimeMillis());
+        BonusEconomy.Circuit run = economy.start(ui.language, ids, System.currentTimeMillis(), lexicon.hash);
         if (run == null || puzzlesFor(run).isEmpty()) {
             Toast.makeText(ui.context, R.string.bonus_start_error, Toast.LENGTH_SHORT).show();
             refresh();
@@ -167,10 +171,14 @@ final class BonusCircuitScreen {
     }
 
     private List<TwoMoveChallenge.Puzzle> puzzlesFor(BonusEconomy.Circuit run) {
-        for (var circuit : circuits) {
+        for (var circuit : dictionaryFor(run) == lexicon ? circuits : legacyCircuits) {
             if (circuit.id().equals(run.id())) return circuit.puzzles();
         }
         return List.of();
+    }
+
+    private Lexicon dictionaryFor(BonusEconomy.Circuit run) {
+        return lexicon.hash.equals(run.lexiconHash()) ? lexicon : legacyLexicon;
     }
 
     private void showRound(BonusEconomy.Circuit run) {
@@ -195,7 +203,7 @@ final class BonusCircuitScreen {
                 score -> economy.completeRound(ui.language, id, attempt, round, score) != null,
                 saved -> economy.saveDraft(ui.language, id, attempt, round, saved),
                 () -> showRound(economy.active(ui.language)), round == BonusEconomy.ROUND_COUNT - 1);
-        play = new TwoMoveChallengeScreen(ui, lexicon, puzzles.get(round), circuit);
+        play = new TwoMoveChallengeScreen(ui, dictionaryFor(run), puzzles.get(round), circuit);
         panel.addView(play.view());
         scrollToStart();
     }

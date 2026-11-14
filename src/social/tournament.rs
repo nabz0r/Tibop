@@ -6,6 +6,10 @@ const WEEK_DAYS: i64 = 7;
 const FIRST_WEEKEND: i64 = 20_771; // 14 November 2026, the first Saturday of the tournament.
 
 pub(super) const SCHEMA: &str = "
+    CREATE TABLE IF NOT EXISTS social_tournament_lexicon_rollout(
+        lexicon_sha256 TEXT PRIMARY KEY,
+        first_weekend INTEGER NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS social_tournament_scores(
         user_id TEXT NOT NULL REFERENCES social_users(id) ON DELETE CASCADE,
         weekend INTEGER NOT NULL,
@@ -15,6 +19,22 @@ pub(super) const SCHEMA: &str = "
         PRIMARY KEY(user_id,weekend,slot)
     );
 ";
+
+pub(super) fn curated_from(db: &Connection, time: i64) -> rusqlite::Result<i64> {
+    // Never rescore the weekend already announced at deployment. The persisted
+    // cutoff also stays fixed across container restarts and stale client retries.
+    let first_weekend = Weekend::at(time).next_starts_at() / DAY_SECONDS;
+    db.execute(
+        "INSERT OR IGNORE INTO social_tournament_lexicon_rollout(lexicon_sha256,first_weekend)
+        VALUES(?1,?2)",
+        params![FR_CLASSIC_LEXICON, first_weekend],
+    )?;
+    db.query_row(
+        "SELECT first_weekend FROM social_tournament_lexicon_rollout WHERE lexicon_sha256=?1",
+        [FR_CLASSIC_LEXICON],
+        |row| row.get(0),
+    )
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -51,6 +71,11 @@ impl Weekend {
     fn puzzle(self, number: usize, app: &Social) -> &Puzzle {
         let index = ((self.id - FIRST_WEEKEND) / WEEK_DAYS) as usize * SLOTS + number - 1;
         &app.puzzles[index % app.puzzles.len()]
+    }
+
+    fn curated(self, app: &Social) -> bool {
+        app.curated_tournament_from
+            .is_some_and(|cutoff| self.id >= cutoff)
     }
 
     fn next_starts_at(self) -> i64 {
@@ -114,7 +139,7 @@ pub(super) async fn play_slot(
             if played != canonical { return Err(conflict("Vous avez déjà joué ce défi.")); }
         } else {
             if weekend.status != WeekendStatus::Open { return Err(conflict("Le tournoi est fermé.")); }
-            let score = body.score(app, weekend.puzzle(number, app))?;
+            let score = body.score(app, weekend.puzzle(number, app), weekend.curated(app))?;
             let deadline = current_weekend(app);
             if deadline.status != WeekendStatus::Open || deadline.id != id {
                 return Err(conflict("Le tournoi est fermé."));
@@ -142,7 +167,12 @@ fn view(app: &Social, db: &Connection, weekend: Weekend, user: &str) -> Api<Valu
         }
         slots.extend(scores.iter().enumerate().map(|(index, score)| {
             let number = index + 1;
-            json!({"number":number,"puzzle":weekend.puzzle(number,app),"score":score})
+            let puzzle = weekend.puzzle(number, app);
+            let mut payload = json!(puzzle);
+            if weekend.curated(app) {
+                payload["lexicon_sha256"] = json!(FR_CLASSIC_LEXICON);
+            }
+            json!({"number":number,"puzzle":payload,"score":score})
         }));
         ranking = standings(db, weekend, user)?;
     }
@@ -237,6 +267,26 @@ mod tests {
             let weekend = Weekend::at(time);
             assert_eq!((weekend.id, weekend.status), (id, status));
         }
+    }
+
+    #[test]
+    fn persisted_rollout_leaves_the_current_weekend_on_its_existing_dictionary() {
+        let db = Connection::open_in_memory().unwrap();
+        db.execute_batch(SCHEMA).unwrap();
+        let cutoff = FIRST_WEEKEND + WEEK_DAYS;
+        assert_eq!(curated_from(&db, START).unwrap(), cutoff);
+        assert_eq!(
+            curated_from(&db, START + 3 * WEEK_DAYS * DAY_SECONDS).unwrap(),
+            cutoff
+        );
+        let mut app = Social::open(FilePath::new(":memory:"), engine()).unwrap();
+        app.curated_tournament_from = Some(cutoff);
+        assert!(!Weekend::at(START).curated(&app));
+        assert!(Weekend::at(cutoff * DAY_SECONDS).curated(&app));
+        assert!(
+            !Weekend::at(cutoff * DAY_SECONDS)
+                .curated(&Social::open(FilePath::new(":memory:"), english_engine()).unwrap())
+        );
     }
 
     #[tokio::test]

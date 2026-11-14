@@ -190,6 +190,7 @@ public final class MainActivity extends Activity {
         skinStore = new SkinStore(this);
         profileStore = new ProfileStore(this);
         socialClient = new SocialClient(this, gameLanguage, this::socialBaseUrl, profileStore::nickname,
+                () -> frenchClassicLexicon == null ? null : frenchClassicLexicon.hash,
                 this::receiveReferralBalance);
         skin = Math.max(0, Math.min(Palette.THEMES.length - 1, preferences.getInt("skin", 0)));
         updateAppearance();
@@ -731,7 +732,8 @@ public final class MainActivity extends Activity {
     private void openTwoMoves() {
         page(Screen.TWO_MOVES, false);
         top(getString(R.string.app_name), this::leaveTwoMoves, null);
-        twoMoveScreen = new TwoMoveChallengeScreen(ui, lexicon, id -> economy.puzzle(gameLanguage, id));
+        twoMoveScreen = new TwoMoveChallengeScreen(ui, newClassicLexicon(), lexicon,
+                id -> economy.puzzle(gameLanguage, id));
         content.addView(twoMoveScreen.view());
     }
 
@@ -742,7 +744,7 @@ public final class MainActivity extends Activity {
     private void openBonusCircuit() {
         page(Screen.BONUS_CIRCUIT, false);
         top(getString(R.string.app_name), this::leaveBonusCircuit, null);
-        bonusCircuit = new BonusCircuitScreen(ui, lexicon, economy, rewarded::available, this::requestBonusVideo,
+        bonusCircuit = new BonusCircuitScreen(ui, newClassicLexicon(), lexicon, economy, rewarded::available, this::requestBonusVideo,
                 this::showSocial);
         content.addView(bonusCircuit.view());
     }
@@ -752,14 +754,15 @@ public final class MainActivity extends Activity {
     }
 
     private void openFirstChallenge(Runnable back, boolean tutorial) {
-        PracticePosition position = PracticePosition.first(lexicon);
+        Lexicon dictionary = newClassicLexicon();
+        PracticePosition position = PracticePosition.first(dictionary);
         if (position == null) {
             toast(getString(R.string.practice_first_unavailable));
             return;
         }
         showPractice(getString(tutorial ? R.string.help_tutorial_intro : R.string.practice_first),
                 getString(tutorial ? R.string.help_tutorial_copy : R.string.practice_first_goal),
-                position, lexicon, true, tutorial, back);
+                position, dictionary, true, tutorial, back);
     }
 
     private void showHelp() {
@@ -772,10 +775,27 @@ public final class MainActivity extends Activity {
     private void openDailyChallenge(ChallengeLink invitation) {
         LocalDate today = LocalDate.now();
         LocalDate date = invitation == null ? today : invitation.date();
-        DailyChallenge challenge = DailyChallenge.forDate(date, lexicon);
-        if (invitation != null && !invitation.matches(challenge, lexicon)) {
-            toast(getString(R.string.daily_invitation_incompatible));
-            return;
+        SharedPreferences drafts = getSharedPreferences(gameLanguage.storageName("daily_draft"), MODE_PRIVATE);
+        String key = date.toString();
+        String dictionaryKey = "lexicon/" + key;
+        String recorded = dailyProgress.recordedLexicon(date);
+        if (recorded == null && (drafts.contains(key) || drafts.contains(dictionaryKey))) {
+            recorded = drafts.getString(dictionaryKey, "");
+        }
+        Lexicon preferred = newClassicLexicon();
+        Lexicon personalDaily = recorded == null || preferred.hash.equals(recorded) ? preferred : lexicon;
+        Lexicon dictionary = personalDaily;
+        DailyChallenge challenge;
+        if (invitation == null) {
+            challenge = DailyChallenge.forDate(date, dictionary);
+        } else {
+            ChallengeLink.Resolved resolved = invitation.resolve(preferred, lexicon);
+            if (resolved == null) {
+                toast(getString(R.string.daily_invitation_incompatible));
+                return;
+            }
+            challenge = resolved.challenge();
+            dictionary = resolved.dictionary();
         }
         if (challenge == null) {
             toast(getString(R.string.daily_unavailable));
@@ -791,16 +811,16 @@ public final class MainActivity extends Activity {
                 DailyResult.points(ui, invitation.score())) + "\n" + goal;
         content.addView(DailyChallengeCard.heading(ui, title, DailyResult.dateLabel(ui, date), goal));
         ui.gap(content, 11);
-        DailyResult dailyResult = new DailyResult(ui, date.equals(today) ? dailyProgress : null,
-                challenge, lexicon, invitation, () -> {
+        boolean countProgress = date.equals(today) && (recorded == null || dictionary == personalDaily);
+        DailyResult dailyResult = new DailyResult(ui, countProgress ? dailyProgress : null,
+                challenge, dictionary, invitation, () -> {
                     if (economy.daily(gameLanguage, date)) toast(getString(R.string.daily_coins_earned));
                 });
-        SharedPreferences drafts = getSharedPreferences(gameLanguage.storageName("daily_draft"), MODE_PRIVATE);
-        String key = date.toString();
         boolean ownDaily = invitation == null;
-        content.addView(new PracticePanel(ui, challenge.position(), lexicon, dailyResult,
+        String dictionaryHash = dictionary.hash;
+        content.addView(new PracticePanel(ui, challenge.position(), dictionary, dailyResult,
                 ownDaily ? drafts.getString(key, "") : "", ownDaily ? tiles -> {
-                    SharedPreferences.Editor editor = drafts.edit().clear();
+                    SharedPreferences.Editor editor = drafts.edit().clear().putString(dictionaryKey, dictionaryHash);
                     if (!tiles.isEmpty()) editor.putString(key, MatchCodec.tiles(tiles, true).toString());
                     editor.apply();
                 } : null).view());
@@ -2712,7 +2732,7 @@ public final class MainActivity extends Activity {
         if (!ready()) return;
         page(Screen.TOURNAMENT_ROUND, false);
         top(getString(R.string.tournament_title), this::showTournament, null);
-        content.addView(new TournamentRoundPanel(ui, socialClient, round, lexicon, this::showTournament,
+        content.addView(new TournamentRoundPanel(ui, socialClient, round, bundledLexicon, frenchClassicLexicon, this::showTournament,
                 this::awardTournamentCoins).view());
     }
 
@@ -2730,7 +2750,8 @@ public final class MainActivity extends Activity {
         top(getString(R.string.app_name), this::showSocial, null);
         heading(getString(SocialDuelPanel.isMirror(duel) ? R.string.social_mirror_title
                 : R.string.social_navigation_duel), "");
-        content.addView(new SocialDuelPanel(ui, socialClient, duel, lexicon, this::showSocial).view());
+        content.addView(new SocialDuelPanel(ui, socialClient, duel, bundledLexicon, frenchClassicLexicon,
+                this::showSocial).view());
     }
 
     private String betaInviteBase() {

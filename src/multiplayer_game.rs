@@ -179,6 +179,7 @@ impl Game {
         board: &[u8],
         rack: &[u8],
         placements: &[(usize, usize, char)],
+        excluded: Option<&dyn Fn(&[u8]) -> bool>,
     ) -> Result<i32, String> {
         let config = engine.profile.game_config(2).map_err(|e| e.to_string())?;
         let mut state = GameState::new(&config);
@@ -196,7 +197,7 @@ impl Game {
                 letter: Some(letter),
             })
             .collect::<Vec<_>>();
-        match placement_play(engine, &config, &state, &placements)? {
+        match placement_play_with_filter(engine, &config, &state, &placements, excluded)? {
             Play::Place { score, .. } => Ok(equity::descale_score(score)),
             _ => unreachable!("un placement produit un coup de pose"),
         }
@@ -708,6 +709,16 @@ fn placement_play(
     state: &GameState,
     placements: &[Placement],
 ) -> Result<Play, String> {
+    placement_play_with_filter(engine, config, state, placements, None)
+}
+
+fn placement_play_with_filter(
+    engine: &Engine,
+    config: &GameConfig,
+    state: &GameState,
+    placements: &[Placement],
+    excluded: Option<&dyn Fn(&[u8]) -> bool>,
+) -> Result<Play, String> {
     let Some(first) = placements.first() else {
         return Err("Posez des lettres sur le plateau.".into());
     };
@@ -817,6 +828,16 @@ fn placement_play(
             );
         }
     });
+    if let Some(excluded) = excluded.filter(|_| invalid.is_none()) {
+        scorer.words_all(&snapshot, &play, |word| {
+            if excluded(word) {
+                invalid = Some(word.iter().map(|&tile| engine.letter(tile)).collect());
+                false
+            } else {
+                true
+            }
+        });
+    }
     if let Some(word) = invalid {
         return Err(format!("« {word} » est absent du lexique."));
     }

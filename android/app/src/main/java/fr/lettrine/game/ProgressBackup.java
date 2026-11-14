@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -163,9 +164,16 @@ final class ProgressBackup {
         return context.getSharedPreferences(group, Context.MODE_PRIVATE);
     }
 
-    private static Class<?> type(String group, String key) {
+    static Class<?> type(String group, String key) {
         var known = PREFS.get(group);
         if (!known.isEmpty()) return known.get(key);
+        if (key.startsWith("lexicon/") && (group.startsWith("daily_progress")
+                || group.startsWith("daily_draft") || group.startsWith("two_move_draft"))) {
+            String valueKey = key.substring("lexicon/".length());
+            return valueKey.indexOf('/') >= 0 || type(group, valueKey) == null
+                    || group.startsWith("daily_draft") && !validDraftDate(valueKey)
+                    ? null : String.class;
+        }
         if (group.startsWith("two_move_challenges")) {
             return key.matches("[a-z0-9-]{1,64}") ? Integer.class : null;
         }
@@ -177,6 +185,14 @@ final class ProgressBackup {
                     ? Integer.class : null;
         } catch (NumberFormatException invalid) {
             return null;
+        }
+    }
+
+    private static boolean validDraftDate(String value) {
+        try {
+            return LocalDate.parse(value).getYear() > 0;
+        } catch (DateTimeParseException invalid) {
+            return false;
         }
     }
 
@@ -217,6 +233,13 @@ final class ProgressBackup {
                         || value instanceof String string && string.length() > (group.contains("_draft") ? 1024 : 256)
                         || value instanceof Integer number && number < 0) {
                     throw new IOException("Réglage de sauvegarde invalide");
+                }
+                if (key.startsWith("lexicon/")) {
+                    if (!(value instanceof String hash) || !hash.matches("[0-9a-f]{64}")
+                            || group.startsWith("daily_progress") && !values.has(key.substring("lexicon/".length()))) {
+                        throw new IOException("Lexique de sauvegarde invalide");
+                    }
+                    continue;
                 }
                 if (group.startsWith("daily_draft")) MatchCodec.readTiles(new JSONArray((String) value), true);
                 if (group.startsWith("two_move_draft")) {

@@ -7,10 +7,12 @@ import java.io.BufferedReader;
 import java.io.StringReader;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class ChallengeLinkTest {
@@ -50,6 +52,20 @@ public class ChallengeLinkTest {
         assertFalse(link.matches(changed, lexicon));
         assertFalse(link.matches(original, dictionary("other-lexicon")));
         assertFalse(link.matches(DailyChallenge.forDate(DATE.plusDays(1), lexicon), lexicon));
+    }
+
+    @Test public void currentAppReopensLegacyAndFilteredInvitationsWithoutChangingPosition() throws Exception {
+        Lexicon filtered = lexicon.filtered("Classique", "filtered", List.of());
+        DailyChallenge oldPosition = DailyChallenge.forDate(DATE, lexicon);
+        DailyChallenge newPosition = DailyChallenge.forDate(DATE, filtered);
+        ChallengeLink legacyLink = ChallengeLink.parse(ChallengeLink.create(oldPosition, lexicon, 18).uri());
+        ChallengeLink filteredLink = ChallengeLink.parse(ChallengeLink.create(newPosition, filtered, 20).uri());
+
+        assertSame(lexicon, legacyLink.resolve(filtered, lexicon).dictionary());
+        assertSame(filtered, filteredLink.resolve(filtered, lexicon).dictionary());
+        assertEquals(oldPosition.position().rack(), legacyLink.resolve(filtered, lexicon).challenge().position().rack());
+        assertEquals(newPosition.position().rack(), filteredLink.resolve(filtered, lexicon).challenge().position().rack());
+        assertNull(filteredLink.resolve(lexicon, lexicon));
     }
 
     @Test public void malformedOrAmbiguousLinksAreRejected() {

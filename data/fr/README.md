@@ -27,6 +27,8 @@ python3 tools/lexicon.py classic --output /tmp/wordrivet-classic
 python3 tools/lexicon.py classic-exclusions --archive /chemin/vers/grammalecte-7.7.zip | diff - data/fr/classic-exclusions.txt
 ```
 
+Le profil alimente aussi les nouveaux défis français et les nouveaux duels en ligne entre joueurs compatibles. Le serveur filtre les mots formés avec le même fichier d’exclusions. Les anciennes activités gardent leur lexique et leurs positions.
+
 ## Officiel du Scrabble et comparaison locale
 
 La 9e édition de l’Officiel du Scrabble (ODS 9) sert de référence aux compétitions francophones depuis le 1er janvier 2024. Larousse indique environ 69 000 entrées et fournit les indications nécessaires pour obtenir les formes fléchies admissibles. La FISF annonce l’ODS 10 pour le 1er janvier 2028 en compétition. La FISF indique que Larousse exploite les droits patrimoniaux de l’ODS et demande un accord préalable écrit pour diffuser des extraits. [FAQ de la FISF](https://fisf.net/lofficiel-du-scrabble/questions-reponses/) · [Éditions Larousse](https://www.editions-larousse.fr/livre/lofficiel-du-scrabble-9e-ed-9782036026377/)

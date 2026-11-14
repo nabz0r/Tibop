@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends cmake \
     && rm -rf /var/lib/apt/lists/*
 COPY Cargo.toml Cargo.lock ./
 COPY src/ src/
+COPY data/fr/classic-exclusions.txt data/fr/
 COPY infra/languages.sql infra/participants.sql infra/move_analytics.sql infra/
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \

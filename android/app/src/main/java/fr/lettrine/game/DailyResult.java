@@ -103,7 +103,7 @@ final class DailyResult {
         streak.setVisibility(View.GONE);
         if (progress != null) {
             try {
-                DailyProgress.Snapshot saved = progress.complete(date, move.score());
+                DailyProgress.Snapshot saved = progress.complete(date, move.score(), lexicon.hash);
                 onComplete.run();
                 bestScore = saved.bestScore();
                 shareStreak = saved.streak();

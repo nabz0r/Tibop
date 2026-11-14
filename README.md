@@ -7,7 +7,7 @@
 <p align="center">Le jeu de lettres de Lettrine pour Android. Affrontez NAB en français ou en anglais et revenez sur vos meilleurs coups.</p>
 
 <p align="center">
-  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.0/android/artifacts/lettrine.apk">Télécharger l’APK 0.16.0</a></strong> ·
+  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.1/android/artifacts/lettrine.apk">Télécharger l’APK 0.16.1</a></strong> ·
   <a href="https://nabz0r.github.io/scrabnble/">Page de la bêta</a> ·
   <a href="android/README.md">Guide Android</a> ·
   <a href="#lettrine-studio">Studio sur Mac</a>
@@ -29,7 +29,7 @@
 
 Glissez les tuiles de gauche à droite dans le chevalet pour essayer un mot. Pour le jouer, glissez les tuiles sur le plateau ou touchez une lettre puis une case. Le jeu affiche les mots formés et les points avant validation. Agrandissez le plateau si besoin et parcourez ses cases avec TalkBack.
 
-Les nouvelles parties françaises en solo et sur le même appareil utilisent **Grammalecte 7.7 · Classique**. Cette version filtre 258 formes attestées uniquement comme symboles, sigles ou abréviations typographiques, dont `KM`, `KG` et `HLM`. Les parties déjà commencées, les défis, les duels en ligne et le Bluetooth utilisent le lexique français d’origine. [Lexique français et exclusions](data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android)
+**Grammalecte 7.7 · Classique** filtre 258 formes, dont `KM`, `KG` et `HLM`. Il s’applique aux nouvelles parties solo et locales, aux nouveaux défis français et aux nouveaux duels entre deux joueurs à jour. Les parties en cours et les liens de défi déjà partagés gardent leur lexique. Les invitations d’amitié restent utilisables. [Lexique français et exclusions](data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android)
 
 <p align="center">
   <img src="docs/media/wordrivet-android.webp" width="330" alt="Partie classique à deux dans WordRivet sur Android. Le placement d’AS affiche quatre points avant validation.">

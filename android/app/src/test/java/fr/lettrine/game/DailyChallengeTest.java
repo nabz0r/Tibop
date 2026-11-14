@@ -55,6 +55,20 @@ public class DailyChallengeTest {
         verifyCalendar(french);
     }
 
+    @Test public void filteredCalendarPreservesAllDailyPositionsAndVerifiedMoves() throws Exception {
+        Lexicon filtered = french.filtered("Classique", "filtered",
+                Files.readAllLines(Path.of("../../data/fr/classic-exclusions.txt")));
+        verifyCalendar(filtered);
+        for (LocalDate date = LAUNCH; date.isBefore(LAUNCH.plusYears(4)); date = date.plusDays(1)) {
+            DailyChallenge original = DailyChallenge.forDate(date, french);
+            DailyChallenge curated = DailyChallenge.forDate(date, filtered);
+            assertArrayEquals(date.toString(), original.position().board(), curated.position().board());
+            assertEquals(date.toString(), original.position().rack(), curated.position().rack());
+            assertEquals(date.toString(), original.position().reference(), curated.position().reference());
+        }
+        assertNotNull(PracticePosition.first(filtered));
+    }
+
     @Test public void englishCalendarCoversFourYearsOfDistinctPlayablePositions() {
         verifyCalendar(english);
         assertEquals("DATE", DailyChallenge.forDate(LAUNCH, english).openingWord());

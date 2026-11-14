@@ -174,6 +174,41 @@ public class BonusEconomyTest {
         output.writeUTF(draft);
     }
 
+    @Test public void v2CircuitRetainsItsRulesAcrossRestoreAndUsesFilteredRulesOnNextEntry() throws Exception {
+        var store = new MemoryStore();
+        var bytes = new ByteArrayOutputStream();
+        try (var output = new DataOutputStream(bytes)) {
+            output.writeInt(2);
+            output.writeInt(0);
+            output.writeInt(3);
+            output.writeInt(0);
+            output.writeBoolean(false);
+            output.writeLong(0);
+            output.writeLong(Long.MIN_VALUE);
+            output.writeInt(0);
+            output.writeInt(0);
+            writeLegacyRun(output, "fr-active", List.of(11), "saved-draft");
+            output.writeBoolean(false);
+            output.writeInt(71);
+            output.writeInt(-1);
+        }
+        store.data = bytes.toByteArray();
+        String edition = "d".repeat(64);
+        var economy = new BonusEconomy(store);
+        var resumed = economy.start(FRENCH, List.of(CIRCUIT), NOW, edition);
+        assertEquals("", resumed.lexiconHash());
+        assertEquals("saved-draft", economy.draft(FRENCH, CIRCUIT, resumed.attemptId(), 1));
+        assertEquals(Integer.valueOf(71), economy.bestScore(FRENCH));
+        complete(economy, FRENCH, resumed);
+
+        var fresh = economy.start(FRENCH, List.of(CIRCUIT), NOW, edition);
+        assertEquals(edition, fresh.lexiconHash());
+        BonusEconomy.validateBackup(store.data);
+        var restored = new BonusEconomy(store);
+        assertEquals(fresh, restored.active(FRENCH));
+        assertEquals(edition, restored.completeRound(FRENCH, CIRCUIT, fresh.attemptId(), 0, 10).lexiconHash());
+    }
+
     @Test public void videoAndReferralSnapshotsCanOnlyIncreaseTheWalletOnce() {
         var store = new MemoryStore();
         var economy = new BonusEconomy(store);

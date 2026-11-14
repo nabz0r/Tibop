@@ -19,13 +19,22 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
-use wolges::movegen::Play;
+use wolges::{
+    klv::AdjustLeave,
+    movegen::{
+        EquityPredicate, GenMovesParams, KurniaMoveGenerator, PassPolicy, PlacePredicate, Play,
+    },
+    play_scorer::PlayScorer,
+};
 
 mod referral;
 mod tournament;
 
 const FR_LEXICON: &str = "8d024eba26b05909beb31a26af5a99ad501efebb895f9488ae1eb09f6487f81a";
 const EN_LEXICON: &str = "452528054b24cce68199a01534e4639d451ac0da3bdac70113546ad6e13fda0e";
+const FR_CLASSIC_LEXICON: &str = "ac01cba21cc2557f4c5d19abdfdf6cf5780b7279d04eac2cd84b834b40fe8c84";
+const LEXICON_HEADER: &str = "x-lettrine-lexicon";
+const CLASSIC_EXCLUSIONS: &str = include_str!("../data/fr/classic-exclusions.txt");
 const INVITE_SECONDS: i64 = 2 * 24 * 60 * 60;
 const NONCE_SECONDS: i64 = 5 * 60;
 const MAX_FRIENDS: i64 = 100;
@@ -81,6 +90,15 @@ const SCHEMA: &str = "
         rack_a TEXT NOT NULL CHECK(length(rack_a)=7),
         rack_b TEXT NOT NULL CHECK(length(rack_b)=7),
         mirror_of TEXT UNIQUE REFERENCES social_duels(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS social_lexicon_clients(
+        user_id TEXT NOT NULL REFERENCES social_users(id) ON DELETE CASCADE,
+        lexicon_sha256 TEXT NOT NULL,
+        PRIMARY KEY(user_id,lexicon_sha256)
+    );
+    CREATE TABLE IF NOT EXISTS social_duel_lexicons(
+        duel_id TEXT PRIMARY KEY REFERENCES social_duels(id) ON DELETE CASCADE,
+        lexicon_sha256 TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS social_google_nonces(
         session TEXT PRIMARY KEY REFERENCES social_sessions(token) ON DELETE CASCADE,
@@ -233,17 +251,21 @@ impl Puzzle {
         format!("{:x}", digest.finalize())[..24].to_string()
     }
 
-    fn for_rack(&self, engine: &Engine, rack: Option<&str>) -> Value {
+    fn for_rack(&self, engine: &Engine, rack: Option<&str>, curated: bool) -> Value {
         let rack = rack.unwrap_or(self.rack);
         let identity = self.identity_for_rack(engine, rack);
-        json!({
+        let mut position = json!({
             "date":self.date, "opening_word":self.opening_word,
             "opening_start":self.opening_start, "opening_end":self.opening_end,
             "rack":rack, "identity":identity, "catalog_identity":self.identity,
-        })
+        });
+        if curated {
+            position["lexicon_sha256"] = json!(FR_CLASSIC_LEXICON);
+        }
+        position
     }
 
-    fn deal(&self, engine: &Engine) -> Api<[String; 2]> {
+    fn deal(&self, engine: &Engine, curated: bool) -> Api<[String; 2]> {
         let alphabet = engine.config.alphabet();
         let mut counts = (0..alphabet.len())
             .map(|tile| alphabet.freq(tile))
@@ -273,7 +295,7 @@ impl Puzzle {
                 continue;
             }
             let mut best_score = |rack: &[u8]| {
-                engine.generate(&mut generator, &self.board_codes, rack, 8);
+                self.generate(engine, &mut generator, rack, curated);
                 generator
                     .plays
                     .iter()
@@ -303,12 +325,54 @@ impl Puzzle {
             )
         })
     }
+
+    fn generate(
+        &self,
+        engine: &Engine,
+        generator: &mut KurniaMoveGenerator,
+        rack: &[u8],
+        curated: bool,
+    ) {
+        if !curated {
+            engine.generate(generator, &self.board_codes, rack, 8);
+            return;
+        }
+        let snapshot = engine.snapshot(&self.board_codes);
+        let mut scorer = PlayScorer::new();
+        let mut allowed = |down, lane, idx, word: &[u8], score| {
+            scorer.words_all(
+                &snapshot,
+                &Play::Place {
+                    down,
+                    lane,
+                    idx,
+                    word: word.into(),
+                    score,
+                },
+                |word| !classic_excludes(engine, word),
+            )
+        };
+        generator.gen_moves_filtered_lean(
+            &GenMovesParams {
+                board_snapshot: &snapshot,
+                rack,
+                max_gen: 8,
+                num_exchanges_by_this_player: 0,
+                pass_policy: PassPolicy::OnlyWhenForced,
+                dynamic_leaves: None,
+            },
+            PlacePredicate::Dyn(&mut allowed),
+            AdjustLeave::Identity,
+            EquityPredicate::AcceptAll,
+        );
+    }
 }
 
 struct Social {
     db: Mutex<Connection>,
     engine: Engine,
     puzzles: Vec<Puzzle>,
+    curated_tournament_from: Option<i64>,
     #[cfg(test)]
     tournament_time: std::sync::atomic::AtomicI64,
 }
@@ -401,11 +465,17 @@ impl Social {
         scope.commit()?;
         conn.execute_batch(SCHEMA)?;
         conn.execute_batch(tournament::SCHEMA)?;
+        let curated_tournament_from = if engine.profile.language == "fr" {
+            Some(tournament::curated_from(&conn, now())?)
+        } else {
+            None
+        };
         conn.execute_batch(referral::SCHEMA)?;
         Ok(Self {
             db: Mutex::new(conn),
             engine,
             puzzles,
+            curated_tournament_from,
             #[cfg(test)]
             tournament_time: std::sync::atomic::AtomicI64::new(0),
         })
@@ -521,6 +591,36 @@ fn digest(value: &str) -> String {
     format!("{:x}", Sha256::digest(value.as_bytes()))
 }
 
+fn supports_curated(headers: &HeaderMap) -> bool {
+    headers
+        .get(LEXICON_HEADER)
+        .is_some_and(|value| value == FR_CLASSIC_LEXICON)
+}
+
+fn note_curated(app: &Social, db: &Connection, user: &str, supported: bool) -> Api<()> {
+    if supported && app.engine.profile.language == "fr" {
+        db.execute(
+            "INSERT OR IGNORE INTO social_lexicon_clients(user_id,lexicon_sha256) VALUES(?1,?2)",
+            params![user, FR_CLASSIC_LEXICON],
+        )?;
+    }
+    Ok(())
+}
+
+fn classic_excludes(engine: &Engine, word: &[u8]) -> bool {
+    static FORMS: std::sync::LazyLock<Vec<&str>> =
+        std::sync::LazyLock::new(|| CLASSIC_EXCLUSIONS.lines().collect());
+    let mut letters = [0u8; 15];
+    if word.len() > letters.len() {
+        return false;
+    }
+    for (out, &tile) in letters.iter_mut().zip(word) {
+        *out = engine.letter(tile) as u8;
+    }
+    let word = std::str::from_utf8(&letters[..word.len()]).expect("lettres françaises ASCII");
+    FORMS.binary_search(&word).is_ok()
+}
+
 fn now() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -621,6 +721,7 @@ struct SessionRequest {
 
 async fn session(
     State(app): State<Arc<Social>>,
+    headers: HeaderMap,
     body: std::result::Result<Json<SessionRequest>, JsonRejection>,
 ) -> Api<Json<Value>> {
     let Json(body) = body.map_err(json_error)?;
@@ -628,6 +729,7 @@ async fn session(
         return Err(invalid("Identifiant de session invalide."));
     }
     let session = digest(&body.token);
+    let curated = supports_curated(&headers);
     let supplied_name = body
         .nickname
         .as_deref()
@@ -665,6 +767,7 @@ async fn session(
             referral::register(db, &id, now())?;
             id
         };
+        note_curated(app, db, &id, curated)?;
         Ok(Json(json!({"profile":private_profile(db,&id)?})))
     })
     .await
@@ -778,9 +881,11 @@ async fn change_friend(
 }
 
 async fn invite(State(app): State<Arc<Social>>, headers: HeaderMap) -> Api<Json<Value>> {
+    let curated = supports_curated(&headers);
     let session = auth(headers)?;
-    write(app, move |_, db| {
+    write(app, move |app, db| {
         let owner = user_id(db, &session)?;
+        note_curated(app, db, &owner, curated)?;
         let now = now();
         db.execute("DELETE FROM social_invites WHERE expires_at<=?1", [now])?;
         if db.query_row(
@@ -816,13 +921,15 @@ async fn accept(
     body: std::result::Result<Json<InviteRequest>, JsonRejection>,
 ) -> Api<Json<Value>> {
     let Json(body) = body.map_err(json_error)?;
+    let curated = supports_curated(&headers);
     let session = auth(headers)?;
     if !hex(&body.token, 32) {
         return Err(invalid("Invitation invalide."));
     }
     let token = digest(&body.token);
-    write(app, move |_, db| {
+    write(app, move |app, db| {
         let recipient = user_id(db, &session)?;
+        note_curated(app, db, &recipient, curated)?;
         let time = now();
         let (owner, used) = db
             .query_row(
@@ -886,16 +993,18 @@ struct Duel {
     mirror_of: Option<String>,
     mirror_id: Option<String>,
     original_scores: Option<[i32; 2]>,
+    lexicon_sha256: Option<String>,
 }
 
 const DUEL_SELECT: &str = "SELECT d.id,d.a,d.b,d.puzzle,d.score_a,d.score_b,d.move_a,d.move_b,
     (SELECT r.id FROM social_duels r WHERE r.rematch_of=d.id),
     deals.rack_a,deals.rack_b,deals.mirror_of,
     (SELECT m.duel_id FROM social_duel_deals m WHERE m.mirror_of=d.id),
-    original.score_a,original.score_b
+    original.score_a,original.score_b,lexicons.lexicon_sha256
     FROM social_duels d
     LEFT JOIN social_duel_deals deals ON deals.duel_id=d.id
-    LEFT JOIN social_duels original ON original.id=deals.mirror_of";
+    LEFT JOIN social_duels original ON original.id=deals.mirror_of
+    LEFT JOIN social_duel_lexicons lexicons ON lexicons.duel_id=d.id";
 
 fn duel_row(row: &Row<'_>) -> rusqlite::Result<Duel> {
     Ok(Duel {
@@ -918,10 +1027,15 @@ fn duel_row(row: &Row<'_>) -> rusqlite::Result<Duel> {
             .get::<_, Option<i32>>(13)?
             .zip(row.get::<_, Option<i32>>(14)?)
             .map(|(a, b)| [a, b]),
+        lexicon_sha256: row.get(15)?,
     })
 }
 
 impl Duel {
+    fn curated(&self) -> bool {
+        self.lexicon_sha256.as_deref() == Some(FR_CLASSIC_LEXICON)
+    }
+
     fn seat(&self, user: &str) -> usize {
         usize::from(self.a != user)
     }
@@ -978,7 +1092,7 @@ fn duel_json(app: &Social, db: &Connection, duel: &Duel, user: &str) -> Api<Valu
         });
     Ok(json!({
         "id":duel.id, "opponent":profile(db,other)?, "date":puzzle.date,
-        "puzzle":puzzle.for_rack(&app.engine,duel.rack(user)),
+        "puzzle":puzzle.for_rack(&app.engine,duel.rack(user),duel.curated()),
         "score":score, "opponent_score":if completed {opponent_score} else {None},
         "status":status, "winner":winner, "rematch_id":duel.rematch_id,
         "can_cancel":!completed,
@@ -1051,6 +1165,7 @@ fn insert_duel(
     b: &str,
     previous: Option<&str>,
     separate_racks: bool,
+    supports_curated: bool,
 ) -> Api<Duel> {
     if !friends(db, a, b)? {
         return Err(missing("Ami introuvable."));
@@ -1087,19 +1202,37 @@ fn insert_duel(
         .optional()?;
     let id = random_hex::<16>();
     let puzzle = (last_puzzle.unwrap_or(-1) + 1) % app.puzzles.len() as i64;
+    let curated = supports_curated
+        && app.engine.profile.language == "fr"
+        && db.query_row(
+            "SELECT count(*) FROM social_lexicon_clients WHERE user_id IN (?1,?2) AND lexicon_sha256=?3",
+            params![a, b, FR_CLASSIC_LEXICON],
+            |row| row.get::<_, i64>(0),
+        )? == 2;
     db.execute(
         "INSERT INTO social_duels(id,a,b,puzzle,created_at,rematch_of)
         VALUES(?1,?2,?3,?4,?5,?6)",
         params![id, a, b, puzzle, now(), previous],
     )?;
+    if curated {
+        record_curated_duel(db, &id)?;
+    }
     if separate_racks {
-        let [rack_a, rack_b] = app.puzzles[puzzle as usize].deal(&app.engine)?;
+        let [rack_a, rack_b] = app.puzzles[puzzle as usize].deal(&app.engine, curated)?;
         db.execute(
             "INSERT INTO social_duel_deals(duel_id,rack_a,rack_b) VALUES(?1,?2,?3)",
             params![id, rack_a, rack_b],
         )?;
     }
     duel(db, &id, a)
+}
+
+fn record_curated_duel(db: &Connection, id: &str) -> Api<()> {
+    db.execute(
+        "INSERT INTO social_duel_lexicons(duel_id,lexicon_sha256) VALUES(?1,?2)",
+        params![id, FR_CLASSIC_LEXICON],
+    )?;
+    Ok(())
 }
 
 fn supports_separate_racks(headers: &HeaderMap) -> bool {
@@ -1115,11 +1248,13 @@ async fn create_duel(
 ) -> Api<Json<Value>> {
     let Json(body) = body.map_err(json_error)?;
     let separate_racks = supports_separate_racks(&headers);
+    let curated = supports_curated(&headers);
     let session = auth(headers)?;
     write(app, move |app, db| {
         let id = user_id(db, &session)?;
+        note_curated(app, db, &id, curated)?;
         let (a, b) = pair(&id, &body.friend_id);
-        let duel = insert_duel(app, db, a, b, None, separate_racks)?;
+        let duel = insert_duel(app, db, a, b, None, separate_racks, curated)?;
         Ok(Json(json!({"duel":duel_json(app,db,&duel,&id)?})))
     })
     .await
@@ -1227,9 +1362,11 @@ async fn rematch(
     Path(duel_id): Path<String>,
 ) -> Api<Json<Value>> {
     let separate_racks = supports_separate_racks(&headers);
+    let curated = supports_curated(&headers);
     let session = auth(headers)?;
     write(app, move |app, db| {
         let user = user_id(db, &session)?;
+        note_curated(app, db, &user, curated)?;
         let previous = duel(db, &duel_id, &user)?;
         if !previous.completed() {
             return Err(conflict("Terminez le duel avant de proposer une revanche."));
@@ -1241,6 +1378,7 @@ async fn rematch(
             &previous.b,
             Some(&duel_id),
             separate_racks,
+            curated,
         )?;
         Ok(Json(json!({"duel":duel_json(app,db,&duel,&user)?})))
     })
@@ -1271,12 +1409,16 @@ async fn mirror(
         if active_duel(db, &previous.a, &previous.b)?.is_some() {
             return Err(conflict("Un duel est déjà en cours avec cet ami."));
         }
+        let curated = previous.curated();
         let [rack_a, rack_b] = previous.deal.expect("duel à deux chevalets");
         let id = random_hex::<16>();
         db.execute(
             "INSERT INTO social_duels(id,a,b,puzzle,created_at) VALUES(?1,?2,?3,?4,?5)",
             params![id, previous.a, previous.b, previous.puzzle as i64, now()],
         )?;
+        if curated {
+            record_curated_duel(db, &id)?;
+        }
         db.execute(
             "INSERT INTO social_duel_deals(duel_id,rack_a,rack_b,mirror_of) VALUES(?1,?2,?3,?4)",
             params![id, rack_b, rack_a, duel_id],
@@ -1318,17 +1460,25 @@ impl MoveRequest {
         serde_json::to_string(&self.tiles).expect("tuiles JSON")
     }
 
-    fn score(&self, app: &Social, puzzle: &Puzzle) -> Api<i32> {
-        self.score_with_rack(app, puzzle, &puzzle.rack_codes)
+    fn score(&self, app: &Social, puzzle: &Puzzle, curated: bool) -> Api<i32> {
+        self.score_with_rack(app, puzzle, &puzzle.rack_codes, curated)
     }
 
-    fn score_with_rack(&self, app: &Social, puzzle: &Puzzle, rack: &[u8]) -> Api<i32> {
+    fn score_with_rack(
+        &self,
+        app: &Social,
+        puzzle: &Puzzle,
+        rack: &[u8],
+        curated: bool,
+    ) -> Api<i32> {
         let placements: Vec<_> = self
             .tiles
             .iter()
             .map(|tile| (tile.position, tile.rack_index, tile.letter))
             .collect();
-        Game::score_position(&app.engine, &puzzle.board_codes, rack, &placements)
+        let excludes = |word: &[u8]| classic_excludes(&app.engine, word);
+        let filter = curated.then_some(&excludes as &dyn Fn(&[u8]) -> bool);
+        Game::score_position(&app.engine, &puzzle.board_codes, rack, &placements, filter)
             .map_err(|message| invalid(&message))
     }
 }
@@ -1370,9 +1520,9 @@ async fn play(
                         .map_err(|_| {
                             err(StatusCode::INTERNAL_SERVER_ERROR, "Chevalet indisponible.")
                         })?;
-                    body.score_with_rack(app, puzzle, &rack)?
+                    body.score_with_rack(app, puzzle, &rack, previous.curated())?
                 }
-                None => body.score(app, puzzle)?,
+                None => body.score(app, puzzle, previous.curated())?,
             };
             let update = if seat_a {
                 "UPDATE social_duels SET score_a=?1,move_a=?2 WHERE id=?3"
@@ -1469,9 +1619,11 @@ fn ranking(db: &Connection, me: Profile, contacts: &[Profile]) -> Api<Vec<Value>
 }
 
 async fn me(State(app): State<Arc<Social>>, headers: HeaderMap) -> Api<Json<Value>> {
+    let curated = supports_curated(&headers);
     let session = auth(headers)?;
     write(app, move |app, db| {
         let user = user_id(db,&session)?;
+        note_curated(app, db, &user, curated)?;
         let mut contacts = db.prepare("SELECT u.id,u.nickname,u.country FROM social_friends f
             JOIN social_users u ON u.id=CASE WHEN f.a=?1 THEN f.b ELSE f.a END
             WHERE f.a=?1 OR f.b=?1 ORDER BY u.nickname,u.id")?;
@@ -1961,13 +2113,13 @@ mod tests {
         let app = Social::open(FilePath::new(":memory:"), engine()).unwrap();
         let alphabet = app.engine.config.alphabet();
         for puzzle in &app.puzzles {
-            let [a, b] = puzzle.deal(&app.engine).unwrap();
+            let [a, b] = puzzle.deal(&app.engine, false).unwrap();
             assert_ne!(
-                puzzle.for_rack(&app.engine, Some(&a))["identity"],
-                puzzle.for_rack(&app.engine, Some(&b))["identity"]
+                puzzle.for_rack(&app.engine, Some(&a), false)["identity"],
+                puzzle.for_rack(&app.engine, Some(&b), false)["identity"]
             );
             assert_eq!(
-                puzzle.for_rack(&app.engine, None)["identity"],
+                puzzle.for_rack(&app.engine, None, false)["identity"],
                 puzzle.identity
             );
             let mut remaining = (0..alphabet.len())
@@ -1995,11 +2147,249 @@ mod tests {
                     moves
                         .prepare()
                         .unwrap()
-                        .score_with_rack(&app, puzzle, &rack_codes)
+                        .score_with_rack(&app, puzzle, &rack_codes, false)
                         .is_ok()
                 );
             }
         }
+    }
+
+    #[test]
+    fn curated_catalog_uses_android_digest_and_keeps_every_board_playable() {
+        let raw = std::fs::read_to_string("data/fr/words.txt").unwrap();
+        let excluded = CLASSIC_EXCLUSIONS.lines().collect::<Vec<_>>();
+        assert!(excluded.windows(2).all(|pair| pair[0] < pair[1]));
+        let mut fingerprint = Sha256::new();
+        let mut removed = 0;
+        for word in raw.lines() {
+            if excluded.binary_search(&word).is_ok() {
+                removed += 1;
+            } else {
+                fingerprint.update(word);
+                fingerprint.update(b"\n");
+            }
+        }
+        assert_eq!(removed, excluded.len());
+        assert_eq!(format!("{:x}", fingerprint.finalize()), FR_CLASSIC_LEXICON);
+
+        let app = Social::open(FilePath::new(":memory:"), engine()).unwrap();
+        let mut generator = app.engine.generator();
+        let mut scorer = PlayScorer::new();
+        for puzzle in &app.puzzles {
+            let opening = puzzle
+                .opening_word
+                .chars()
+                .map(|c| app.engine.symbol_id(c).unwrap())
+                .collect::<Vec<_>>();
+            assert!(!classic_excludes(&app.engine, &opening));
+            let [a, b] = puzzle.deal(&app.engine, true).unwrap();
+            for rack in [puzzle.rack, a.as_str(), b.as_str()] {
+                let rack = rack
+                    .chars()
+                    .map(|c| app.engine.symbol_id(c).unwrap())
+                    .collect::<Vec<_>>();
+                puzzle.generate(&app.engine, &mut generator, &rack, true);
+                let snapshot = app.engine.snapshot(&puzzle.board_codes);
+                assert!(
+                    generator
+                        .plays
+                        .iter()
+                        .any(|entry| matches!(entry.play, Play::Place { .. })),
+                    "aucun placement classique pour {}",
+                    puzzle.date
+                );
+                for entry in &generator.plays {
+                    assert!(
+                        scorer.words_all(&snapshot, &entry.play, |word| !classic_excludes(
+                            &app.engine,
+                            word
+                        ))
+                    );
+                }
+            }
+        }
+    }
+
+    async fn curated_request(
+        base: &str,
+        method: Method,
+        route: &str,
+        token: &str,
+        body: Value,
+        status: StatusCode,
+    ) -> Value {
+        let mut request = reqwest::Client::new()
+            .request(method, format!("{base}/api/social/{route}"))
+            .header(LEXICON_HEADER, FR_CLASSIC_LEXICON);
+        if !token.is_empty() {
+            request = request.bearer_auth(token);
+        }
+        if !body.is_null() {
+            request = request.json(&body);
+        }
+        let response = request.send().await.unwrap();
+        let actual = response.status();
+        let payload = response.json::<Value>().await.unwrap();
+        assert_eq!(actual, status, "{route}: {payload}");
+        payload
+    }
+
+    #[tokio::test]
+    async fn french_rollout_preserves_old_invites_and_active_duels_and_persists_new_rules() {
+        let app = Arc::new(Social::open(FilePath::new(":memory:"), engine()).unwrap());
+        let (base, server) = server(app.clone()).await;
+        let a = "a".repeat(64);
+        let b = "b".repeat(64);
+        let alice = curated_request(
+            &base,
+            Method::POST,
+            "session",
+            "",
+            json!({"token":a}),
+            StatusCode::OK,
+        )
+        .await;
+        let bob = request(
+            &base,
+            Method::POST,
+            "session",
+            "",
+            json!({"token":b}),
+            StatusCode::OK,
+        )
+        .await;
+        let invite = request(
+            &base,
+            Method::POST,
+            "invites",
+            &b,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
+        let accepted = curated_request(
+            &base,
+            Method::POST,
+            "invites/accept",
+            &a,
+            json!({"token":invite["token"]}),
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(accepted["friend"]["id"], bob["profile"]["id"]);
+        let legacy = curated_request(
+            &base,
+            Method::POST,
+            "duels",
+            &a,
+            json!({"friend_id":bob["profile"]["id"]}),
+            StatusCode::OK,
+        )
+        .await;
+        assert!(legacy["duel"]["puzzle"].get("lexicon_sha256").is_none());
+        let id = legacy["duel"]["id"].as_str().unwrap();
+        let path = format!("duels/{id}");
+        let play = format!("{path}/play");
+        let puzzle = &app.puzzles[0];
+        let move_a = candidate(&app, puzzle, puzzle.rack, puzzle.rack);
+        let placed = request(
+            &base,
+            Method::POST,
+            &play,
+            &a,
+            move_a.clone(),
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(placed["duel"]["status"], "waiting");
+        curated_request(&base, Method::GET, "me", &b, Value::Null, StatusCode::OK).await;
+        let legacy_b = curated_request(
+            &base,
+            Method::POST,
+            "duels",
+            &b,
+            json!({"friend_id":alice["profile"]["id"]}),
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(legacy_b["duel"]["id"], id);
+        assert_eq!(legacy_b["duel"]["puzzle"], legacy["duel"]["puzzle"]);
+        let finished =
+            curated_request(&base, Method::POST, &play, &b, move_a, StatusCode::OK).await;
+        assert_eq!(finished["duel"]["status"], "finished");
+        assert_eq!(finished["duel"]["opponent_score"], placed["duel"]["score"]);
+        let curated = curated_request(
+            &base,
+            Method::POST,
+            &format!("{path}/rematch"),
+            &a,
+            json!({}),
+            StatusCode::OK,
+        )
+        .await;
+        let new_id = curated["duel"]["id"].as_str().unwrap();
+        let new_path = format!("duels/{new_id}");
+        assert_eq!(
+            curated["duel"]["puzzle"]["lexicon_sha256"],
+            FR_CLASSIC_LEXICON
+        );
+        assert_eq!(
+            curated["duel"]["puzzle"]["identity"],
+            app.puzzles[1].identity
+        );
+        let old_client = request(
+            &base,
+            Method::GET,
+            &new_path,
+            &b,
+            Value::Null,
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(old_client["duel"]["puzzle"], curated["duel"]["puzzle"]);
+
+        // Place H next to P in the PASSE opening. Supply a deterministic rack
+        // after asserting the shared-rack payload, then verify a legacy build
+        // can submit but cannot bypass the duel's stored dictionary.
+        app.db.lock().unwrap().execute(
+            "INSERT INTO social_duel_deals(duel_id,rack_a,rack_b) VALUES(?1,'HATESUX','HATESOU')",
+            [new_id],
+        ).unwrap();
+        let ph = json!({"tiles":[{"position":83,"rack_index":0,"letter":"H"}]});
+        let ph_move = serde_json::from_value::<MoveRequest>(ph.clone())
+            .unwrap()
+            .prepare()
+            .unwrap();
+        let h = app.engine.symbol_id('H').unwrap();
+        assert!(
+            ph_move
+                .score_with_rack(&app, &app.puzzles[1], &[h], false)
+                .is_ok()
+        );
+        let rejected = request(
+            &base,
+            Method::POST,
+            &format!("{new_path}/play"),
+            &b,
+            ph,
+            StatusCode::BAD_REQUEST,
+        )
+        .await;
+        assert_eq!(rejected["error"], "« PH » est absent du lexique.");
+
+        // Verify the same formed-word filter on a normal placement and joker.
+        let board = vec![0; 225];
+        let rack = ['K', 'M'].map(|c| app.engine.symbol_id(c).unwrap());
+        let tiles = [(112, 0, 'K'), (113, 1, 'M')];
+        assert!(Game::score_position(&app.engine, &board, &rack, &tiles, None).is_ok());
+        let excludes = |word: &[u8]| classic_excludes(&app.engine, word);
+        for rack in [rack, [0, rack[1]]] {
+            assert_eq!(
+                Game::score_position(&app.engine, &board, &rack, &tiles, Some(&excludes)),
+                Err("« KM » est absent du lexique.".into())
+            );
+        }
+        server.abort();
     }
 
     #[tokio::test]

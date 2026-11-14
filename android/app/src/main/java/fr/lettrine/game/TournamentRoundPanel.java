@@ -23,7 +23,7 @@ final class TournamentRoundPanel {
     private final TextView notice;
     private PracticePanel practice;
 
-    TournamentRoundPanel(ViewKit ui, SocialClient client, JSONObject round, Lexicon lexicon, Runnable back,
+    TournamentRoundPanel(ViewKit ui, SocialClient client, JSONObject round, Lexicon catalog, Lexicon curated, Runnable back,
                          Consumer<JSONObject> completedEvent) {
         this.ui = ui;
         this.client = client;
@@ -38,8 +38,10 @@ final class TournamentRoundPanel {
         notice.setVisibility(View.GONE);
         root.addView(notice);
 
-        DailyChallenge challenge = SocialDuelPanel.compatibleChallenge(round.optJSONObject("puzzle"), "", lexicon);
-        if (eventId < 0 || number < 1 || number > 3 || challenge == null) {
+        JSONObject puzzle = round.optJSONObject("puzzle");
+        DailyChallenge challenge = SocialDuelPanel.compatibleChallenge(puzzle, "", catalog);
+        Lexicon rules = SocialDuelPanel.validationLexicon(puzzle, catalog, curated);
+        if (eventId < 0 || number < 1 || number > 3 || challenge == null || rules == null) {
             showNotice(label(R.string.social_duel_incompatible));
             addBackButton();
             return;
@@ -47,7 +49,7 @@ final class TournamentRoundPanel {
         root.addView(DailyChallengeCard.heading(ui, label(R.string.tournament_round, number),
                 label(R.string.tournament_title), label(R.string.tournament_round_intro)));
         ui.gap(root, 12);
-        practice = new PracticePanel(ui, challenge.position(), lexicon, this::confirm);
+        practice = new PracticePanel(ui, challenge.position(), rules, this::confirm);
         root.addView(practice.view());
     }
 

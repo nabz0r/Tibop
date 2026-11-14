@@ -29,7 +29,8 @@ final class BonusEconomy {
     static final long REFILL_MILLIS = TimeUnit.HOURS.toMillis(2);
 
     private static final int LEGACY_FILE_VERSION = 1;
-    private static final int FILE_VERSION = 2;
+    private static final int RECORDS_FILE_VERSION = 2;
+    private static final int FILE_VERSION = 3;
     private static final int MAX_DRAFT_LENGTH = 16_384;
     private static final int MAX_ENTRIES = 100_000;
     private static final int MAX_ROUND_SCORE = 9_999;
@@ -41,7 +42,7 @@ final class BonusEconomy {
         boolean canStart() { return freeEntry || freeTickets > 0 || bonusTickets > 0; }
     }
 
-    record Circuit(String id, String attemptId, List<Integer> scores) {
+    record Circuit(String id, String attemptId, List<Integer> scores, String lexiconHash) {
         Circuit {
             scores = List.copyOf(scores);
         }
@@ -124,7 +125,12 @@ final class BonusEconomy {
     }
 
     Circuit start(GameLanguage language, List<String> circuitIds, long nowMillis) {
+        return start(language, circuitIds, nowMillis, "");
+    }
+
+    Circuit start(GameLanguage language, List<String> circuitIds, long nowMillis, String lexiconHash) {
         if (circuitIds.isEmpty() || !circuitIds.stream().allMatch(BonusEconomy::validKey)
+                || !validLexiconHash(lexiconHash)
                 || nowMillis < 0 || nowMillis > Long.MAX_VALUE - REFILL_MILLIS) return null;
         synchronized (LOCK) {
             State state = load();
@@ -140,7 +146,7 @@ final class BonusEconomy {
                 state.freeTickets--;
             } else if (state.bonusTickets > 0) state.bonusTickets--;
             else return null;
-            Circuit circuit = new Circuit(circuitId, UUID.randomUUID().toString(), List.of());
+            Circuit circuit = new Circuit(circuitId, UUID.randomUUID().toString(), List.of(), lexiconHash);
             state.runs.put(language, new Run(circuit, ""));
             return save(state) ? circuit : null;
         }
@@ -155,7 +161,7 @@ final class BonusEconomy {
             if (round < run.circuit.round()) return run.circuit;
             var scores = new ArrayList<>(run.circuit.scores());
             scores.add(score);
-            Circuit circuit = new Circuit(circuitId, attemptId, scores);
+            Circuit circuit = new Circuit(circuitId, attemptId, scores, run.circuit.lexiconHash());
             state.runs.put(language, new Run(circuit, ""));
             if (circuit.complete()) state.bestScores.merge(language, circuit.totalScore(), Math::max);
             return save(state) ? circuit : null;
@@ -276,6 +282,10 @@ final class BonusEconomy {
         return value != null && !value.isBlank() && value.length() <= 256 && value.indexOf('\0') < 0;
     }
 
+    private static boolean validLexiconHash(String value) {
+        return value != null && (value.isEmpty() || value.matches("[0-9a-f]{64}"));
+    }
+
     private static int add(int left, int right) {
         return (int) Math.min((long) left + right, Integer.MAX_VALUE);
     }
@@ -293,7 +303,7 @@ final class BonusEconomy {
         try {
             try (DataInputStream input = new DataInputStream(new ByteArrayInputStream(bytes))) {
                 int version = input.readInt();
-                if (version != FILE_VERSION && version != LEGACY_FILE_VERSION) return null;
+                if (version < LEGACY_FILE_VERSION || version > FILE_VERSION) return null;
                 State state = new State();
                 state.coins = input.readInt();
                 state.freeTickets = input.readInt();
@@ -324,14 +334,16 @@ final class BonusEconomy {
                         scores.add(score);
                     }
                     String draft = input.readUTF();
-                    if (!validKey(id) || !validKey(attempt) || draft.length() > MAX_DRAFT_LENGTH) return null;
-                    Circuit circuit = new Circuit(id, attempt, scores);
+                    String lexiconHash = version == FILE_VERSION ? input.readUTF() : "";
+                    if (!validKey(id) || !validKey(attempt) || draft.length() > MAX_DRAFT_LENGTH
+                            || !validLexiconHash(lexiconHash)) return null;
+                    Circuit circuit = new Circuit(id, attempt, scores, lexiconHash);
                     state.runs.put(language, new Run(circuit, draft));
                     if (version == LEGACY_FILE_VERSION && circuit.complete()) {
                         state.bestScores.put(language, circuit.totalScore());
                     }
                 }
-                if (version == FILE_VERSION) {
+                if (version >= RECORDS_FILE_VERSION) {
                     for (GameLanguage language : GameLanguage.values()) {
                         int best = input.readInt();
                         if (best < NO_BEST_SCORE || best > ROUND_COUNT * MAX_ROUND_SCORE) return null;
@@ -378,6 +390,7 @@ final class BonusEconomy {
                     output.writeInt(run.circuit.round());
                     for (int score : run.circuit.scores()) output.writeInt(score);
                     output.writeUTF(run.draft);
+                    output.writeUTF(run.circuit.lexiconHash());
                 }
                 for (GameLanguage language : GameLanguage.values()) {
                     output.writeInt(state.bestScores.getOrDefault(language, NO_BEST_SCORE));

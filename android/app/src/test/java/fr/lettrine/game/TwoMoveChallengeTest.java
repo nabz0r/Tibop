@@ -50,6 +50,35 @@ public class TwoMoveChallengeTest {
         assertEquals(List.of("TO", "IT", "NO"), crosses.solution().get(0).preview().words());
     }
 
+    @Test public void filteredDictionaryKeepsEveryFrenchPuzzleAndBonusCircuitPlayable() throws Exception {
+        Lexicon filtered = french.filtered("Classique", "filtered",
+                Files.readAllLines(Path.of("../../data/fr/classic-exclusions.txt")));
+        var catalog = TwoMoveChallenge.catalog(filtered);
+        assertSamePositions(puzzles, catalog);
+        verifyCatalog(catalog, filtered, "Les deux coups sont déjà joués.");
+        var originalCircuits = TwoMoveChallenge.bonusCircuits(french);
+        var filteredCircuits = TwoMoveChallenge.bonusCircuits(filtered);
+        assertEquals(originalCircuits.stream().map(TwoMoveChallenge.BonusSet::id).toList(),
+                filteredCircuits.stream().map(TwoMoveChallenge.BonusSet::id).toList());
+        for (int i = 0; i < originalCircuits.size(); i++) {
+            var rounds = filteredCircuits.get(i).puzzles();
+            assertSamePositions(originalCircuits.get(i).puzzles(), rounds);
+            verifyCatalog(rounds, filtered, "Les deux coups sont déjà joués.", BonusEconomy.ROUND_COUNT);
+        }
+    }
+
+    private static void assertSamePositions(List<TwoMoveChallenge.Puzzle> original,
+                                            List<TwoMoveChallenge.Puzzle> curated) {
+        assertEquals(original.stream().map(TwoMoveChallenge.Puzzle::id).toList(),
+                curated.stream().map(TwoMoveChallenge.Puzzle::id).toList());
+        for (int i = 0; i < original.size(); i++) {
+            var before = original.get(i);
+            var after = curated.get(i);
+            assertArrayEquals(before.id(), before.initial().board(), after.initial().board());
+            assertEquals(before.id(), before.initial().rack(), after.initial().rack());
+        }
+    }
+
     @Test public void bonusRotationHasNineDistinctPlayablePuzzlesInEachLanguage() {
         for (Lexicon dictionary : List.of(french, english)) {
             var circuits = TwoMoveChallenge.bonusCircuits(dictionary);

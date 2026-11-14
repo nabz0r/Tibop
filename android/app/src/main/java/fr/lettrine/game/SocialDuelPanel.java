@@ -17,17 +17,18 @@ import java.util.List;
 final class SocialDuelPanel {
     private final ViewKit ui;
     private final SocialClient client;
-    private final Lexicon lexicon;
+    private final Lexicon catalogLexicon;
     private final Runnable back;
     private final String duelId;
     private final LinearLayout root;
     private final TextView notice;
     private PracticePanel practice;
 
-    SocialDuelPanel(ViewKit ui, SocialClient client, JSONObject duel, Lexicon lexicon, Runnable back) {
+    SocialDuelPanel(ViewKit ui, SocialClient client, JSONObject duel, Lexicon catalogLexicon, Lexicon curated,
+                    Runnable back) {
         this.ui = ui;
         this.client = client;
-        this.lexicon = lexicon;
+        this.catalogLexicon = catalogLexicon;
         this.back = back;
         duelId = duel.optString("id");
         root = ui.column();
@@ -41,8 +42,9 @@ final class SocialDuelPanel {
             return;
         }
         JSONObject puzzle = duel.optJSONObject("puzzle");
-        PracticePosition position = compatiblePosition(puzzle, duel.optString("date"), lexicon);
-        if (position == null) {
+        PracticePosition position = compatiblePosition(puzzle, duel.optString("date"), catalogLexicon);
+        Lexicon rules = validationLexicon(puzzle, catalogLexicon, curated);
+        if (position == null || rules == null) {
             notice.setText(R.string.social_duel_incompatible);
             notice.setVisibility(View.VISIBLE);
             backButton();
@@ -55,13 +57,25 @@ final class SocialDuelPanel {
         }
         root.addView(ui.body(label(isMirror(duel) ? R.string.social_mirror_goal : R.string.social_duel_goal)));
         ui.gap(root, 10);
-        practice = new PracticePanel(ui, position, lexicon, this::confirm);
+        practice = new PracticePanel(ui, position, rules, this::confirm);
         root.addView(practice.view());
     }
 
     View view() { return root; }
 
     static boolean isMirror(JSONObject duel) { return "mirror".equals(duel.optString("kind")); }
+
+    static Lexicon validationLexicon(JSONObject puzzle, Lexicon catalog, Lexicon curated) {
+        if (puzzle == null || catalog == null) return null;
+        if (!puzzle.has("lexicon_sha256")) return lexiconForDigest(null, catalog, curated);
+        Object marker = puzzle.opt("lexicon_sha256");
+        return marker instanceof String digest ? lexiconForDigest(digest, catalog, curated) : null;
+    }
+
+    static Lexicon lexiconForDigest(String digest, Lexicon catalog, Lexicon curated) {
+        if (digest == null || catalog.hash.equals(digest)) return catalog;
+        return curated != null && curated.language == catalog.language && curated.hash.equals(digest) ? curated : null;
+    }
 
     private static PracticePosition compatiblePosition(JSONObject puzzle, String fallbackDate, Lexicon lexicon) {
         DailyChallenge catalog = catalogChallenge(puzzle, fallbackDate, lexicon);
@@ -160,7 +174,7 @@ final class SocialDuelPanel {
         JSONArray own = duel.optJSONArray("move");
         JSONArray opponent = duel.optJSONArray("opponent_move");
         if (own == null || opponent == null) return;
-        PracticePosition position = compatiblePosition(duel.optJSONObject("puzzle"), duel.optString("date"), lexicon);
+        PracticePosition position = compatiblePosition(duel.optJSONObject("puzzle"), duel.optString("date"), catalogLexicon);
         if (position == null) return;
         List<FrenchGame.Tile> ownTiles;
         List<FrenchGame.Tile> opponentTiles;

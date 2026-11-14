@@ -12,8 +12,11 @@ import java.util.HexFormat;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 public class SocialPuzzleParityTest {
     @Test public void everyServerDuelReconstructsTheExactAndroidPosition() throws Exception {
@@ -68,5 +71,28 @@ public class SocialPuzzleParityTest {
         assertEquals(swapped, accepted.rack());
         assertNull(SocialDuelPanel.exactRackPosition(catalog, "TESAETE", identity, lexicon));
         assertNull(SocialDuelPanel.exactRackPosition(catalog, "QQQAAAZ", identity, lexicon));
+    }
+
+    @Test public void curatedValidationDoesNotChangeTheAdvertisedDuelPosition() throws Exception {
+        Lexicon catalog = Lexicon.read(new BufferedReader(new StringReader("CLOCHE\nCLOCHES\nCLOCHETTE\nKM\n")),
+                "Original", "Test", "catalog", 4);
+        Lexicon curated = catalog.filtered("Classique", "curated", List.of("KM"));
+        DailyChallenge challenge = DailyChallenge.forDate(LocalDate.of(2026, 11, 13), catalog);
+        assertNotNull(challenge);
+        String rack = "SEATEET";
+        PracticePosition seat = new PracticePosition(challenge.position().board(), challenge.position().blanks(),
+                List.of('S', 'E', 'A', 'T', 'E', 'E', 'T'), null, null);
+        String identity = ChallengeLink.positionIdentity(seat, catalog);
+        assertNotNull(SocialDuelPanel.exactRackPosition(challenge, rack, identity, catalog));
+        assertNull(SocialDuelPanel.exactRackPosition(challenge, rack, identity, curated));
+
+        assertSame(catalog, SocialDuelPanel.lexiconForDigest(null, catalog, curated));
+        assertSame(catalog, SocialDuelPanel.lexiconForDigest(catalog.hash, catalog, curated));
+        Lexicon chosen = SocialDuelPanel.lexiconForDigest(curated.hash, catalog, curated);
+        assertSame(curated, chosen);
+        assertTrue(chosen.contains("CLOCHE"));
+        assertFalse(chosen.contains("KM"));
+        assertNull(SocialDuelPanel.lexiconForDigest("unknown", catalog, curated));
+        assertNull(SocialDuelPanel.lexiconForDigest(curated.hash, catalog, null));
     }
 }

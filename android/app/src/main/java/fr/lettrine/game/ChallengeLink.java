@@ -18,6 +18,8 @@ record ChallengeLink(LocalDate date, int score, String identity, GameLanguage la
             + "(?:(en)/)?([0-9]{4}-[0-9]{2}-[0-9]{2})/(0|[1-9][0-9]{0,3})/(" + IDENTITY + ")");
     private static final String HEX = "0123456789abcdef";
 
+    record Resolved(DailyChallenge challenge, Lexicon dictionary) {}
+
     ChallengeLink {
         Objects.requireNonNull(date);
         Objects.requireNonNull(language);
@@ -50,6 +52,14 @@ record ChallengeLink(LocalDate date, int score, String identity, GameLanguage la
     boolean matches(DailyChallenge challenge, Lexicon lexicon) {
         return language == lexicon.language && challenge != null && date.equals(challenge.date())
                 && identity.equals(positionIdentity(challenge, lexicon));
+    }
+
+    Resolved resolve(Lexicon current, Lexicon legacy) {
+        DailyChallenge challenge = DailyChallenge.forDate(date, current);
+        if (matches(challenge, current)) return new Resolved(challenge, current);
+        if (current == legacy) return null;
+        challenge = DailyChallenge.forDate(date, legacy);
+        return matches(challenge, legacy) ? new Resolved(challenge, legacy) : null;
     }
 
     String uri() { return WEBSITE + payload(); }

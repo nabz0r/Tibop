@@ -37,17 +37,19 @@ final class SocialClient {
     private final SharedPreferences preferences;
     private final Supplier<String> base;
     private final Supplier<String> nickname;
+    private final Supplier<String> supportedLexicon;
     private final Consumer<JSONObject> referralBalance;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
 
     SocialClient(Context context, GameLanguage language, Supplier<String> base, Supplier<String> nickname,
-                 Consumer<JSONObject> referralBalance) {
+                 Supplier<String> supportedLexicon, Consumer<JSONObject> referralBalance) {
         this.context = context;
         this.language = language;
         preferences = context.getSharedPreferences(language.storageName("social_session"), Context.MODE_PRIVATE);
         this.base = base;
         this.nickname = nickname;
+        this.supportedLexicon = supportedLexicon;
         this.referralBalance = referralBalance;
     }
 
@@ -180,21 +182,22 @@ final class SocialClient {
             return;
         }
         String name = nickname.get();
+        String lexicon = supportedLexicon.get();
         worker.execute(() -> {
             try {
-                String token = createSession ? session(origin, name) : existingSession(origin);
+                String token = createSession ? session(origin, name, lexicon) : existingSession(origin);
                 if (token == null) {
                     deliver(origin, callback, null, context.getString(R.string.turn_notification_unavailable), false);
                     return;
                 }
                 JSONObject result;
                 try {
-                    result = exchange(origin, method, path, body, token);
+                    result = exchange(origin, method, path, body, token, lexicon);
                 } catch (ApiError exception) {
                     if (!path.equals("/me") || exception.status != HttpURLConnection.HTTP_UNAUTHORIZED) throw exception;
                     // A replaced server database can forget this guest. Reuse the local token on explicit refresh.
                     preferences.edit().remove("ready:" + origin).apply();
-                    result = exchange(origin, method, path, body, session(origin, name));
+                    result = exchange(origin, method, path, body, session(origin, name, lexicon), lexicon);
                 }
                 if (method.equals("DELETE") && path.equals("/profile")) {
                     preferences.edit().remove("token:" + origin).remove("ready:" + origin).apply();
@@ -226,7 +229,7 @@ final class SocialClient {
         return preferences.getString("token:" + origin, null);
     }
 
-    private String session(String origin, String name) throws IOException, JSONException, ApiError {
+    private String session(String origin, String name, String lexicon) throws IOException, JSONException, ApiError {
         String key = "token:" + origin;
         String ready = "ready:" + origin;
         String token = preferences.getString(key, null);
@@ -241,13 +244,13 @@ final class SocialClient {
         if (!preferences.getBoolean(ready, false)) {
             JSONObject session = json("token", token);
             if (name != null && !name.isBlank()) add(session, "nickname", name);
-            exchange(origin, "POST", "/session", session, null);
+            exchange(origin, "POST", "/session", session, null, lexicon);
             preferences.edit().putBoolean(ready, true).apply();
         }
         return token;
     }
 
-    private JSONObject exchange(String origin, String method, String path, JSONObject body, String token)
+    private JSONObject exchange(String origin, String method, String path, JSONObject body, String token, String lexicon)
             throws IOException, JSONException, ApiError {
         HttpURLConnection http = (HttpURLConnection) URI.create(origin + api(language) + path).toURL().openConnection();
         try {
@@ -258,6 +261,7 @@ final class SocialClient {
             http.setRequestMethod(method);
             http.setRequestProperty("Accept", "application/json");
             http.setRequestProperty("X-Lettrine-Duel-Version", "2");
+            if (lexicon != null) http.setRequestProperty("X-Lettrine-Lexicon", lexicon);
             if (token != null) http.setRequestProperty("Authorization", "Bearer " + token);
             if (body != null) {
                 byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);

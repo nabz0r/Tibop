@@ -22,6 +22,7 @@ import java.util.function.IntPredicate;
 final class TwoMoveChallengeScreen {
     private final ViewKit ui;
     private final Lexicon lexicon;
+    private final Lexicon legacyLexicon;
     private final LinearLayout panel;
     private final List<TwoMoveChallenge.Puzzle> catalog;
     private final SharedPreferences progress;
@@ -33,19 +34,21 @@ final class TwoMoveChallengeScreen {
     record CircuitPlay(String savedDraft, IntPredicate complete, Consumer<String> saveDraft,
                        Runnable next, boolean lastRound) {}
 
-    TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, Consumer<String> baseCompletion) {
-        this(ui, lexicon, null, baseCompletion);
+    TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, Lexicon legacyLexicon, Consumer<String> baseCompletion) {
+        this(ui, lexicon, legacyLexicon, null, baseCompletion);
         showCatalog();
     }
 
     TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, TwoMoveChallenge.Puzzle puzzle, CircuitPlay circuit) {
-        this(ui, lexicon, circuit, null);
+        this(ui, lexicon, lexicon, circuit, null);
         open(puzzle);
     }
 
-    private TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, CircuitPlay circuit, Consumer<String> baseCompletion) {
+    private TwoMoveChallengeScreen(ViewKit ui, Lexicon lexicon, Lexicon legacyLexicon,
+                                   CircuitPlay circuit, Consumer<String> baseCompletion) {
         this.ui = ui;
         this.lexicon = lexicon;
+        this.legacyLexicon = legacyLexicon;
         this.baseCompletion = baseCompletion;
         this.circuit = circuit;
         panel = ui.column();
@@ -99,7 +102,13 @@ final class TwoMoveChallengeScreen {
 
     private void open(TwoMoveChallenge.Puzzle puzzle) {
         panel.removeAllViews();
-        active = new PuzzlePanel(puzzle);
+        Lexicon dictionary = lexicon;
+        if (drafts != null) {
+            String dictionaryKey = "lexicon/" + puzzle.id();
+            if ((drafts.contains(puzzle.id()) || drafts.contains(dictionaryKey))
+                    && !lexicon.hash.equals(drafts.getString(dictionaryKey, ""))) dictionary = legacyLexicon;
+        }
+        active = new PuzzlePanel(puzzle, dictionary);
         panel.addView(active.layout);
         active.fitBoard();
         scrollToStart();
@@ -119,6 +128,7 @@ final class TwoMoveChallengeScreen {
 
     private final class PuzzlePanel implements BoardView.Interaction {
         private final TwoMoveChallenge.Puzzle puzzle;
+        private final Lexicon lexicon;
         private final LinearLayout layout = ui.column();
         private final List<FrenchGame.Tile> staged = new ArrayList<>();
         private final List<TextView> rackButtons = new ArrayList<>();
@@ -146,8 +156,9 @@ final class TwoMoveChallengeScreen {
         private boolean hintVisible;
         private boolean blocked;
 
-        PuzzlePanel(TwoMoveChallenge.Puzzle puzzle) {
+        PuzzlePanel(TwoMoveChallenge.Puzzle puzzle, Lexicon lexicon) {
             this.puzzle = puzzle;
+            this.lexicon = lexicon;
             position = puzzle.initial();
             layout.addView(ui.title(puzzle.title(), 24));
             ui.gap(layout, 4);
@@ -414,7 +425,7 @@ final class TwoMoveChallengeScreen {
                         progress.edit().putInt(puzzle.id(), position.totalScore()).apply();
                     }
                     baseCompletion.accept(puzzle.id());
-                    drafts.edit().remove(puzzle.id()).apply();
+                    removeDraft();
                 }
             }
             ui.audio.played();
@@ -441,6 +452,10 @@ final class TwoMoveChallengeScreen {
         }
 
         private void restart() {
+            if (drafts != null && second != null) {
+                open(puzzle);
+                return;
+            }
             position = puzzle.initial();
             first = null;
             second = null;
@@ -458,7 +473,7 @@ final class TwoMoveChallengeScreen {
 
         private void saveDraft() {
             if (drafts != null && first == null && staged.isEmpty()) {
-                drafts.edit().remove(puzzle.id()).apply();
+                drafts.edit().remove(puzzle.id()).putString("lexicon/" + puzzle.id(), lexicon.hash).apply();
                 return;
             }
             JSONArray moves = new JSONArray();
@@ -466,7 +481,12 @@ final class TwoMoveChallengeScreen {
             moves.put(MatchCodec.tiles(staged, true));
             String saved = moves.toString();
             if (drafts == null) circuit.saveDraft().accept(saved);
-            else drafts.edit().putString(puzzle.id(), saved).apply();
+            else drafts.edit().putString(puzzle.id(), saved)
+                    .putString("lexicon/" + puzzle.id(), lexicon.hash).apply();
+        }
+
+        private void removeDraft() {
+            drafts.edit().remove(puzzle.id()).remove("lexicon/" + puzzle.id()).apply();
         }
 
         private void restoreDraft() {

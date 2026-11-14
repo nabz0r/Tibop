@@ -1,12 +1,13 @@
 # WordRivet pour Android
 
-L’[APK de bêta 0.16.0](artifacts/lettrine.apk) de WordRivet fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il met à jour une installation directe qui utilise la même signature. Le [bundle 0.16.0](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK de bêta 0.16.1](artifacts/lettrine.apk) de WordRivet fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il met à jour une installation directe qui utilise la même signature. Le [bundle 0.16.1](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Tester la bêta sur son téléphone
 
-1. Sur Android, [téléchargez l’APK 0.16.0](https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.0/android/artifacts/lettrine.apk) et ouvrez-le. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Pour mettre à jour une bêta installée directement, gardez l’application en place et choisissez **Mettre à jour**.
+1. Sur Android, [téléchargez l’APK 0.16.1](https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.1/android/artifacts/lettrine.apk) et ouvrez-le. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Pour mettre à jour une bêta installée directement, gardez l’application en place et choisissez **Mettre à jour**.
 2. En français, ouvrez **Jouer contre NAB** ou **Jouer à deux ou plus** et démarrez une nouvelle partie. Faites glisser une tuile du chevalet sur une autre pour déplacer la première. Faites ensuite glisser une tuile sur le plateau. Quittez l’application en cours de tour et touchez **Reprendre ma partie** pour retrouver l’ordre des lettres et le brouillon.
 3. Pour tester le lexique, si le tirage le permet, essayez `KM` ou `KG` sur la case centrale, puis un mot courant comme `AS` ou `CHAT`. Le jeu indique le motif du refus ou le score du coup. Le filtre s’applique aux nouvelles parties classiques en français.
+4. Pour un duel avec le lexique filtré, installez tous les deux la mise à jour et ouvrez **Amis** pour vous connecter avant de lancer un nouveau duel. Les liens d’amitié déjà envoyés s’utilisent comme avant.
 
 ## Jouer
 
@@ -40,7 +41,9 @@ L’[APK de bêta 0.16.0](artifacts/lettrine.apk) de WordRivet fonctionne en inv
 - La fin de partie affiche le résultat et permet de relancer le même mode avec **Nouvelle partie**. Lorsqu’un autre coup rapporte davantage, NAB présente une tactique et surligne les cases utiles. **Rejouer ce coup** replace le plateau et le chevalet avant le tour. **Bilan avec NAB** affiche jusqu’à trois comparaisons détaillées, également accessibles depuis l’historique.
 - **Rejouer mes coups manqués** ouvre la position et le chevalet du tour sélectionné dans le bilan. Ce bouton apparaît quand NAB a trouvé un placement qui marque plus de points et que le journal contient le chevalet du tour. Jouez votre propre tentative ou affichez la proposition. Les exercices ne modifient ni la partie ni l’Elo.
 
-Les nouvelles parties classiques en français, en solo ou sur le même appareil, utilisent [Grammalecte 7.7 · Classique](../data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android). Ce filtre retire 258 formes et conserve 406 054 formes, dont 78 de deux lettres. Les parties françaises déjà commencées, les défis, le jeu social et le Bluetooth utilisent leur liste Grammalecte 7.7 d’origine. Le jeu anglais utilise [ENABLE2K](../data/en/README.md). Les lettres et leurs valeurs suivent la langue. Pour le lexique filtré, le niveau Maître applique ses poids de référence. Les poids entraînés s’activent pour le lexique français d’origine à l’empreinte correspondante.
+Les nouvelles parties solo et locales et les nouveaux défis français utilisent [Grammalecte 7.7 · Classique](../data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android). Ce filtre retire 258 formes et conserve 406 054 formes, dont 78 de deux lettres. Une partie sauvegardée, un défi déjà commencé et un lien « Bats mon score » gardent le lexique de leur édition. Pour ouvrir un nouveau lien filtré, installez WordRivet 0.16.1 ou une version ultérieure.
+
+Le serveur applique le lexique filtré aux nouveaux duels français quand les deux joueurs se sont connectés avec une version compatible. Les duels en cours et leurs revanches miroir gardent leur lexique. Les invitations d’amitié conservent leur lien. Le tournoi adopte le filtre à partir du prochain week-end après la mise à jour du serveur. Le Bluetooth utilise Grammalecte 7.7 d’origine et le jeu anglais [ENABLE2K](../data/en/README.md). Pour le lexique filtré, le niveau Maître applique ses poids de référence. Les poids entraînés restent associés à l’empreinte française d’origine.
 
 SmolLM2 135M Instruct quantifié en 4 bits tourne sur le processeur via llama.cpp lorsque vous demandez à NAB de choisir un détail. Le premier appel prépare une copie des poids dans le stockage privé de l’application. L’APK pèse environ 97 Mo et cette copie utilise environ 92 Mo supplémentaires. Le moteur Android calcule les placements, les scores et l’Elo local. Les explications fonctionnent en mode avion. [Modèle, empreinte et licences](app/src/main/assets/SmolLM2-NOTICE.md)
 
@@ -73,7 +76,7 @@ Dans la Play Console, créer la version sur le canal de test souhaité, configur
 
 Dans **Profil → Réglages → Lexique personnel**, importez un fichier TXT UTF-8 autorisé contenant une forme de deux à quinze lettres par ligne. Le français normalise les accents et les ligatures. L’application dédoublonne et trie le fichier. L’entraînement permet le solo contre NAB ou la partie locale sur le même appareil. Chaque langue et chaque empreinte de liste ont leurs propres sauvegardes et leur propre historique. Les parties de ce mode ne modifient ni l’Elo ni les déblocages. Les listes personnelles et leurs parties restent sur l’appareil. L’import à l’identique retrouve les sauvegardes associées.
 
-Grammalecte et ENABLE2K restent les lexiques des défis et du jeu social. Si vous disposez d’une liste de compétition que vous êtes autorisé à utiliser dans l’application, vous pouvez l’importer de la même manière. La référence française est l’ODS 9, l’internationale anglophone est CSW24 et la référence NASPA en Amérique du Nord est NWL2023. L’APK ne distribue pas ces trois listes. L’entraînement valide les mots automatiquement avec les règles de WordRivet. [Fédération française](https://www.ffsc.fr/initiation.php?page=mots-2-lettres) · [Collins](https://scrabble.collinsdictionary.com/tools/) · [Licence NASPA](https://scrabbleplayers.org/w/Licensing)
+Le lexique personnel alimente les parties d’entraînement. Si vous disposez d’une liste de compétition que vous êtes autorisé à utiliser dans l’application, vous pouvez l’importer de la même manière. La référence française est l’ODS 9, l’internationale anglophone est CSW24 et la référence NASPA en Amérique du Nord est NWL2023. L’entraînement valide les mots automatiquement avec les règles de WordRivet. [Fédération française](https://www.ffsc.fr/initiation.php?page=mots-2-lettres) · [Collins](https://scrabble.collinsdictionary.com/tools/) · [Licence NASPA](https://scrabbleplayers.org/w/Licensing)
 
 ## Transférer sa progression
 
@@ -175,6 +178,12 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 - Sur Android 16, l’annulation de la vidéo de démonstration a laissé le solde intact. Une annonce Google terminée a crédité un ticket bonus.
 
 Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.
+
+## Vérification de la version 0.16.1
+
+- Sur émulateur Android 16, l’APK signé s’installe par-dessus la version précédente. Un ancien lien de défi et un lien filtré ouvrent le même plateau avec le même score à battre. Le brouillon du jour est conservé dans les deux cas.
+- Sur une base de test créée par le serveur précédent, une invitation d’amitié a été acceptée et un duel en cours a pu se terminer avec son plateau et ses règles d’origine. Le nouveau serveur a refusé `CH` et accepté `CLOCHES` dans un duel filtré. La revanche miroir et le tournoi déjà ouvert ont conservé leurs règles.
+- Les 76 tests Android, Lint et les 45 tests Rust passent. Le bundle signé passe la validation de `bundletool`.
 
 ## Vérification de la version 0.16.0
 

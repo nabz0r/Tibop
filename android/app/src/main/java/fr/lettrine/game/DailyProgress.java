@@ -25,22 +25,36 @@ final class DailyProgress {
         }
     }
 
+    String recordedLexicon(LocalDate date) {
+        String scoreKey = key(date);
+        synchronized (preferences) {
+            return preferences.contains(scoreKey) ? preferences.getString("lexicon/" + scoreKey, "") : null;
+        }
+    }
+
     Achievements achievements(LocalDate today) {
         synchronized (preferences) {
             return achievements(preferences.getAll(), today);
         }
     }
 
-    Snapshot complete(LocalDate challengeDate, int score) throws IOException {
+    Snapshot complete(LocalDate challengeDate, int score, String lexicon) throws IOException {
         if (score < 0) throw new IllegalArgumentException("Le score du défi doit être positif ou nul.");
         String key = key(challengeDate);
+        String lexiconKey = "lexicon/" + key;
         synchronized (preferences) {
             int previous = preferences.getInt(key, -1);
-            if (score > previous && !preferences.edit().putInt(key, score).commit()) {
+            String previousLexicon = preferences.getString(lexiconKey, null);
+            SharedPreferences.Editor editor = preferences.edit().putInt(key, score);
+            if (lexicon.isEmpty()) editor.remove(lexiconKey);
+            else editor.putString(lexiconKey, lexicon);
+            if (score > previous && !editor.commit()) {
                 // SharedPreferences updates memory before committing to disk.
                 SharedPreferences.Editor restore = preferences.edit();
                 if (previous < 0) restore.remove(key);
                 else restore.putInt(key, previous);
+                if (previousLexicon == null) restore.remove(lexiconKey);
+                else restore.putString(lexiconKey, previousLexicon);
                 restore.apply();
                 throw new IOException("Le score du défi n’a pas pu être enregistré.");
             }
