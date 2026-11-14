@@ -22,6 +22,7 @@
     <string name="practice_joker_choice">Choose a letter for the blank tile</string>
     <string name="practice_cancel">Cancel</string>
     <string name="practice_letter">Letter %1$c</string>
+    <string name="practice_rack_selected">Selected</string>
     <string name="practice_joker">Blank tile</string>
     <string name="practice_placed">%1$s, already on the board</string>
     <string name="practice_board_description">Practice board, 15 rows by 15 columns.</string>

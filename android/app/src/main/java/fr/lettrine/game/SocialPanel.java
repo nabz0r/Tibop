@@ -6,10 +6,8 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
 import android.view.View;
-import android.view.ViewParent;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.json.JSONArray;
@@ -36,6 +34,7 @@ final class SocialPanel {
     private final Supplier<String> betaInviteBase;
     private final Runnable editEndpoint;
     private final Consumer<FriendInvitation> openFriendInvitation;
+    private final Consumer<String> clearPendingInvitation;
     private final LinearLayout root;
     private final TextView notice;
     private final LinearLayout body;
@@ -48,7 +47,7 @@ final class SocialPanel {
     SocialPanel(ViewKit ui, SocialClient client, Consumer<JSONObject> openDuel, String invitation,
                 Consumer<String> connectGoogle, Runnable openTournament, Runnable openNotifications,
                 Consumer<BetaLink> openBeta, Supplier<String> betaInviteBase, Runnable editEndpoint,
-                Consumer<FriendInvitation> openFriendInvitation) {
+                Consumer<FriendInvitation> openFriendInvitation, Consumer<String> clearPendingInvitation) {
         this.ui = ui;
         this.client = client;
         this.openDuel = openDuel;
@@ -60,6 +59,7 @@ final class SocialPanel {
         this.betaInviteBase = betaInviteBase;
         this.editEndpoint = editEndpoint;
         this.openFriendInvitation = openFriendInvitation;
+        this.clearPendingInvitation = clearPendingInvitation;
 
         root = ui.column();
         notice = ui.body("");
@@ -78,6 +78,12 @@ final class SocialPanel {
     }
 
     View view() { return root; }
+
+    void clearInvitation(String token) {
+        if (!token.equals(invitation)) return;
+        invitation = null;
+        render();
+    }
 
     private void load() {
         if (!begin()) return;
@@ -177,6 +183,9 @@ final class SocialPanel {
         invite.addView(ui.body(label(R.string.social_invite_ready)));
         invite.addView(ui.body(label(R.string.referral_invite_info)));
         addAction(invite, R.string.social_accept_invite, true, () -> accept(invitation));
+        addAction(invite, R.string.social_dismiss_invite, false, () -> {
+            if (!busy && invitation != null) clearPendingInvitation.accept(invitation);
+        });
         body.addView(invite);
     }
 
@@ -334,30 +343,19 @@ final class SocialPanel {
                     : R.string.social_beta_invalid));
             else {
                 dialog.dismiss();
-                if (!configured || friend.language() != null && friend.language() != ui.language) {
-                    openFriendInvitation.accept(friend);
-                    return;
-                }
-                invitation = friend.token();
-                render();
-                for (ViewParent parent = root.getParent(); parent != null; parent = parent.getParent()) {
-                    if (parent instanceof ScrollView scroll) {
-                        scroll.smoothScrollTo(0, 0);
-                        break;
-                    }
-                }
+                openFriendInvitation.accept(friend);
             }
         }));
         dialog.show();
     }
 
     private void accept(String token) {
-        if (!begin()) return;
+        if (token == null || !begin()) return;
         client.acceptInvitation(token, (result, error) -> {
             if (!finish(error)) return;
-            invitation = null;
             tab = Tab.FRIENDS;
-            load();
+            clearPendingInvitation.accept(token);
+            if (root.isAttachedToWindow()) load();
         });
     }
 

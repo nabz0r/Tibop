@@ -20,6 +20,7 @@
     <string name="social_link_hint">Paste the invitation link or code</string>
     <string name="social_invalid_invite">This invitation link is invalid.</string>
     <string name="social_accept_invite">Accept invitation</string>
+    <string name="social_dismiss_invite">Dismiss invitation</string>
     <string name="social_invite_ready">You have a friend invitation. Accept it to share your nickname and duel results with this friend.</string>
     <string name="social_no_duels">Start a duel from your friends list. You both get the same board and play one move whenever you like.</string>
     <string name="social_no_friends">Send an invitation link to add a friend.</string>

@@ -91,8 +91,10 @@ public final class MainActivity extends Activity {
     private BonusCircuitScreen bonusCircuit;
     private BonusEconomy economy;
     private SocialClient socialClient;
+    private SocialPanel socialPanel;
     private CancellationSignal googleSignIn;
     private String pendingSocialInvite;
+    private String pendingSocialInviteOrigin;
     private Object pendingTurnNavigation;
     private Lexicon lexicon;
     private Lexicon bundledLexicon;
@@ -165,6 +167,10 @@ public final class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        if (state != null) {
+            pendingSocialInvite = state.getString("pendingSocialInvite");
+            pendingSocialInviteOrigin = state.getString("pendingSocialInviteOrigin");
+        }
         gameLanguage = AppLocale.language(this);
         personalLexicon = new PersonalLexicon(this, gameLanguage);
         preferences = getSharedPreferences("preferences", MODE_PRIVATE);
@@ -240,6 +246,12 @@ public final class MainActivity extends Activity {
                 });
             }
         });
+    }
+
+    @Override protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putString("pendingSocialInvite", pendingSocialInvite);
+        state.putString("pendingSocialInviteOrigin", pendingSocialInviteOrigin);
     }
 
     @Override protected void onNewIntent(Intent intent) {
@@ -351,6 +363,7 @@ public final class MainActivity extends Activity {
         if (screen == Screen.GAME && !persist()) return;
         setIntent(new Intent(this, MainActivity.class));
         pendingSocialInvite = invitation.token();
+        pendingSocialInviteOrigin = SocialClient.origin(socialBaseUrl());
         showSocial();
     }
 
@@ -1184,12 +1197,13 @@ public final class MainActivity extends Activity {
     private final class Arena {
         final LinearLayout scores = ui.row();
         final LinearLayout rack = ui.row();
+        final View[] rackTokens = new View[FrenchGame.RACK_SIZE];
         final TextView status = ui.body("");
         final TextView preview = ui.text("", 14, ui.palette.ink(), ui.medium);
         final TextView confirm = ui.button(getString(R.string.practice_ready), true, MainActivity.this::commit);
         final TextView recall = ui.textButton(getString(R.string.app_recall_tiles), () -> {
             clearStaged();
-            updateArena(-1);
+            updateDraft(-1);
         });
         final TextView tools = ui.textButton(getString(R.string.app_turn_tools), MainActivity.this::turnOptions);
         final TextView review = ui.button(getString(R.string.match_review), true, MainActivity.this::reviewFinishedGame);
@@ -1288,6 +1302,7 @@ public final class MainActivity extends Activity {
         arena.status.setText(current.end() != null ? moveCount(current.history().size())
                 : getString(R.string.app_bag_turn, current.bagSize(), current.history().size() + 1));
         arena.rack.removeAllViews();
+        Arrays.fill(arena.rackTokens, null);
 
         boolean canPlay = myTurn(current) && !analysing;
         FrenchGame.Preview result = evaluate(current);
@@ -1343,25 +1358,46 @@ public final class MainActivity extends Activity {
             LinearLayout token = ui.column();
             token.setGravity(Gravity.CENTER);
             token.setMinimumHeight(ui.dp(49));
-            token.setBackground(ui.rackTile(index == selected));
+            updateRackSelection(token, index);
             TextView glyph = ui.text(occupied[index] ? " " : String.valueOf(letter),
                     22, ui.tileInk(), ui.medium);
             glyph.setGravity(Gravity.CENTER);
+            glyph.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             token.addView(glyph);
             if (!occupied[index]) {
-                TextView value = ui.text(Integer.toString(gameLanguage.value(letter)), 10, ui.tileInk(), ui.medium);
+                int tilePoints = gameLanguage.value(letter);
+                TextView value = ui.text(Integer.toString(tilePoints), 10, ui.tileInk(), ui.medium);
                 value.setGravity(Gravity.CENTER);
+                value.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
                 token.addView(value);
-                token.setContentDescription(letter == FrenchGame.JOKER ? getString(R.string.practice_joker) : getString(R.string.practice_letter, letter));
-                token.setOnClickListener(view -> {
-                    if (analysing) return;
-                    selected = selected == index ? -1 : index;
-                    updateArena(-1);
-                });
+                token.setContentDescription(letter == FrenchGame.JOKER ? getString(R.string.practice_joker)
+                        : getString(R.string.board_accessibility_tile, letter, points(tilePoints)));
+                token.setOnClickListener(view -> selectRackTile(index));
                 ui.dragTile(token, index, letter, () -> !analysing && myTurn(state()));
-            } else token.setAlpha(0.42f);
+            } else {
+                token.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                token.setAlpha(0.42f);
+            }
+            arena.rackTokens[index] = token;
             ui.weight(arena.rack, token);
         }
+    }
+
+    private void selectRackTile(int index) {
+        if (analysing || !myTurn(state())) return;
+        int previous = selected;
+        selected = selected == index ? -1 : index;
+        if (previous >= 0) updateRackSelection(arena.rackTokens[previous], previous);
+        if (selected >= 0) updateRackSelection(arena.rackTokens[selected], selected);
+        arena.board.refreshCellActions();
+    }
+
+    private void updateRackSelection(View token, int index) {
+        boolean active = index == selected;
+        token.setSelected(active);
+        token.setBackground(ui.rackTile(active));
+        androidx.core.view.ViewCompat.setStateDescription(token,
+                active ? getString(R.string.practice_rack_selected) : null);
     }
 
     private FrenchGame.Preview evaluate(MatchCodec.State current) {
@@ -1375,7 +1411,7 @@ public final class MainActivity extends Activity {
         int index = stagedAt(position);
         if (index >= 0) {
             selected = staged.remove(index).rackIndex();
-            updateArena(-1);
+            updateDraft(-1);
             return;
         }
         if (selected >= 0) place(position, selected);
@@ -1394,7 +1430,7 @@ public final class MainActivity extends Activity {
         FrenchGame.Tile tile = staged.get(index);
         staged.set(index, new FrenchGame.Tile(to, tile.rackIndex(), tile.letter(), tile.blank()));
         audio.tile();
-        updateArena(to);
+        updateDraft(to);
     }
 
     private void place(int position, int rackIndex) {
@@ -1420,6 +1456,11 @@ public final class MainActivity extends Activity {
         selected = -1;
         if (arena != null) arena.board.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
         audio.tile();
+        updateDraft(position);
+    }
+
+    private void updateDraft(int position) {
+        persist();
         updateArena(position);
     }
 
@@ -1580,8 +1621,7 @@ public final class MainActivity extends Activity {
                 clearStaged();
                 staged.addAll(result.tiles());
                 assisted = true;
-                persist();
-                updateArena(result.tiles().get(0).position());
+                updateDraft(result.tiles().get(0).position());
                 toast(getString(R.string.app_hint_score, points(result.score())));
             });
         });
@@ -2312,11 +2352,22 @@ public final class MainActivity extends Activity {
         page(Screen.SOCIAL, true);
         top(getString(R.string.app_name), null, ui.textButton(getString(R.string.social_navigation_endpoint), this::editSocialEndpoint));
         heading(getString(R.string.social_navigation_friends), "");
-        String invite = pendingSocialInvite;
-        if (socialClient.configured()) pendingSocialInvite = null;
-        content.addView(new SocialPanel(ui, socialClient, this::showSocialDuel, invite, this::connectGoogle,
+        if (pendingSocialInvite != null) {
+            String origin = SocialClient.origin(socialBaseUrl());
+            if (pendingSocialInviteOrigin == null) pendingSocialInviteOrigin = origin;
+            else if (!pendingSocialInviteOrigin.equals(origin)) clearPendingSocialInvite(pendingSocialInvite);
+        }
+        socialPanel = new SocialPanel(ui, socialClient, this::showSocialDuel, pendingSocialInvite, this::connectGoogle,
                 this::showTournament, this::editTurnNotifications, this::confirmBeta, this::betaInviteBase,
-                this::editSocialEndpoint, this::openFriendInvitation).view());
+                this::editSocialEndpoint, this::openFriendInvitation, this::clearPendingSocialInvite);
+        content.addView(socialPanel.view());
+    }
+
+    private void clearPendingSocialInvite(String token) {
+        if (!token.equals(pendingSocialInvite)) return;
+        pendingSocialInvite = null;
+        pendingSocialInviteOrigin = null;
+        if (screen == Screen.SOCIAL && socialPanel != null) socialPanel.clearInvitation(token);
     }
 
     private void showTournament() {

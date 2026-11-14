@@ -1,6 +1,6 @@
 # WordRivet pour Android
 
-L’[APK 0.15.2](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). WordRivet est la bêta Android de Lettrine. L’identifiant Android et la signature de l’APK permettent de mettre à jour une installation directe. Le [bundle 0.15.2](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK 0.15.3](artifacts/lettrine.apk) fonctionne en invité hors ligne à partir d’Android 8 (API 26). WordRivet est la bêta Android de Lettrine. L’identifiant Android et la signature de l’APK permettent de mettre à jour une installation directe. Le [bundle 0.15.3](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Jouer
 
@@ -167,6 +167,14 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 - Sur Android 16, l’annulation de la vidéo de démonstration a laissé le solde intact. Une annonce Google terminée a crédité un ticket bonus.
 
 Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.
+
+## Vérification de la version 0.15.3
+
+- La partie de référence dans l’APK 0.15.2 s’est terminée à 539–367 pour le joueur de test face à NAB Adaptatif en 23 tours, par épuisement du chevalet. Les coups ont été saisis à l’écran par un script de test. Le résultat est apparu une seule fois dans l’historique, avec un Elo local passé de 1 022 à 1 040, et le rejeu s’est ouvert au dernier tour.
+- La partie de vérification dans l’APK 0.15.3 s’est terminée à 435–402 face à NAB Adaptatif en 26 tours. Un arrêt forcé pendant le brouillon de FIRME a conservé le plateau, les chevalets, les scores et la pose en cours. Le résultat s’est archivé une fois et le rejeu s’est ouvert au tour 26. Le brouillon est désormais enregistré à chaque pose, déplacement ou retrait de tuile.
+- Une invitation Amis reste visible après un changement d’onglet ou une erreur de connexion. Elle est associée au serveur qui l’a fournie. L’action **Ignorer** permet de la retirer.
+- Sur un émulateur Android 16 à pages de 16 Kio, TalkBack a conservé le focus lors de la sélection d’une lettre et annoncé sa valeur. Le test a couvert le déplacement du focus entre cases, l’annonce d’une case bonus, la pose et le retrait par double appui, le zoom à 125 % et la validation d’ALEXIES pour 16 points, suivie du coup de NAB.
+- La mise à jour de l’APK depuis la 0.15.2 conserve à l’identique les fichiers de sauvegarde et d’historique contrôlés sur Android 16. Les 65 tests unitaires Android et Lint passent. Le bundle signé passe la validation de `bundletool`.
 
 ## Vérification de la version 0.15.2
 

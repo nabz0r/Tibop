@@ -7,7 +7,7 @@
 <p align="center">Le jeu de lettres de Lettrine pour Android. Affrontez NAB en français ou en anglais et revenez sur vos meilleurs coups.</p>
 
 <p align="center">
-  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk">Télécharger l’APK 0.15.2</a></strong> ·
+  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/main/android/artifacts/lettrine.apk">Télécharger l’APK 0.15.3</a></strong> ·
   <a href="android/README.md">Guide Android</a> ·
   <a href="#lettrine-studio">Studio sur Mac</a>
 </p>
@@ -38,7 +38,7 @@ Dans **Historique**, rejouez la partie coup par coup, suivez votre progression E
 
 **Expliquer ce coup** affiche immédiatement le score et son premier détail vérifié, même en mode avion. Ouvrez les autres détails pour lire les mots croisés, les primes ou le rôle des jokers. Sur demande, SmolLM2 135M Instruct Q4_0 sélectionne un détail à mettre en avant. Le moteur Android joue les coups de NAB et calcule les scores. [Modèle, empreinte et licences](android/app/src/main/assets/SmolLM2-NOTICE.md)
 
-[Vérifications de la version 0.15.2](docs/SIMULATIONS_ANDROID.md#vérifier-wordrivet-0152-sur-android)
+[Essai de bout en bout sur Android](android/README.md#vérification-de-la-version-0153) · [Mesures du modèle embarqué](docs/SIMULATIONS_ANDROID.md#vérifier-wordrivet-0152-sur-android)
 
 ### Garder votre progression
 

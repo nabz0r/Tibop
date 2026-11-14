@@ -199,6 +199,10 @@ final class BoardView extends View {
         listener.accept(zoom);
     }
 
+    void refreshCellActions() {
+        accessibility.invalidateRoot();
+    }
+
     void resetZoom() { zoomAt(1, side * 0.5f, side * 0.5f); }
 
     void focusArea(int minRow, int minCol, int maxRow, int maxCol) {

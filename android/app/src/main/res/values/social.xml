@@ -20,6 +20,7 @@
     <string name="social_link_hint">Collez le lien ou le code d’invitation</string>
     <string name="social_invalid_invite">Ce lien d’invitation est invalide.</string>
     <string name="social_accept_invite">Accepter l’invitation</string>
+    <string name="social_dismiss_invite">Ignorer l’invitation</string>
     <string name="social_invite_ready">Une invitation WordRivet vous attend. En l’acceptant, vous partagez votre pseudo et vos résultats de duel avec cet ami.</string>
     <string name="social_no_duels">Lancez un duel depuis votre liste d’amis. Chacun dispose du même plateau et joue un seul coup quand il le souhaite.</string>
     <string name="social_no_friends">Envoyez un lien d’invitation pour retrouver un ami ici.</string>
