@@ -191,15 +191,28 @@ final class SocialDuelPanel {
         TextView theirs = ui.button(label(R.string.social_duel_opponent_move), false, () -> {});
         yours.setMinHeight(ui.dp(48));
         theirs.setMinHeight(ui.dp(48));
-        yours.setOnClickListener(view -> showMove(board, position, ownTiles, yours, theirs));
-        theirs.setOnClickListener(view -> showMove(board, position, opponentTiles, theirs, yours));
+        TextView definition = DefinitionAction.button(ui);
+        List<String> ownWords = DefinitionAction.recordedWords(position.board(), position.blanks(), ownTiles,
+                ui.language, duel.optInt("score", -1));
+        List<String> opponentWords = DefinitionAction.recordedWords(position.board(), position.blanks(), opponentTiles,
+                ui.language, duel.optInt("opponent_score", -1));
+        Runnable showYourMove = () -> {
+            showMove(board, position, ownTiles, yours, theirs);
+            DefinitionAction.update(ui, definition, ownWords);
+        };
+        yours.setOnClickListener(view -> showYourMove.run());
+        theirs.setOnClickListener(view -> {
+            showMove(board, position, opponentTiles, theirs, yours);
+            DefinitionAction.update(ui, definition, opponentWords);
+        });
         ui.weight(controls, yours);
         ui.space(controls, 6);
         ui.weight(controls, theirs);
         root.addView(controls);
+        root.addView(definition);
         ui.gap(root, 6);
         root.addView(board, new LinearLayout.LayoutParams(-1, -2));
-        showMove(board, position, ownTiles, yours, theirs);
+        showYourMove.run();
     }
 
     private void showMove(BoardView board, PracticePosition position, List<FrenchGame.Tile> tiles,

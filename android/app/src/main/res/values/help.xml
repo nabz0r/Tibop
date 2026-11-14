@@ -15,11 +15,11 @@
     <string name="help_tutorial_clear">Effacez votre essai, puis posez seulement le S en H12.</string>
     <string name="help_tutorial_done">Coup réussi. La case L2 a doublé la valeur du S.</string>
     <string name="help_rules">Former un mot</string>
-    <string name="help_rules_copy">Le premier mot traverse l’étoile centrale. Ensuite, raccordez votre coup à une lettre déjà posée. Les nouvelles lettres d’un coup forment une seule ligne ou colonne. Tous les mots créés doivent figurer dans le lexique français intégré.</string>
+    <string name="help_rules_copy">Le premier mot traverse l’étoile centrale. Ensuite, raccordez votre coup à une lettre déjà posée. Les nouvelles lettres d’un coup forment une seule ligne ou colonne. Tous les mots formés doivent figurer dans le lexique de la partie.</string>
     <string name="help_scoring">Compter les points</string>
     <string name="help_scoring_copy">Additionnez la valeur des lettres des mots créés. L2 et L3 multiplient une lettre. M2 et M3 multiplient le mot. Ces bonus s’appliquent quand vous recouvrez la case pour la première fois. Un joker vaut zéro. Poser les sept lettres du chevalet rapporte 50 points de plus.</string>
     <string name="help_local_bot">NAB joue sur votre téléphone</string>
-    <string name="help_local_bot_copy">NAB est votre adversaire en solo. Son moteur cherche des placements légaux dans le lexique embarqué. Le niveau adaptatif tient compte de votre Elo local et de l’écart de score pendant la partie.</string>
+    <string name="help_local_bot_copy">NAB est votre adversaire en solo. Son moteur cherche des placements légaux avec le même lexique que vous. Le niveau adaptatif tient compte de votre Elo local et de l’écart de score pendant la partie.</string>
     <string name="help_competition">S’entraîner avec un lexique de compétition</string>
     <string name="help_competition_copy">Vous pouvez importer une liste autorisée dans Profil → Réglages → Lexique personnel. L’entraînement Android valide les mots à la pose et se joue sans pendule. Dans le règlement FISF, la pendule limite le temps de jeu et l’adversaire peut contester les mots après la pose.</string>
     <string name="help_local_model">Explications des coups hors ligne</string>

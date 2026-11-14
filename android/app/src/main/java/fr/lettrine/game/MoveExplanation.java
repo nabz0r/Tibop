@@ -10,11 +10,17 @@ final class MoveExplanation {
     private final String summary;
     private final String facts;
     private final List<Focus> focuses;
+    private final List<String> words;
 
     private MoveExplanation(String summary, String facts, List<Focus> focuses) {
+        this(summary, facts, focuses, List.of());
+    }
+
+    private MoveExplanation(String summary, String facts, List<Focus> focuses, List<String> words) {
         this.summary = summary;
         this.facts = facts;
         this.focuses = List.copyOf(focuses);
+        this.words = words;
     }
 
     static MoveExplanation create(List<FrenchGame.Move> history, int moveIndex) {
@@ -35,6 +41,8 @@ final class MoveExplanation {
     String summary() { return summary; }
 
     String facts() { return facts; }
+
+    List<String> words() { return words; }
 
     List<String> options() { return focuses.stream().map(Focus::label).collect(Collectors.toList()); }
 
@@ -64,7 +72,7 @@ final class MoveExplanation {
         int total = words.stream().mapToInt(FrenchGame.FormedWord::score).sum() + (bingo ? 50 : 0);
         String facts = "Played word " + word + " for " + move.score() + " points.";
         if (words.isEmpty() || !words.get(0).word().equals(word) || total != move.score()) {
-            return new MoveExplanation(summary, facts, List.of());
+            return new MoveExplanation(summary, facts, List.of(), List.of(word));
         }
 
         List<Focus> focuses = new ArrayList<>();
@@ -128,7 +136,7 @@ final class MoveExplanation {
                 : count + language.text(" nouvelles lettres ont été posées.", " new tiles were placed.");
         focuses.add(new Focus(count + " newly placed tiles and " + words.size() + " formed words",
                 placement + origin + (bingo ? language.text(" La prime de scrabble ajoute 50 points.", " The seven-tile bonus adds 50 points.") : "")));
-        return new MoveExplanation(summary, facts, focuses);
+        return new MoveExplanation(summary, facts, focuses, words.stream().map(FrenchGame.FormedWord::word).toList());
     }
 
     private static MoveExplanation pass(List<FrenchGame.Move> history, int index, GameLanguage language) {

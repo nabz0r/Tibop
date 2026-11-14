@@ -1,10 +1,10 @@
 # WordRivet pour Android
 
-L’[APK de bêta 0.16.1](artifacts/lettrine.apk) de WordRivet fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il met à jour une installation directe qui utilise la même signature. Le [bundle 0.16.1](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK de bêta 0.16.2](artifacts/lettrine.apk) de WordRivet fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il met à jour une installation directe qui utilise la même signature. Le [bundle 0.16.2](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Tester la bêta sur son téléphone
 
-1. Sur Android, [téléchargez l’APK 0.16.1](https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.1/android/artifacts/lettrine.apk) et ouvrez-le. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Pour mettre à jour une bêta installée directement, gardez l’application en place et choisissez **Mettre à jour**.
+1. Sur Android, [téléchargez l’APK 0.16.2](https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.2/android/artifacts/lettrine.apk) et ouvrez-le. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Pour mettre à jour une bêta installée directement, gardez l’application en place et choisissez **Mettre à jour**.
 2. En français, ouvrez **Jouer contre NAB** ou **Jouer à deux ou plus** et démarrez une nouvelle partie. Faites glisser une tuile du chevalet sur une autre pour déplacer la première. Faites ensuite glisser une tuile sur le plateau. Quittez l’application en cours de tour et touchez **Reprendre ma partie** pour retrouver l’ordre des lettres et le brouillon.
 3. Pour tester le lexique, si le tirage le permet, essayez `KM` ou `KG` sur la case centrale, puis un mot courant comme `AS` ou `CHAT`. Le jeu indique le motif du refus ou le score du coup. Le filtre s’applique aux nouvelles parties classiques en français.
 4. Pour un duel avec le lexique filtré, installez tous les deux la mise à jour et ouvrez **Amis** pour vous connecter avant de lancer un nouveau duel. Les liens d’amitié déjà envoyés s’utilisent comme avant.
@@ -59,7 +59,7 @@ Installer le SDK Android 36, le NDK `28.2.13676358`, Java 17, Python 3, CMake 3.
 
 Sur un poste où les dépendances sont en cache, `LETTRINE_GRADLE_OFFLINE=1` compile sans téléchargement. `ANDROID_NDK_HOME` permet de sélectionner le NDK. Le script fabrique les métadonnées du lexique classique à partir des [exclusions versionnées](../data/fr/classic-exclusions.txt). Pour tester un autre lexique autorisé, définissez `LETTRINE_WORDS` avec un chemin de fichier UTF-8 contenant un mot par ligne et `LETTRINE_WORDS_LABEL` avec le nom de l’édition. Une compilation avec une liste fournie utilise cette liste sans le filtre Classique.
 
-Les livrables de la bêta utilisent les annonces de démonstration Google. Pour les reproduire, préfixez les commandes de compilation par `LETTRINE_ADMOB_TEST=1`. Sans cet indicateur et sans identifiants AdMob configurés, la compilation ne contient pas le SDK publicitaire. [Configuration et récompenses](../docs/ECONOMIE_ANDROID.md) · [Simulations du moteur Android](../docs/SIMULATIONS_ANDROID.md)
+L’APK direct utilise les annonces de démonstration Google. Pour le reproduire, préfixez la compilation de l’APK par `LETTRINE_ADMOB_TEST=1`. Le bundle signé fourni se compile avec `LETTRINE_ADMOB_TEST=0` et sans identifiants AdMob. [Configuration et récompenses](../docs/ECONOMIE_ANDROID.md) · [Simulations du moteur Android](../docs/SIMULATIONS_ANDROID.md)
 
 ## Préparer la bêta Google Play
 
@@ -77,6 +77,16 @@ Dans la Play Console, créer la version sur le canal de test souhaité, configur
 Dans **Profil → Réglages → Lexique personnel**, importez un fichier TXT UTF-8 autorisé contenant une forme de deux à quinze lettres par ligne. Le français normalise les accents et les ligatures. L’application dédoublonne et trie le fichier. L’entraînement permet le solo contre NAB ou la partie locale sur le même appareil. Chaque langue et chaque empreinte de liste ont leurs propres sauvegardes et leur propre historique. Les parties de ce mode ne modifient ni l’Elo ni les déblocages. Les listes personnelles et leurs parties restent sur l’appareil. L’import à l’identique retrouve les sauvegardes associées.
 
 Le lexique personnel alimente les parties d’entraînement. Si vous disposez d’une liste de compétition que vous êtes autorisé à utiliser dans l’application, vous pouvez l’importer de la même manière. La référence française est l’ODS 9, l’internationale anglophone est CSW24 et la référence NASPA en Amérique du Nord est NWL2023. L’entraînement valide les mots automatiquement avec les règles de WordRivet. [Fédération française](https://www.ffsc.fr/initiation.php?page=mots-2-lettres) · [Collins](https://scrabble.collinsdictionary.com/tools/) · [Licence NASPA](https://scrabbleplayers.org/w/Licensing)
+
+Pour importer une liste anglaise, touchez **EN** à l’accueil, ouvrez **Profile → Settings → Personal dictionary**, puis choisissez **Play with this dictionary** après l’import. Touchez **FR** à l’accueil pour retrouver la progression française. Le moteur de NAB utilise le lexique de la partie pour ses coups et pour les alternatives dans le bilan. Le modèle local choisit parmi les explications calculées par le moteur.
+
+## Consulter une définition
+
+Touchez le dernier coup d’une partie classique, ou **Définition** dans le bilan, les résultats des défis et les duels terminés. Lorsqu’un coup forme plusieurs mots, le bouton ouvre leur liste. La fiche de mot fonctionne en mode avion. **Wiktionnaire** ouvre le navigateur pour une recherche complémentaire ou un mot absent du fichier hors ligne. La recherche en français tient compte de l’absence d’accents sur le plateau et peut présenter plusieurs graphies.
+
+Le français couvre 335 901 mots avec une définition et 3 613 autres formes avec leur conjugaison. Les mots conjugués peuvent afficher plusieurs infinitifs ou graphies. L’anglais contient 71 641 entrées d’Open English WordNet 2025, dont 57 922 présentes dans ENABLE2K. Les deux fichiers sont consultés séparément du lexique qui décide si un coup est valide. [Sources et licence du français](app/src/main/assets/definitions-fr-NOTICE.md) · [Sources et licence de l’anglais](app/src/main/assets/definitions-en-NOTICE.txt)
+
+Les fichiers sont générés par [prepare_french_definitions.py](../tools/prepare_french_definitions.py), [prepare_english_definitions.py](../tools/prepare_english_definitions.py) et [definition_pack.py](../tools/definition_pack.py). Utilisez `--only-classic --max-length 140` pour le français et `--recorded-only` pour l’anglais. Les notices pointent vers les sources utilisées.
 
 ## Transférer sa progression
 
@@ -178,6 +188,11 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 - Sur Android 16, l’annulation de la vidéo de démonstration a laissé le solde intact. Une annonce Google terminée a crédité un ticket bonus.
 
 Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.
+
+## Vérification de la version 0.16.2
+
+- Sur Android 16 en mode avion, les résultats des défis français et anglais ouvrent une définition dans l’application. Le retour au français retrouve la progression locale. Les entrées `MANGEAIENT`, `SUIS` et `ELEVE` ont été contrôlées dans le fichier livré.
+- Les 82 tests Android et Lint passent. La mise à jour directe conserve le certificat de l’APK précédent. Le bundle signé contient les deux fichiers de définitions et passe la validation de `bundletool`.
 
 ## Vérification de la version 0.16.1
 

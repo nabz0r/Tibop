@@ -26,8 +26,8 @@ android {
         applicationId 'fr.lettrine.game'
         minSdk 26
         targetSdk 36
-        versionCode 22
-        versionName '0.16.1'
+        versionCode 23
+        versionName '0.16.2'
         buildConfigField 'String', 'SOCIAL_BASE_URL', '"' + socialUrl + '"'
         manifestPlaceholders.admobAppId = ads ? adApp : 'disabled'
         if (ads) {
@@ -40,6 +40,10 @@ android {
     bundle.language.enableSplit = false
 
     buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+        }
         debug {
             if (ads) {
                 debuggable false
@@ -58,6 +62,10 @@ android {
     sourceSets.main.assets.srcDir(layout.buildDirectory.dir('generated/lettrineAssets'))
     sourceSets.main.jniLibs.srcDir(layout.buildDirectory.dir('generated/lettrineJni'))
     sourceSets.main.java.srcDir(ads ? 'src/admob/java' : 'src/noAds/java')
+
+    androidResources {
+        noCompress += ['dpack']
+    }
 
     packaging.jniLibs.useLegacyPackaging = true
 }

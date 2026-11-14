@@ -136,6 +136,7 @@ final class TwoMoveChallengeScreen {
         private final TextView objective;
         private final BoardView board;
         private final TextView feedback;
+        private final TextView definition;
         private final TextView submit;
         private final TextView clear;
         private final TextView edit;
@@ -189,6 +190,8 @@ final class TwoMoveChallengeScreen {
             ui.space(tools, 5);
             tools.addView(zoomControls());
             layout.addView(tools);
+            definition = DefinitionAction.button(ui);
+            layout.addView(definition);
             ui.gap(layout, 6);
 
             playRow = ui.row();
@@ -554,6 +557,9 @@ final class TwoMoveChallengeScreen {
                 return;
             }
             if (!playing) {
+                List<String> words = new ArrayList<>(first.preview().words());
+                words.addAll(second.preview().words());
+                DefinitionAction.update(ui, definition, words);
                 phase.setText(label(R.string.two_move_result, points(position.totalScore())));
                 objective.setText(label(R.string.two_move_breakdown,
                         points(first.preview().score()), points(second.preview().score())));
@@ -563,6 +569,7 @@ final class TwoMoveChallengeScreen {
                 return;
             }
 
+            DefinitionAction.update(ui, definition, List.of());
             boolean firstMove = first == null;
             phase.setText(firstMove ? label(R.string.two_move_phase, 1)
                     : label(R.string.two_move_phase, 2) + "  ·  "
@@ -592,6 +599,7 @@ final class TwoMoveChallengeScreen {
 
         private void renderReplay(int animate) {
             TwoMoveChallenge.Step step = puzzle.solution().get(replay);
+            DefinitionAction.update(ui, definition, step.preview().words());
             phase.setText(label(R.string.two_move_replay_phase, replay + 1));
             objective.setText(label(R.string.two_move_running_total, points(step.after().totalScore())));
             feedback.setText(score(step.preview()));

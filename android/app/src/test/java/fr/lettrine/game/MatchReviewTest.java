@@ -99,6 +99,31 @@ public class MatchReviewTest {
         assertEquals("AX scores 18 points more on this board.", review.highlight().explanation());
     }
 
+    @Test public void coachingUsesTheDictionaryOfTheMatch() throws Exception {
+        var original = Lexicon.read(new BufferedReader(new StringReader("AS\nCH\n")),
+                "Original", "", "original", 2);
+        var filtered = original.filtered("Classique", "filtered", List.of("CH"));
+        var personal = Lexicon.read(new BufferedReader(new StringReader("AS\n")),
+                "Personal", "", "personal", 1);
+        var moves = List.of(pass(0, "CH"));
+
+        var originalReview = MatchReview.review(moves, original, 0, true);
+        var originalTurn = originalReview.turns().get(0);
+        assertEquals("CH", originalTurn.alternative().preview().word());
+        assertTrue(originalTurn.facts().contains("Legal placement CH"));
+        assertNotNull(originalReview.highlight());
+
+        for (var dictionary : List.of(filtered, personal)) {
+            var review = MatchReview.review(moves, dictionary, 0, true);
+            var turn = review.turns().get(0);
+            assertNull(turn.alternative());
+            assertNull(turn.practice());
+            assertNull(review.highlight());
+            assertFalse(turn.facts().contains("CH"));
+            assertTrue(turn.details().stream().noneMatch(detail -> detail.contains("CH")));
+        }
+    }
+
     @Test public void highlightsAnEasyCrossingWithoutChangingDetailedReviewOrder() throws Exception {
         var lexicon = Lexicon.read(new BufferedReader(new StringReader("AS\nAA\nSS\nZA\n")), "Test", "", "", 4);
         var opening = new FrenchGame.Move(1, "play", "AS", 4, List.of(tile(CENTER, 0, 'A', false),

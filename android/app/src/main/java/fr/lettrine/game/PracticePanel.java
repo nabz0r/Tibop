@@ -45,6 +45,7 @@ final class PracticePanel {
     private final TextView retry;
     private final TextView showAttempt;
     private final TextView showReference;
+    private final TextView definition;
     private final BoardView board;
     private int selected = -1;
     private boolean finished;
@@ -105,6 +106,8 @@ final class PracticePanel {
         ui.space(modes, 6);
         ui.weight(modes, showReference);
         result.addView(modes);
+        definition = DefinitionAction.button(ui);
+        result.addView(definition);
         retry = ui.textButton(label(R.string.practice_reset), () -> {
             reset();
             saveDraft();
@@ -424,6 +427,7 @@ final class PracticePanel {
         board.setContentDescription(label(R.string.practice_board_result,
                 label(alternative ? R.string.practice_reference : R.string.practice_yours),
                 move.word(), points(move.score())) + tileSummary(tiles));
+        DefinitionAction.update(ui, definition, move.words());
         highlight(showAttempt, !alternative);
         highlight(showReference, alternative);
     }

@@ -7,7 +7,7 @@
 <p align="center">Le jeu de lettres de Lettrine pour Android. Affrontez NAB en français ou en anglais et revenez sur vos meilleurs coups.</p>
 
 <p align="center">
-  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.1/android/artifacts/lettrine.apk">Télécharger l’APK 0.16.1</a></strong> ·
+  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.2/android/artifacts/lettrine.apk">Télécharger l’APK 0.16.2</a></strong> ·
   <a href="https://nabz0r.github.io/scrabnble/">Page de la bêta</a> ·
   <a href="android/README.md">Guide Android</a> ·
   <a href="#lettrine-studio">Studio sur Mac</a>
@@ -26,6 +26,7 @@
 - **Partie classique** lance une partie solo contre NAB ou reprend celle en cours. Choisissez l’un des quatre niveaux fixes ou laissez le mode adaptatif ajuster la difficulté pendant la partie. Le bouton **EN / FR** change les menus et le lexique. Chaque langue garde sa progression.
 - **À plusieurs**, passez le téléphone à deux, trois ou quatre ou jouez en duel Bluetooth. En ligne, ouvrez **Amis** pour rejoindre un serveur de bêta, jouer un duel à un coup chacun, demander une revanche miroir ou participer au tournoi du week-end. [Accès à la bêta et invitations](android/README.md#amis-et-duels-en-bêta)
 - **En quelques minutes**, jouez le défi du jour, essayez de placer deux mots avec un même chevalet dans *Deux coups d’avance*, ou améliorez votre record sur les trois parcours du circuit bonus.
+- **Définition** ouvre une fiche hors ligne pour les mots couverts. Pour les verbes français, la fiche peut retrouver l’infinitif, le temps et la personne. [Sources et couverture](android/README.md#consulter-une-définition)
 
 Glissez les tuiles de gauche à droite dans le chevalet pour essayer un mot. Pour le jouer, glissez les tuiles sur le plateau ou touchez une lettre puis une case. Le jeu affiche les mots formés et les points avant validation. Agrandissez le plateau si besoin et parcourez ses cases avec TalkBack.
 

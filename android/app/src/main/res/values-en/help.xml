@@ -15,13 +15,13 @@
     <string name="help_tutorial_clear">Clear your placement, then place only the S on H12.</string>
     <string name="help_tutorial_done">Well played. The 2L square doubled the value of S.</string>
     <string name="help_rules">Forming a word</string>
-    <string name="help_rules_copy">The first word covers the center star. After that, connect to a letter on the board. New tiles must form a single row or column. Every word created must be in the built-in dictionary.</string>
+    <string name="help_rules_copy">The first word covers the center star. After that, connect to a letter on the board. New tiles must form a single row or column. Every word you form must be in the dictionary used for that game.</string>
     <string name="help_scoring">Scoring</string>
     <string name="help_scoring_copy">Add the tile values of the words you form. 2L and L3 multiply a letter. 2W and 3W multiply the word. Bonuses apply the first time you cover a square. A blank tile is worth zero. Playing all seven tiles in one move earns 50 extra points.</string>
     <string name="help_local_bot">NAB plays on your device</string>
-    <string name="help_local_bot_copy">NAB is your solo opponent. Its engine looks for legal moves in the built-in dictionary. Adaptive difficulty uses your local Elo and the score difference during the game.</string>
+    <string name="help_local_bot_copy">NAB is your solo opponent. Its engine finds legal moves using the same dictionary as you. Adaptive difficulty uses your local Elo and the score difference during the game.</string>
     <string name="help_local_model">Offline move explanations</string>
     <string name="help_local_model_copy">The game engine checks and explains the score. When several details are available, you can read them or ask NAB to pick one using the SmolLM2 model. The explanations work in airplane mode.</string>
     <string name="help_competition">Practise with a tournament dictionary</string>
-    <string name="help_competition_copy">To import a word list you have permission to use, go to Profile → Settings → Personal dictionary. Android practice validates words as you play and has no clock. FISF tournament rules use a clock and allow the opponent to challenge words after a move is played.</string>
+    <string name="help_competition_copy">The standard English modes use ENABLE2K. For offline practice, import a word list you have permission to use in Profile → Settings → Personal dictionary. WESPA uses CSW24 for international tournaments. NASPA uses NWL2023 for its US and Canadian tournaments.</string>
 </resources>

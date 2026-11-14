@@ -1270,15 +1270,16 @@ public final class MainActivity extends Activity {
         MoveExplanation explanation = MoveExplanation.create(history, moveIndex, gameLanguage);
         if (explanation == null) return;
         showExplanation(getString(R.string.move_explanation_title, moveIndex + 1),
-                explanation.summary(), explanation.facts(), explanation.options(), explanation.details());
+                explanation.summary(), explanation.facts(), explanation.options(), explanation.details(), explanation.words());
     }
 
     private void explainReview(MatchReview.Turn turn) {
         showExplanation(getString(R.string.move_explanation_title, turn.index() + 1),
-                turn.summary(), turn.facts(), turn.options(), turn.details());
+                turn.summary(), turn.facts(), turn.options(), turn.details(), List.of());
     }
 
-    private void showExplanation(String title, String summary, String facts, List<String> options, List<String> details) {
+    private void showExplanation(String title, String summary, String facts, List<String> options, List<String> details,
+                                 List<String> words) {
         if (explanationDialog != null) return;
 
         LinearLayout panel = ui.column();
@@ -1286,6 +1287,7 @@ public final class MainActivity extends Activity {
         TextView body = ui.body(details.isEmpty() ? summary : summary + "\n\n" + details.get(0));
         body.setTextColor(ui.palette.ink());
         panel.addView(body);
+        DefinitionAction.add(ui, panel, words);
         if (details.isEmpty()) {
             ui.gap(panel, 9);
             panel.addView(ui.body(getString(R.string.move_explanation_partial)));

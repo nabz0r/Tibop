@@ -1,0 +1,8 @@
+<resources>
+    <string name="definition_word">Definition of %1$s</string>
+    <string name="definition_words">Word definitions</string>
+    <string name="definition_loading">Looking in the offline dictionary…</string>
+    <string name="definition_missing">No offline definition for this word. Open Wiktionary when you are online.</string>
+    <string name="definition_online">Wiktionary ↗</string>
+    <string name="definition_unavailable">Install a browser to open Wiktionary.</string>
+</resources>

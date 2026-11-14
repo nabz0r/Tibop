@@ -18,7 +18,7 @@ if (window.location.protocol === "https:") {
     document.title = "Android beta · WordRivet";
     document.querySelector(".eyebrow").textContent = "Android beta";
     document.getElementById("detail").textContent = "Install WordRivet and open this invitation again on Android.";
-    document.getElementById("changes").textContent = "New French challenges and duels between players on the latest version use the filtered dictionary. Existing invitations and duels still work.";
+    document.getElementById("changes").textContent = "Look up French and English definitions even in airplane mode.";
     const download = document.querySelector(".download a");
     download.textContent = "Download Android APK " + download.querySelector("span").textContent;
     button.textContent = "Open in WordRivet";

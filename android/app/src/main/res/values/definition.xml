@@ -1,0 +1,10 @@
+<resources>
+    <string name="definition_word">Définition de %1$s</string>
+    <string name="definition_words">Définitions des mots</string>
+    <string name="definition_loading">Recherche dans le dictionnaire de l’app…</string>
+    <string name="definition_missing">Aucune définition hors ligne pour ce mot. Consultez le Wiktionnaire si vous êtes connecté.</string>
+    <string name="definition_online">Wiktionnaire ↗</string>
+    <string name="definition_source_fr" translatable="false">Wiktionnaire, via Verbarium · CC BY-SA 4.0</string>
+    <string name="definition_source_en" translatable="false">Open English WordNet 2025 · CC BY 4.0</string>
+    <string name="definition_unavailable">Installez un navigateur pour ouvrir le Wiktionnaire.</string>
+</resources>

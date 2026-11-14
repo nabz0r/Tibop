@@ -19,6 +19,7 @@ final class TournamentRoundPanel {
     private final Consumer<JSONObject> completedEvent;
     private final long eventId;
     private final int number;
+    private final PracticePosition position;
     private final LinearLayout root;
     private final TextView notice;
     private PracticePanel practice;
@@ -40,8 +41,9 @@ final class TournamentRoundPanel {
 
         JSONObject puzzle = round.optJSONObject("puzzle");
         DailyChallenge challenge = SocialDuelPanel.compatibleChallenge(puzzle, "", catalog);
+        position = challenge == null ? null : challenge.position();
         Lexicon rules = SocialDuelPanel.validationLexicon(puzzle, catalog, curated);
-        if (eventId < 0 || number < 1 || number > 3 || challenge == null || rules == null) {
+        if (eventId < 0 || number < 1 || number > 3 || position == null || rules == null) {
             showNotice(label(R.string.social_duel_incompatible));
             addBackButton();
             return;
@@ -49,7 +51,7 @@ final class TournamentRoundPanel {
         root.addView(DailyChallengeCard.heading(ui, label(R.string.tournament_round, number),
                 label(R.string.tournament_title), label(R.string.tournament_round_intro)));
         ui.gap(root, 12);
-        practice = new PracticePanel(ui, challenge.position(), rules, this::confirm);
+        practice = new PracticePanel(ui, position, rules, this::confirm);
         root.addView(practice.view());
     }
 
@@ -76,7 +78,7 @@ final class TournamentRoundPanel {
                 practice.setSubmitting(false);
                 showNotice(error == null ? label(R.string.tournament_response_error) : error);
             } else {
-                showResult(slot.optInt("score"), result.optInt("total"), result.optInt("completed"), unlocked);
+                showResult(slot.optInt("score"), result.optInt("total"), result.optInt("completed"), unlocked, tiles);
             }
         });
     }
@@ -87,7 +89,7 @@ final class TournamentRoundPanel {
         notice.post(() -> notice.requestRectangleOnScreen(new Rect(0, 0, notice.getWidth(), notice.getHeight())));
     }
 
-    private void showResult(int score, int total, int completed, boolean unlocked) {
+    private void showResult(int score, int total, int completed, boolean unlocked, List<FrenchGame.Tile> tiles) {
         root.removeAllViews();
         LinearLayout card = ui.card();
         card.addView(ui.body(label(R.string.tournament_round, number)));
@@ -99,6 +101,8 @@ final class TournamentRoundPanel {
         card.addView(ui.body(label(R.string.tournament_total, TournamentPanel.points(ui, total))));
         ui.gap(card, 4);
         card.addView(ui.body(TournamentPanel.progress(ui, completed)));
+        DefinitionAction.add(ui, card,
+                DefinitionAction.recordedWords(position.board(), position.blanks(), tiles, ui.language, score));
         root.addView(card);
         if (unlocked) {
             ui.gap(root, 10);

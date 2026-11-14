@@ -23,6 +23,7 @@ final class MatchReviewPanel {
     private final TextView alternativeButton;
     private final TextView explainButton;
     private final TextView practiceButton;
+    private final TextView definition;
     private int selected;
     private boolean alternativeRevealed;
 
@@ -69,6 +70,8 @@ final class MatchReviewPanel {
         comparison = ui.text("", 13, ui.palette.accent(), ui.medium);
         comparison.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         scores.addView(comparison);
+        definition = DefinitionAction.button(ui);
+        scores.addView(definition);
         panel.addView(scores);
         ui.gap(panel, 10);
 
@@ -143,6 +146,14 @@ final class MatchReviewPanel {
         }
         String word = showAlternative ? alternative.preview().word() : playedWord(played);
         int score = showAlternative ? alternative.preview().score() : played.score();
+        List<String> words = List.of();
+        if (showAlternative) {
+            words = alternative.preview().words();
+        } else if (played.type().equals("play")) {
+            words = DefinitionAction.recordedWords(turn.board(), turn.blanks(), tiles, ui.language, score);
+            if (words.isEmpty()) words = List.of(played.word());
+        }
+        DefinitionAction.update(ui, definition, words);
         List<String> placed = new ArrayList<>(tiles.size());
         for (FrenchGame.Tile tile : tiles) {
             char row = (char) ('A' + tile.position() / FrenchGame.SIZE);
