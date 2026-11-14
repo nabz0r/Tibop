@@ -26,6 +26,7 @@ final class ShopPanel {
     private final TextView exchange;
     private final TextView video;
     private final List<ThemeOffer> themes = new ArrayList<>();
+    private final TextView themeHeading;
     private final Runnable refreshBalance = this::refresh;
 
     ShopPanel(ViewKit ui, BonusEconomy economy, int currentTheme, BooleanSupplier adAvailable,
@@ -67,7 +68,9 @@ final class ShopPanel {
         panel.addView(ticketCard);
         ui.gap(panel, 14);
 
-        panel.addView(ui.title(label(R.string.shop_themes), 21));
+        themeHeading = ui.title(label(R.string.shop_themes), 21);
+        if (android.os.Build.VERSION.SDK_INT >= 28) themeHeading.setAccessibilityHeading(true);
+        panel.addView(themeHeading);
         for (int i = 0; i < Palette.THEMES.length; i++) {
             ui.gap(panel, 8);
             panel.addView(themeCard(i, onChooseTheme));
@@ -80,6 +83,11 @@ final class ShopPanel {
     }
 
     View view() { return panel; }
+
+    void showThemes() {
+        themeHeading.post(() -> themeHeading.requestRectangleOnScreen(
+                new android.graphics.Rect(0, 0, themeHeading.getWidth(), themeHeading.getHeight()), true));
+    }
 
     void refresh() {
         panel.removeCallbacks(refreshBalance);

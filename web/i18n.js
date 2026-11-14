@@ -461,7 +461,11 @@ Outils|Tools
 Retrouvez vos fichiers de parties et téléchargez Tibop pour Android.|Find your game files and download Tibop for Android.
 Télécharger des parties|Download games
 Utilisez le format CSV pour ouvrir les résultats dans un tableur.|Use CSV to open results in a spreadsheet.
-Version 0.16.6|Version 0.16.6
+Version 0.16.7|Version 0.16.7
+Collection|Collection
+Combinez six plateaux, quatre chevalets et six styles de tuiles. L’aperçu réunit vos choix avant de jouer.|Mix six boards, four racks and six tile styles. Preview your combination before playing.
+Lexique personnel|Personal dictionary
+Ajoutez vos mots au lexique de jeu pour l’entraînement hors ligne, ou importez une liste complète.|Add your words to the game dictionary for offline practice, or import a full word list.
 Circuit bonus|Bonus Circuit
 Trois nouveaux défis à enchaîner hors ligne avec un ticket. La première entrée est offerte.|One ticket gives you three new offline puzzles. Your first entry is free.
 Tibop pour Android|Tibop for Android

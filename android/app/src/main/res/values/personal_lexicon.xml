@@ -2,8 +2,25 @@
 <resources>
     <string name="classic_dictionary_summary">Liste française filtrée pour les nouvelles parties classiques en solo et sur cet appareil.</string>
     <string name="personal_lexicon_title">Lexique personnel</string>
-    <string name="personal_lexicon_entry">Importer un lexique pour les parties d’entraînement hors ligne</string>
-    <string name="personal_lexicon_intro">Choisissez un fichier TXT UTF-8 que vous êtes autorisé à utiliser, avec un mot de 2 à 15 lettres par ligne (12 Mio maximum). En français, les accents et ligatures sont normalisés. La liste reste sur cet appareil. Importez-la de nouveau sur un autre appareil si nécessaire.</string>
+    <string name="personal_lexicon_entry">Ajouter des mots ou importer une liste</string>
+    <string name="personal_lexicon_intro">Choisissez vos mots pour l’entraînement hors ligne, contre NAB ou à plusieurs sur cet appareil.</string>
+    <string name="personal_lexicon_additions">Mots ajoutés</string>
+    <string name="personal_lexicon_additions_empty">Ajoutez vos propres mots au lexique de jeu pour l’entraînement.</string>
+    <string name="personal_lexicon_additions_count">Mots ajoutés · %1$d sur %2$d</string>
+    <string name="personal_lexicon_add_word">Ajouter un mot</string>
+    <string name="personal_lexicon_manage_words">Gérer les mots ajoutés</string>
+    <string name="personal_lexicon_play_additions">Jouer avec mes mots</string>
+    <string name="personal_lexicon_word_hint">Un mot de 2 à 15 lettres</string>
+    <string name="personal_lexicon_word_scope">Ce mot sera disponible en entraînement hors ligne. Les défis, les duels et l’Elo utilisent les règles habituelles.</string>
+    <string name="personal_lexicon_word_invalid">Saisissez un seul mot de 2 à 15 lettres, sans espaces ni ponctuation.</string>
+    <string name="personal_lexicon_word_duplicate">%1$s est déjà accepté dans ce lexique.</string>
+    <string name="personal_lexicon_remove_word">Retirer %1$s ?</string>
+    <string name="personal_lexicon_remove_action">Retirer</string>
+    <string name="personal_lexicon_words_saved">Vous pourrez reprendre les parties déjà commencées sous Parties avec les anciennes listes.</string>
+    <string name="personal_lexicon_previous">Parties avec les anciennes listes</string>
+    <string name="personal_lexicon_edition_summary">%1$s… (%2$d mots)</string>
+    <string name="personal_lexicon_import_heading">Liste complète</string>
+    <string name="personal_lexicon_import_help">Pour jouer avec votre propre liste, choisissez un fichier TXT UTF-8 que vous êtes autorisé à utiliser. Un mot de 2 à 15 lettres par ligne, jusqu’à 12 Mio.</string>
     <string name="personal_lexicon_import">Importer un fichier TXT</string>
     <string name="personal_lexicon_replace">Remplacer le lexique</string>
     <string name="personal_lexicon_remove">Retirer le lexique</string>
@@ -14,7 +31,7 @@
     <string name="personal_lexicon_details">Empreinte du lexique</string>
     <string name="personal_lexicon_copy">Copier l’empreinte</string>
     <string name="personal_lexicon_loading">Chargement du lexique personnel…</string>
-    <string name="personal_lexicon_error">Lexique illisible ou trop volumineux. Vérifiez le fichier TXT UTF-8 et les mots de 2 à 15 lettres, à raison d’un mot par ligne.</string>
+    <string name="personal_lexicon_error">Le lexique n’a pas pu être chargé ou enregistré. Pour un fichier TXT, vérifiez le format UTF-8 et la présence d’un mot de 2 à 15 lettres par ligne.</string>
     <string name="personal_lexicon_play">Jouer avec ce lexique</string>
     <string name="personal_lexicon_game_context">Entraînement hors ligne avec le lexique personnel</string>
     <string name="personal_lexicon_bluetooth">Terminez ou quittez la partie Bluetooth avant d’ouvrir le lexique personnel.</string>

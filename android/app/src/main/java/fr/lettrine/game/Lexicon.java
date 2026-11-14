@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.function.Predicate;
 
 final class Lexicon {
     private static final int ROOT = 1;
@@ -127,13 +128,22 @@ final class Lexicon {
 
     static Lexicon read(BufferedReader reader, String label, String license, String hash, int size,
                         GameLanguage language) throws java.io.IOException {
+        return read(reader, label, license, hash, size, language, word -> true, List.of());
+    }
+
+    static Lexicon read(BufferedReader reader, String label, String license, String hash, int size,
+                        GameLanguage language, Predicate<String> include, Iterable<String> additions)
+            throws IOException {
         Lexicon dictionary = new Lexicon(label, license, hash, size, language);
         dictionary.first = new int[16384];
         dictionary.sibling = new int[16384];
         dictionary.frequency = new int[16384];
         dictionary.character = new byte[16384];
         int rank = 0;
-        for (String word; (word = reader.readLine()) != null; ) dictionary.add(word, ++rank);
+        for (String word; (word = reader.readLine()) != null; ) {
+            if (include.test(word)) dictionary.add(word, ++rank);
+        }
+        for (String word : additions) dictionary.add(word, ++rank);
         if (rank != size) throw new IllegalStateException("Liste incomplète");
         dictionary.pack();
         return dictionary;

@@ -2,6 +2,19 @@
 
 Les nouvelles parties classiques françaises utilisent le lexique filtré et les poids Maître de référence. Les campagnes historiques indiquent le lexique utilisé. [Empreintes et filtres](../data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android)
 
+## Vérification de Tibop 0.16.7
+
+Les 89 tests unitaires Android passent. Sur une position construite pour le test, le moteur refuse `OK` avec le lexique de base, accepte la pose avec `OK` ajouté à la liste d’entraînement, et NAB peut choisir ce coup. Les tests couvrent aussi la normalisation, l’empreinte des listes d’entraînement, les conditions de déblocage des apparences et la prise en charge du chevalet dans la sauvegarde de la Collection. Lint se termine avec 0 erreur et 40 avertissements.
+
+```sh
+cd android
+./gradlew :app:testDebugUnitTest :app:lintDebug
+```
+
+Sur émulateur Android 16, l’installation de la 0.16.7 par-dessus la 0.16.6 a conservé les 225 cases du plateau, le score de 5 à 12, le sac de 80 tuiles au tour 4, l’ordre du chevalet, le dernier coup `LE` et le brouillon `A`, `E`, `U` en E4–E6. En anglais à 240 dp de largeur et 145 % de taille de texte, la Collection a gardé les apparences sélectionnées.
+
+En mode avion, `OK` a été ajouté avant le démarrage d’une partie locale à deux. Après retrait du mot et arrêt forcé, **Parties avec les anciennes listes** a permis de reprendre cette partie.
+
 ## Parties locales à deux, trois et quatre joueurs
 
 Le moteur Java d’Android a terminé **1 200 parties** avec Grammalecte 7.7 · Classique en français et ENABLE2K en anglais. Chaque groupe compte 200 tirages. Un calcul indépendant a contrôlé les mots, les cases bonus, les points et la conservation des tuiles. Le test a sauvegardé et rechargé chacun des 37 935 tours et vérifié les ajustements de fin et les ex æquo. Les 39 708 actions volontairement invalides ont été refusées sans modification de l’état.

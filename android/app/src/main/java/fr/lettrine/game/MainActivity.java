@@ -1666,6 +1666,10 @@ public final class MainActivity extends Activity {
         tray.setBackground(ui.shape(ui.palette.paper(), 20, ui.palette.line()));
         tray.setElevation(ui.dp(3));
         opened.rack.setClipChildren(false);
+        if (ui.skins.rack() != null) {
+            opened.rack.setBackground(ui.rackBackground(ui.skins.rack(), 12));
+            ui.inset(opened.rack, 4, 3);
+        }
         LinearLayout rackTools = ui.row();
         opened.shuffle.setContentDescription(getString(R.string.app_shuffle_rack));
         if (skin == 0) {
@@ -2638,7 +2642,7 @@ public final class MainActivity extends Activity {
     }
 
     private void openPersonalLexicon() {
-        updatePersonalLexicon(() -> personalLexicon.current(), false);
+        updatePersonalLexicon(() -> personalLexicon.current(), null);
     }
 
     private void showPersonalLexicon() {
@@ -2649,16 +2653,47 @@ public final class MainActivity extends Activity {
             content.addView(ui.body(getString(R.string.personal_lexicon_loading)));
             return;
         }
-        if (personalEntry != null) {
-            content.addView(ui.body(getResources().getQuantityString(R.plurals.personal_lexicon_loaded,
-                    personalEntry.count(), personalEntry.count())));
-            content.addView(ui.textButton(getString(R.string.personal_lexicon_details), this::showPersonalLexiconDetails));
-            ui.gap(content, 8);
-            content.addView(ui.button(getString(R.string.personal_lexicon_play), true, this::startPersonalSession));
-            ui.gap(content, 8);
+        List<String> words = personalLexicon.addedWords();
+        LinearLayout additions = ui.card();
+        additions.addView(ui.title(getString(R.string.personal_lexicon_additions), 21));
+        additions.addView(ui.body(words.isEmpty() ? getString(R.string.personal_lexicon_additions_empty)
+                : getString(R.string.personal_lexicon_additions_count, words.size(), PersonalLexicon.MAX_ADDITIONS)));
+        if (!words.isEmpty()) {
+            ui.gap(additions, 8);
+            additions.addView(ui.button(getString(R.string.personal_lexicon_play_additions), true,
+                    () -> startPersonalSession(words)));
+            additions.addView(ui.textButton(getString(R.string.personal_lexicon_manage_words),
+                    () -> showPersonalWords(words)));
         }
-        content.addView(ui.button(getString(personalEntry == null ? R.string.personal_lexicon_import
-                : R.string.personal_lexicon_replace), personalEntry == null, () -> {
+        if (words.size() < PersonalLexicon.MAX_ADDITIONS) {
+            ui.gap(additions, 8);
+            additions.addView(ui.button(getString(R.string.personal_lexicon_add_word), words.isEmpty(),
+                    () -> showAddPersonalWord(additionsBase(), words)));
+        }
+        Lexicon base = additionsBase();
+        if (base != null) {
+            List<List<String>> editions = personalLexicon.playedAdditions(base).stream()
+                    .filter(edition -> !edition.equals(words)).collect(java.util.stream.Collectors.toList());
+            if (!editions.isEmpty()) additions.addView(ui.textButton(getString(R.string.personal_lexicon_previous),
+                    () -> showPersonalEditions(editions)));
+        }
+        content.addView(additions);
+        ui.gap(content, 12);
+        LinearLayout imported = ui.card();
+        imported.addView(ui.title(getString(R.string.personal_lexicon_import_heading), 21));
+        imported.addView(ui.body(getString(R.string.personal_lexicon_import_help)));
+        ui.gap(imported, 8);
+        if (personalEntry != null) {
+            imported.addView(ui.body(getResources().getQuantityString(R.plurals.personal_lexicon_loaded,
+                    personalEntry.count(), personalEntry.count())));
+            imported.addView(ui.textButton(getString(R.string.personal_lexicon_details), this::showPersonalLexiconDetails));
+            ui.gap(imported, 8);
+            imported.addView(ui.button(getString(R.string.personal_lexicon_play), words.isEmpty(),
+                    () -> startPersonalSession(null)));
+            ui.gap(imported, 8);
+        }
+        imported.addView(ui.button(getString(personalEntry == null ? R.string.personal_lexicon_import
+                : R.string.personal_lexicon_replace), false, () -> {
             try {
                 startActivityForResult(PersonalLexicon.picker(), PERSONAL_LEXICON_IMPORT);
             } catch (android.content.ActivityNotFoundException unavailable) {
@@ -2666,13 +2701,87 @@ public final class MainActivity extends Activity {
             }
         }));
         if (personalEntry != null) {
-            ui.gap(content, 8);
-            content.addView(ui.textButton(getString(R.string.personal_lexicon_remove), () ->
+            ui.gap(imported, 8);
+            imported.addView(ui.textButton(getString(R.string.personal_lexicon_remove), () ->
                     dialog(getString(R.string.personal_lexicon_remove), getString(R.string.personal_lexicon_remove_confirm))
                             .setNegativeButton(R.string.social_cancel, null)
                             .setPositiveButton(R.string.personal_lexicon_remove, (ignored, action) ->
-                                    updatePersonalLexicon(() -> { personalLexicon.remove(); return null; }, false)).show()));
+                                    updatePersonalLexicon(() -> { personalLexicon.remove(); return null; }, null)).show()));
         }
+        content.addView(imported);
+    }
+
+    private Lexicon additionsBase() {
+        return frenchClassicLexicon != null ? frenchClassicLexicon : bundledLexicon;
+    }
+
+    private void showAddPersonalWord(Lexicon base, List<String> words) {
+        if (base == null) {
+            ready();
+            return;
+        }
+        EditText field = input(getString(R.string.personal_lexicon_word_hint), "");
+        field.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
+                | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        field.setFilters(new InputFilter[]{new InputFilter.LengthFilter(64)});
+        LinearLayout form = ui.column();
+        ui.inset(form, 24, 8);
+        form.addView(field);
+        TextView feedback = ui.body("");
+        feedback.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        feedback.setVisibility(View.GONE);
+        form.addView(feedback);
+        AlertDialog editor = dialog(getString(R.string.personal_lexicon_add_word),
+                getString(R.string.personal_lexicon_word_scope)).setView(form)
+                .setNegativeButton(R.string.social_cancel, null).setPositiveButton(R.string.app_save, null).create();
+        editor.setOnShowListener(ignored -> editor.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button -> {
+            String word;
+            try {
+                word = PersonalLexicon.normalizeForm(field.getText().toString(), gameLanguage);
+            } catch (java.io.IOException invalid) {
+                feedback.setText(R.string.personal_lexicon_word_invalid);
+                feedback.setVisibility(View.VISIBLE);
+                return;
+            }
+            if (base.contains(word) || words.contains(word)) {
+                feedback.setText(getString(R.string.personal_lexicon_word_duplicate, word));
+                feedback.setVisibility(View.VISIBLE);
+                return;
+            }
+            editor.dismiss();
+            savePersonalWord(word, true);
+        }));
+        editor.show();
+    }
+
+    private void showPersonalWords(List<String> words) {
+        dialog(getString(R.string.personal_lexicon_manage_words), null)
+                .setItems(words.toArray(new String[0]), (list, index) -> {
+                    String word = words.get(index);
+                    dialog(getString(R.string.personal_lexicon_remove_word, word),
+                            getString(R.string.personal_lexicon_words_saved))
+                            .setNegativeButton(R.string.social_cancel, null)
+                            .setPositiveButton(R.string.personal_lexicon_remove_action,
+                                    (ignored, action) -> savePersonalWord(word, false)).show();
+                })
+                .setNegativeButton(R.string.move_explanation_close, null).show();
+    }
+
+    private void savePersonalWord(String word, boolean add) {
+        PersonalLexicon.Entry entry = personalEntry;
+        updatePersonalLexicon(() -> {
+            personalLexicon.updateAddition(word, add);
+            return entry;
+        }, null);
+    }
+
+    private void showPersonalEditions(List<List<String>> editions) {
+        String[] labels = editions.stream().map(words -> words.size() <= 5 ? String.join(", ", words)
+                : getString(R.string.personal_lexicon_edition_summary,
+                        String.join(", ", words.subList(0, 5)), words.size())).toArray(String[]::new);
+        dialog(getString(R.string.personal_lexicon_previous), null)
+                .setItems(labels, (ignored, index) -> startPersonalSession(editions.get(index)))
+                .setNegativeButton(R.string.social_cancel, null).show();
     }
 
     private void showPersonalLexiconDetails() {
@@ -2686,21 +2795,23 @@ public final class MainActivity extends Activity {
                 }).show();
     }
 
-    private void updatePersonalLexicon(java.util.concurrent.Callable<PersonalLexicon.Entry> operation, boolean open) {
+    private void updatePersonalLexicon(java.util.concurrent.Callable<PersonalLexicon.Entry> operation,
+                                       java.util.concurrent.Callable<Lexicon> session) {
         if (personalBusy) return;
         personalBusy = true;
         showPersonalLexicon();
         worker.submit(() -> {
             try {
                 PersonalLexicon.Entry entry = operation.call();
-                Lexicon loaded = open ? personalLexicon.load(entry) : null;
-                GameStore matches = open ? new GameStore(personalLexicon.matchDirectory(entry)) : null;
+                Lexicon loaded = session == null ? null : session.call();
+                GameStore matches = loaded == null ? null : new GameStore(personalLexicon.matchDirectory(
+                        new PersonalLexicon.Entry(loaded.hash, loaded.size)));
                 main.post(() -> {
                     if (isDestroyed()) return;
                     personalBusy = false;
                     personalEntry = entry;
                     if (screen != Screen.PERSONAL_LEXICON) return;
-                    if (open) {
+                    if (loaded != null) {
                         resetMatch();
                         personalSession = true;
                         store = matches;
@@ -2719,13 +2830,20 @@ public final class MainActivity extends Activity {
         });
     }
 
-    private void startPersonalSession() {
-        if (personalEntry == null || !persist()) return;
+    private void startPersonalSession(List<String> words) {
+        if ((words == null && personalEntry == null) || !persist()) return;
         if (link != null) {
             toast(getString(R.string.personal_lexicon_bluetooth));
             return;
         }
-        updatePersonalLexicon(() -> personalLexicon.current(), true);
+        Lexicon base = additionsBase();
+        if (words != null && base == null) {
+            ready();
+            return;
+        }
+        PersonalLexicon.Entry imported = personalEntry;
+        updatePersonalLexicon(() -> imported, words == null
+                ? () -> personalLexicon.load(imported) : () -> personalLexicon.loadWithAdditions(base, words));
     }
 
     private void leavePersonalSession() {
@@ -3017,6 +3135,8 @@ public final class MainActivity extends Activity {
         ui.gap(content, 10);
         profilePanel = new ProfilePanel(ui, profileStore, store, dailyProgress, this::chooseProfilePhoto);
         content.addView(profilePanel.view());
+        ScrollView profileScroll = screenScroll;
+        profileScroll.post(() -> profileScroll.scrollTo(0, 0));
     }
 
     private void updateAppearance() {
@@ -3027,7 +3147,11 @@ public final class MainActivity extends Activity {
         collectionBack = back;
         page(Screen.COLLECTION, false);
         top(getString(R.string.app_name), back, null);
-        content.addView(new SkinPanel(ui, skinStore, store, dailyProgress, this::updateAppearance).view());
+        content.addView(new SkinPanel(ui, skinStore, store, dailyProgress, this::updateAppearance,
+                () -> {
+                    showShop(() -> showCollection(back));
+                    shop.showThemes();
+                }).view());
     }
 
     private void chooseProfilePhoto() {
@@ -3522,7 +3646,7 @@ public final class MainActivity extends Activity {
         if (request == PERSONAL_LEXICON_IMPORT) {
             if (result == RESULT_OK && data != null && data.getData() != null) {
                 Uri source = data.getData();
-                updatePersonalLexicon(() -> personalLexicon.importFrom(source), false);
+                updatePersonalLexicon(() -> personalLexicon.importFrom(source), null);
             }
             return;
         }

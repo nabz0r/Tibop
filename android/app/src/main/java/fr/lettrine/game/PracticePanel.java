@@ -181,7 +181,7 @@ final class PracticePanel {
         LinearLayout hand = ui.row();
         rackDrop = new RackDrop(ui, hand, rackButtons, this::canMoveRackTile, this::reorderRack);
         ui.gap(playControls, 8);
-        hand.setBackground(ui.shape(ui.palette.ordinary(), 16));
+        hand.setBackground(ui.rackBackground(ui.skins.rack(), 16));
         ui.inset(hand, 6, 6);
         for (int i = 0; i < rack.size(); i++) {
             int index = i;

@@ -192,8 +192,8 @@ final class TwoMoveChallengeScreen {
             rackRow = ui.row();
             rackDrop = new RackDrop(ui, rackRow, rackButtons, this::canMoveRackTile, this::reorderRack);
             rackRow.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+            rackRow.setBackground(ui.rackBackground(ui.skins.rack(), 13));
             ui.inset(rackRow, 6, 6);
-            rackRow.setBackground(ui.shape(ui.palette.ordinary(), 13));
             layout.addView(rackRow);
             ui.gap(layout, 6);
             feedback = ui.text("", 14, ui.palette.ink(), ui.medium);

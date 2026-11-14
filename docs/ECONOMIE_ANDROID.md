@@ -1,6 +1,6 @@
 # Économie de Tibop sur Android
 
-La bêta 0.16.6 propose un circuit solo avec trois parcours par langue. La Boutique affiche les pièces et les tickets de l’appareil, permet d’échanger 100 pièces contre un ticket et propose des thèmes à équiper ou à débloquer. La partie classique, le défi du jour, le bilan NAB, les duels et le tournoi restent en accès libre. Les achats en argent réel sont désactivés.
+La bêta 0.16.7 propose un circuit solo avec trois parcours par langue. La Boutique affiche les pièces et les tickets de l’appareil, permet d’échanger 100 pièces contre un ticket et propose des thèmes à équiper ou à débloquer. La Collection affiche les conditions de déblocage et permet d’accéder aux thèmes de la Boutique. La partie classique, le défi du jour, le bilan NAB, les duels et le tournoi restent en accès libre. Les achats en argent réel sont désactivés.
 
 ## Publicité choisie par le joueur
 
@@ -20,7 +20,7 @@ L’intégration utilise UMP avant de demander une annonce. Le lien vers les cho
 | Words With Friends Classic | Objectifs adaptés au joueur, coffres, clés et paliers de récompenses. [Aide Zynga](https://zyngasupport.helpshift.com/hc/en/26-words-with-friends-classic/faq/20962-what-are-daily-goals/) |
 | Brawl Stars | Les victoires quotidiennes peuvent donner des récompenses aléatoires. Le classé donne accès à des skins, sprays ou icônes de saison. Certains skins se prévisualisent à l’entraînement. [Récompenses](https://support.supercell.com/brawl-stars/en/articles/starr-drops-5.html) · [Skins](https://support.supercell.com/brawl-stars/en/articles/skins-8.html) |
 
-Tibop débloque Porcelaine et Ramune après un jour de défi quotidien, Marée et Sakura après trois jours joués, Ambre après trois parties solo terminées et Ardoise après cinq. Le profil affiche notamment la première victoire, le premier coup à sept lettres et la série de trois jours.
+Tibop débloque les tuiles Porcelaine et Ramune ainsi que le chevalet Lagon après un défi quotidien. Trois jours joués débloquent les plateaux Marée et Sakura. Trois parties solo terminées débloquent les tuiles Ambre et le plateau Lagon. Cinq parties solo débloquent le plateau Ardoise, le chevalet Minuit et les tuiles Minuit. Le plateau et les tuiles Aurore ainsi que le chevalet Érable sont disponibles dès le départ. Le profil affiche notamment la première victoire, le premier coup à sept lettres et la série de trois jours. [Aperçu de la Collection](../android/README.md#personnaliser-le-jeu)
 
 Terminer les trois manches d’un même week-end débloque **Nocturne dorée**, un fond à choisir pour les cartes **Bats mon score**. Le tournoi montre l’aperçu et confirme le déblocage.
 

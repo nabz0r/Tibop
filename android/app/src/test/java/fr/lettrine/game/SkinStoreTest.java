@@ -21,14 +21,23 @@ public class SkinStoreTest {
     @Test public void earnedSkinsStayUnlockedAndEquipIndependently() {
         int earned = SkinStore.earn(0, new SkinStore.Progress(3, 3));
         assertEquals(earned, SkinStore.earn(earned, new SkinStore.Progress(0, 0)));
-        SkinStore.Selection selected = SkinStore.selected("TIDE", "AMBER", earned);
+        SkinStore.Selection selected = SkinStore.selected("TIDE", "AMBER", "LAGOON", earned);
         assertEquals(SkinStore.BoardSkin.TIDE, selected.board());
         assertEquals(SkinStore.TileSkin.AMBER, selected.tiles());
-        assertEquals(new SkinStore.Selection(SkinStore.BoardSkin.TIDE, null),
-                SkinStore.selected("TIDE", "CLASSIC", earned));
-        assertEquals(new SkinStore.Selection(null, SkinStore.TileSkin.AMBER),
-                SkinStore.selected("CLASSIC", "AMBER", earned));
-        assertNull(SkinStore.selected("SLATE", "UNKNOWN", earned).board());
-        assertNull(SkinStore.selected("UNKNOWN", "PORCELAIN", 0).tiles());
+        assertEquals(SkinStore.RackSkin.LAGOON, selected.rack());
+        assertEquals(new SkinStore.Selection(SkinStore.BoardSkin.TIDE, null, SkinStore.RackSkin.LAGOON),
+                SkinStore.selected("TIDE", "CLASSIC", "LAGOON", earned));
+        assertEquals(new SkinStore.Selection(null, SkinStore.TileSkin.AMBER, null),
+                SkinStore.selected("CLASSIC", "AMBER", "CLASSIC", earned));
+        assertEquals(new SkinStore.Selection(SkinStore.BoardSkin.TIDE, SkinStore.TileSkin.AMBER, null),
+                SkinStore.selected("TIDE", "AMBER", "", earned));
+        assertNull(SkinStore.selected("SLATE", "UNKNOWN", "MIDNIGHT", earned).board());
+        assertNull(SkinStore.selected("UNKNOWN", "PORCELAIN", "MIDNIGHT", 0).tiles());
+        assertNull(SkinStore.selected("TIDE", "AMBER", "MIDNIGHT", earned).rack());
+    }
+
+    @Test public void includedAlternativesCanBeEquippedBeforeAnyRewards() {
+        assertEquals(new SkinStore.Selection(SkinStore.BoardSkin.SUNRISE, SkinStore.TileSkin.SUNRISE,
+                        SkinStore.RackSkin.MAPLE), SkinStore.selected("SUNRISE", "SUNRISE", "MAPLE", 0));
     }
 }

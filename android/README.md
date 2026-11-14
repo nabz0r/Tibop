@@ -1,10 +1,10 @@
 # Tibop pour Android
 
-[Tibop 0.16.6](https://github.com/nabz0r/Tibop/releases/tag/v0.16.6) est la bêta Android avec NAB le Maine Coon. Le jeu fonctionne en invité hors ligne à partir d’Android 8 (API 26). La bêta conserve l’identifiant Android et la signature des éditions distribuées en APK direct.
+[Tibop 0.16.7](https://github.com/nabz0r/Tibop/releases/tag/v0.16.7) est la bêta Android avec NAB le Maine Coon. Le jeu fonctionne en invité hors ligne à partir d’Android 8 (API 26). La bêta conserve l’identifiant Android et la signature des éditions distribuées en APK direct.
 
 ## Tester la bêta sur son téléphone
 
-1. Sur Android, [téléchargez Tibop 0.16.6](https://github.com/nabz0r/Tibop/releases/download/v0.16.6/Tibop-0.16.6.apk) et ouvrez le fichier. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Gardez la bêta précédente installée et choisissez **Mettre à jour** pour conserver vos parties et votre progression.
+1. Sur Android, [téléchargez Tibop 0.16.7](https://github.com/nabz0r/Tibop/releases/download/v0.16.7/Tibop-0.16.7.apk) et ouvrez le fichier. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Gardez la bêta précédente installée et choisissez **Mettre à jour** pour conserver vos parties et votre progression.
 2. En français, ouvrez **Jouer contre NAB** ou **Jouer à deux ou plus** et démarrez une nouvelle partie. Faites glisser une tuile du chevalet sur une autre pour déplacer la première. Faites ensuite glisser une tuile sur le plateau. Quittez l’application en cours de tour et touchez **Reprendre ma partie** pour retrouver l’ordre des lettres et le brouillon.
 3. Pour tester le lexique, si le tirage le permet, essayez `KM` ou `KG` sur la case centrale, puis un mot courant comme `AS` ou `CHAT`. Le jeu indique le motif du refus ou le score du coup. Le filtre s’applique aux nouvelles parties classiques en français.
 4. Pour un duel avec le lexique filtré, installez tous les deux la mise à jour et ouvrez **Amis** pour vous connecter avant de lancer un nouveau duel. Les liens d’amitié déjà envoyés s’utilisent comme avant.
@@ -25,7 +25,7 @@
 - **Revanche miroir** apparaît après un duel terminé où chacun avait un chevalet distinct. Rejouez sur le même plateau, chacun avec le chevalet que son ami avait au premier duel. Le résultat affiche aussi le cumul des deux manches. Le coup du premier duel est consultable dans son résultat et peut servir de point de départ. Les anciens duels à chevalet commun gardent la revanche classique.
 - **Tournoi du week-end** se trouve dans **Amis**. Du samedi à 0 h au lundi à 0 h UTC, jouez un coup sur chacun des trois plateaux communs. Le classement entre amis additionne les points des trois défis terminés et attribue la même place en cas d’égalité. L’app affiche les heures dans votre fuseau. Le tournoi et l’envoi des coups demandent une connexion au serveur social.
 - **Nocturne dorée** se débloque dès que le serveur confirme les trois coups d’un même week-end. Le fond est appliqué aux cartes **Bats mon score** et reste disponible hors ligne sur l’appareil. L’onglet **Cartes** de la Collection permet de le prévisualiser ou de revenir au fond classique. Sur un autre appareil, retrouver le même compte social puis ouvrir le tournoi restaure le déblocage.
-- **Collection**, dans **Profil** ou la **Boutique**, permet de choisir séparément un plateau, des tuiles et une carte de score. Porcelaine et Ramune se débloquent après un défi quotidien, Marée et Sakura après trois jours de défi, Ambre après trois parties solo terminées et Ardoise après cinq. Les parties et défis déjà enregistrés comptent. La collection fonctionne hors ligne.
+- **Collection**, dans **Profil** ou la **Boutique**, permet de choisir séparément un plateau, un chevalet, des tuiles et une carte de score. Les parties et défis déjà enregistrés comptent pour les déblocages. La collection fonctionne hors ligne. [Aperçu et déblocages](#personnaliser-le-jeu)
 - La **Boutique** affiche le solde et le temps restant avant le prochain ticket gratuit. Le solde se met à jour même lorsque la boutique reste ouverte. Confirmez l’échange de 100 pièces contre un ticket. Nuit indigo et Coquelicot se débloquent avec les pièces gagnées en jouant. Une annonce AdMob facultative de démonstration peut créditer un ticket par jour, partagé entre les deux langues.
 - Dans **Profil → Réglages**, choisissez **Arcade bonbon** ou **Atelier du soir**. Réglez séparément la musique et les effets, et activez ou désactivez les animations, les célébrations et les vibrations. Android applique aussi votre réglage système de réduction des animations.
 - **Comment jouer**, depuis l’accueil, propose un premier coup guidé et une page sur les règles, NAB et le modèle d’explication embarqué. Dans un défi, faites glisser une tuile depuis le chevalet ou touchez une lettre puis une case. Vous pouvez déplacer un jeton déjà posé, zoomer dans les deux sens et vérifier la validité du coup avant de l’envoyer.
@@ -79,11 +79,23 @@ Dans la Play Console, créer la version sur le canal de test souhaité, configur
 
 ## Jouer avec un lexique personnel
 
+Dans **Profil → Réglages → Lexique personnel → Ajouter un mot**, saisissez une forme de 2 à 15 lettres, par exemple `OK`. Vous pouvez ajouter jusqu’à 200 mots par langue. **Jouer avec mes mots** ouvre un entraînement hors ligne avec ces ajouts au lexique fourni, contre NAB ou à plusieurs sur le même appareil. **Gérer les mots ajoutés** retire une forme. Les parties d’une édition déjà jouée restent accessibles sous **Parties avec les anciennes listes** tant que le lexique fourni conserve la même empreinte. Les ajouts sont réservés à ce mode d’entraînement.
+
 Dans **Profil → Réglages → Lexique personnel**, importez un fichier TXT UTF-8 autorisé contenant une forme de deux à quinze lettres par ligne. Le français normalise les accents et les ligatures. L’application dédoublonne et trie le fichier. L’entraînement permet le solo contre NAB ou la partie locale sur le même appareil. Chaque langue et chaque empreinte de liste ont leurs propres sauvegardes et leur propre historique. Les parties de ce mode ne modifient ni l’Elo ni les déblocages. Les listes personnelles et leurs parties restent sur l’appareil. L’import à l’identique retrouve les sauvegardes associées.
 
 Le lexique personnel alimente les parties d’entraînement. Si vous disposez d’une liste de compétition que vous êtes autorisé à utiliser dans l’application, vous pouvez l’importer de la même manière. La référence française est l’ODS 9, l’internationale anglophone est CSW24 et la référence NASPA en Amérique du Nord est NWL2023. Tibop valide automatiquement les mots selon le lexique importé. [Fédération française](https://www.ffsc.fr/initiation.php?page=mots-2-lettres) · [Collins](https://scrabble.collinsdictionary.com/tools/) · [Licence NASPA](https://scrabbleplayers.org/w/Licensing)
 
 Pour importer une liste anglaise, touchez **EN** à l’accueil, ouvrez **Profile → Settings → Personal dictionary**, puis choisissez **Play with this dictionary** après l’import. Touchez **FR** à l’accueil pour retrouver la progression française. Le moteur de NAB utilise le lexique de la partie pour ses coups et pour les alternatives dans le bilan. Le modèle local choisit parmi les explications calculées par le moteur.
+
+`OK` ne figure pas dans la liste officielle des mots français de deux lettres de l’ODS 9. Tibop et cette liste ont 74 formes de deux lettres en commun, sur 78 pour Tibop et 81 pour l’ODS 9. Pour pratiquer avec les règles lexicales d’une compétition, utilisez **Importer un fichier TXT** avec la liste complète que vous êtes autorisé à utiliser. [Liste ODS 9 de la FFSc](https://www.ffsc.fr/initiation.php?page=mots-2-lettres)
+
+## Personnaliser le jeu
+
+Ouvrez **Profil → Collection**. Choisissez séparément parmi six plateaux, quatre chevalets et six styles de tuiles. L’aperçu montre la combinaison équipée. Le plateau et les tuiles Aurore ainsi que le chevalet Érable sont inclus dès le départ. Chaque autre style indique sa condition de déblocage. Retrouvez aussi les cartes de score et le raccourci vers les thèmes de l’interface dans la Collection.
+
+<p align="center">
+  <a href="../docs/media/tibop-collection.webp"><img src="../docs/media/tibop-collection.webp" width="310" alt="Collection Tibop et aperçu combiné du plateau, du chevalet et des tuiles"></a>
+</p>
 
 ## Consulter une définition
 
@@ -95,7 +107,7 @@ Les fichiers sont générés par [prepare_french_definitions.py](../tools/prepar
 
 ## Transférer sa progression
 
-Dans **Profil → Réglages → Sauvegarder et transférer**, créez un fichier ZIP puis choisissez **Restaurer une sauvegarde** sur l’autre installation. Le fichier reprend les parties et brouillons sauvegardés, l’historique, l’Elo, les défis, les pièces, les tickets, les thèmes, les réglages de jeu et le profil local des deux langues. La restauration remplace la progression locale actuelle après confirmation. Le ZIP peut contenir la photo et le profil local. Gardez-le dans un endroit privé.
+Dans **Profil → Réglages → Sauvegarder et transférer**, créez un fichier ZIP puis choisissez **Restaurer une sauvegarde** sur l’autre installation. Le fichier reprend les parties et brouillons sauvegardés, l’historique, l’Elo, les défis, les pièces, les tickets, les choix de la Collection, les thèmes, les réglages de jeu et le profil local des deux langues. La restauration remplace la progression locale actuelle après confirmation. Le ZIP peut contenir la photo et le profil local. Gardez-le dans un endroit privé.
 
 Le ZIP couvre les parties jouées avec les lexiques fournis. Le lexique personnel et ses parties sont propres à l’installation. Pour récupérer un compte Amis sur un autre appareil, il faut l’avoir lié à Google et retrouver le même serveur et la même langue. Un compte invité local ne peut pas être récupéré après désinstallation.
 
@@ -107,17 +119,24 @@ Le service de la bêta dispose de sa propre base et d’un accès HTTPS séparé
 
 Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion Google, créer un client OAuth Web et des clients Android pour `fr.lettrine.game` avec les certificats des distributions à tester. Passer l’identifiant du client Web au serveur avec `LETTRINE_GOOGLE_CLIENT_ID`. Le serveur valide la signature Google, le destinataire du jeton et le nonce avant d’associer le compte. Le profil local, les parties hors ligne et l’Elo restent sur l’appareil. La connexion Google peut restaurer le compte social sur un autre appareil. [Connexion Google sur Android](https://developer.android.com/identity/sign-in/credential-manager-siwg-implementation) · [Validation du jeton Google](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token)
 
-## Tibop 0.16.6
+## Tibop 0.16.7
 
-- Sur un émulateur Android 16 à pages mémoire de 16 Kio, la mise à jour depuis la bêta précédente a retrouvé le tour, le score, l’ordre du chevalet et le brouillon de deux lettres. Le fichier de sauvegarde est resté identique octet pour octet après l’installation et la reprise.
-- Les 86 tests unitaires Android et le contrôle Lint passent. La campagne a terminé 600 parties locales en français et en anglais, réparties en six groupes de deux à quatre joueurs. Les 19 710 tours ont été sauvegardés puis rechargés. Quatre salons web ont terminé une partie avec des joueurs humains ou des bots.
-- Sur émulateur Android 16, les parties locales à deux, trois et quatre ont été reprises après arrêt forcé. Le brouillon reste privé au retour de l’arrière-plan et les scores restent visibles avec du texte agrandi. Deux émulateurs ont terminé un duel en ligne et sa revanche miroir, puis vérifié la reprise Bluetooth après deux coupures. La portée et la reconnexion Bluetooth sur deux téléphones physiques restent à vérifier.
-- Sur Android 8 en mode avion, le défi quotidien, le catalogue et les trois manches du circuit ont été vérifiés. Le circuit a conservé son brouillon entre les deux coups et a débité un seul ticket. La boutique et la Collection ont été vérifiées sur un écran étroit. Un échange annulé a conservé le solde et une annonce AdMob de démonstration a crédité un seul ticket. [Scénarios et détails des contrôles](../docs/SIMULATIONS_ANDROID.md#vérification-de-tibop-0166)
+- La Collection combine indépendamment le plateau, le chevalet et les tuiles. Une sauvegarde ZIP peut transférer ces trois sélections.
+- Le lexique d’entraînement accepte des mots saisis dans l’application et permet de retrouver les parties d’une liste déjà jouée. Les signatures de lexique continuent de distinguer les éditions.
+- Sur émulateur Android 16, la mise à jour depuis la 0.16.6 a conservé le plateau, le score, le tour, l’ordre du chevalet et un brouillon de trois lettres. La Collection a aussi été vérifiée en anglais sur un écran de 240 dp avec du texte à 145 %.
+- Les 89 tests unitaires Android passent. Lint se termine sans erreur, avec 40 avertissements. [Vérifications de Tibop 0.16.7](../docs/SIMULATIONS_ANDROID.md#vérification-de-tibop-0167)
 
 ## Historique des vérifications
 
 <details>
 <summary>Résultats des éditions précédentes</summary>
+
+### Vérification de la version 0.16.6
+
+- Sur un émulateur Android 16 à pages mémoire de 16 Kio, la mise à jour depuis la bêta précédente a retrouvé le tour, le score, l’ordre du chevalet et le brouillon de deux lettres. Le fichier de sauvegarde est resté identique octet pour octet après l’installation et la reprise.
+- Les 86 tests unitaires Android et le contrôle Lint passent. La campagne a terminé 600 parties locales en français et en anglais, réparties en six groupes de deux à quatre joueurs. Les 19 710 tours ont été sauvegardés puis rechargés. Quatre salons web ont terminé une partie avec des joueurs humains ou des bots.
+- Sur émulateur Android 16, les parties locales à deux, trois et quatre ont été reprises après arrêt forcé. Le brouillon reste privé au retour de l’arrière-plan et les scores restent visibles avec du texte agrandi. Deux émulateurs ont terminé un duel en ligne et sa revanche miroir, puis vérifié la reprise Bluetooth après deux coupures. La portée et la reconnexion Bluetooth sur deux téléphones physiques restent à vérifier.
+- Sur Android 8 en mode avion, le défi quotidien, le catalogue et les trois manches du circuit ont été vérifiés. Le circuit a conservé son brouillon entre les deux coups et a débité un seul ticket. La boutique et la Collection ont été vérifiées sur un écran étroit. Un échange annulé a conservé le solde et une annonce AdMob de démonstration a crédité un seul ticket. [Scénarios et détails des contrôles](../docs/SIMULATIONS_ANDROID.md#vérification-de-tibop-0166)
 
 ### Vérification de la version 0.16.5
 

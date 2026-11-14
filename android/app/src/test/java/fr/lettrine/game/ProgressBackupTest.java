@@ -22,4 +22,10 @@ public class ProgressBackupTest {
         assertNull(ProgressBackup.type("two_move_challenges", "lexicon/chats"));
         assertNull(ProgressBackup.type("preferences", "lexicon/app_language"));
     }
+
+    @Test public void includesIndependentRackSelectionAlongsideExistingSkins() {
+        assertEquals(String.class, ProgressBackup.type("skin_collection", "board"));
+        assertEquals(String.class, ProgressBackup.type("skin_collection", "tiles"));
+        assertEquals(String.class, ProgressBackup.type("skin_collection", "rack"));
+    }
 }

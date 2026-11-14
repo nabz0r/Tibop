@@ -8,19 +8,34 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.function.BooleanSupplier;
 
 final class SkinPanel {
-    private enum Category { BOARDS, TILES, CARDS }
+    private enum Category {
+        BOARDS(R.string.skins_boards), RACKS(R.string.skins_racks), TILES(R.string.skins_tiles),
+        CARDS(R.string.card_styles);
+
+        final int title;
+        Category(int title) { this.title = title; }
+    }
+
+    private enum Sample { BOARD, RACK, TILES, SET }
+
+    private record Piece(int name, int detail, SkinStore.Reward reward,
+                         boolean equipped, View preview, BooleanSupplier equip) {}
 
     private final ViewKit ui;
     private final SkinStore store;
@@ -29,14 +44,16 @@ final class SkinPanel {
     private final DailyProgress daily;
     private final Runnable applied;
     private final LinearLayout root;
+    private final FrameLayout previewSet;
+    private final TextView combination;
     private final LinearLayout items;
-    private final TextView boardsTab;
-    private final TextView tilesTab;
-    private final TextView cardsTab;
+    private final TextView[] categoryTabs = new TextView[Category.values().length];
     private final TextView count;
+    private int columns;
     private Category category = Category.BOARDS;
 
-    SkinPanel(ViewKit ui, SkinStore store, GameStore games, DailyProgress daily, Runnable applied) {
+    SkinPanel(ViewKit ui, SkinStore store, GameStore games, DailyProgress daily, Runnable applied,
+              Runnable openThemes) {
         this.ui = ui;
         this.store = store;
         cardStyles = new CardStyleStore(ui.context);
@@ -53,7 +70,10 @@ final class SkinPanel {
         ui.inset(hero, 20, 19);
         var configuration = ui.context.getResources().getConfiguration();
         boolean compact = configuration.screenWidthDp < 340 || configuration.fontScale > 1.35f;
-        TextView title = ui.text(label(R.string.skins_title), compact ? 29 : 38, ui.palette.heroInk(), ui.display);
+        int titleSize = compact ? 29 : 38;
+        TextView title = ui.text(label(R.string.skins_title), titleSize, ui.palette.heroInk(), ui.display);
+        title.setMaxLines(1);
+        title.setAutoSizeTextTypeUniformWithConfiguration(16, titleSize, 1, TypedValue.COMPLEX_UNIT_SP);
         if (Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
         hero.addView(title);
         ui.gap(hero, 8);
@@ -62,20 +82,32 @@ final class SkinPanel {
         hero.addView(intro);
         root.addView(hero);
 
-        ui.gap(root, 15);
-        LinearLayout tabs = ui.row();
-        boardsTab = ui.button(label(R.string.skins_boards), true, () -> select(Category.BOARDS));
-        tilesTab = ui.button(label(R.string.skins_tiles), false, () -> select(Category.TILES));
-        cardsTab = ui.button(label(R.string.card_styles), false, () -> select(Category.CARDS));
-        arrangeTabs(tabs, compact);
+        ui.gap(root, 13);
+        LinearLayout tabs = ui.column();
+        for (Category entry : Category.values()) {
+            categoryTabs[entry.ordinal()] = ui.button(label(entry.title), entry == category, () -> select(entry));
+        }
+        arrangeTabs(tabs, columns(ui.dp(configuration.screenWidthDp) - ui.dp(34), configuration.fontScale));
         tabs.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
-            boolean stackTabs = right - left < ui.dp(306)
-                    || ui.context.getResources().getConfiguration().fontScale > 1.35f;
-            if (stackTabs != (tabs.getOrientation() == LinearLayout.VERTICAL)) {
-                tabs.post(() -> arrangeTabs(tabs, stackTabs));
-            }
+            int next = columns(right - left, ui.context.getResources().getConfiguration().fontScale);
+            if (next != columns) tabs.post(() -> arrangeTabs(tabs, next));
         });
         root.addView(tabs);
+        ui.gap(root, 11);
+        TextView previewTitle = ui.title(label(R.string.skins_preview), 18);
+        if (Build.VERSION.SDK_INT >= 28) previewTitle.setAccessibilityHeading(true);
+        root.addView(previewTitle);
+        ui.gap(root, 5);
+        previewSet = new FrameLayout(ui.context);
+        root.addView(previewSet, new LinearLayout.LayoutParams(-1, ui.dp(112)));
+        ui.gap(root, 5);
+        combination = ui.body("");
+        combination.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        root.addView(combination);
+        ui.gap(root, 7);
+        TextView themes = ui.textButton(label(R.string.skins_theme_current, label(ui.palette.name())), openThemes);
+        themes.setContentDescription(label(R.string.skins_theme_open, label(ui.palette.name())));
+        root.addView(themes);
         ui.gap(root, 11);
         count = ui.body("");
         root.addView(count);
@@ -87,18 +119,26 @@ final class SkinPanel {
 
     View view() { return root; }
 
-    private void arrangeTabs(LinearLayout tabs, boolean stacked) {
+    private int columns(int width, float scale) {
+        if (width >= ui.dp(430) && scale <= 1.2f) return 4;
+        return width >= ui.dp(240) && scale <= 1.75f ? 2 : 1;
+    }
+
+    private void arrangeTabs(LinearLayout tabs, int count) {
+        if (count == columns) return;
+        columns = count;
+        for (int i = 0; i < tabs.getChildCount(); i++) {
+            if (tabs.getChildAt(i) instanceof LinearLayout row) row.removeAllViews();
+        }
         tabs.removeAllViews();
-        tabs.setOrientation(stacked ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
-        boolean first = true;
-        for (TextView tab : new TextView[]{boardsTab, tilesTab, cardsTab}) {
-            if (!first) {
-                if (stacked) ui.gap(tabs, 5);
-                else ui.space(tabs, 6);
+        for (int i = 0; i < categoryTabs.length; i += count) {
+            if (i > 0) ui.gap(tabs, 5);
+            LinearLayout row = ui.row();
+            for (int k = 0; k < count; k++) {
+                if (k > 0) ui.space(row, 6);
+                ui.weight(row, categoryTabs[i + k]);
             }
-            if (stacked) tabs.addView(tab, new LinearLayout.LayoutParams(-1, -2));
-            else ui.weight(tabs, tab);
-            first = false;
+            tabs.addView(row);
         }
     }
 
@@ -109,10 +149,16 @@ final class SkinPanel {
     }
 
     private void render() {
-        tab(boardsTab, category == Category.BOARDS);
-        tab(tilesTab, category == Category.TILES);
-        tab(cardsTab, category == Category.CARDS);
+        for (Category entry : Category.values()) {
+            TextView tab = categoryTabs[entry.ordinal()];
+            boolean active = entry == category;
+            tab.setSelected(active);
+            ui.styleKey(tab, active);
+        }
         items.removeAllViews();
+        SkinStore.Inventory inventory = store.refresh(games, daily);
+        SkinStore.Selection selection = inventory.selection();
+        updatePreviewSet(selection);
         int available = 0;
         if (category == Category.CARDS) {
             for (CardStyleStore.Style style : CardStyleStore.Style.values()) {
@@ -122,52 +168,69 @@ final class SkinPanel {
             count.setText(label(R.string.skins_available, available, CardStyleStore.Style.values().length));
             return;
         }
-        SkinStore.Inventory inventory = store.refresh(games, daily);
-        SkinStore.Selection selection = inventory.selection();
-        int total;
-        if (category == Category.BOARDS) {
-            SkinStore.BoardSkin[] skins = SkinStore.BoardSkin.values();
-            total = skins.length;
-            for (SkinStore.BoardSkin skin : skins) {
-                boolean classic = skin == SkinStore.BoardSkin.CLASSIC;
-                boolean active = classic ? selection.board() == null : selection.board() == skin;
-                if (inventory.has(skin.reward)) available++;
-                Preview preview = new Preview(ui, true, classic ? null : skin, selection.tiles());
-                addCard(skin.name, skin.detail, skin.reward, inventory, active, preview, () -> store.equip(skin));
+        var pieces = new ArrayList<Piece>();
+        switch (category) {
+            case BOARDS -> {
+                for (SkinStore.BoardSkin item : SkinStore.BoardSkin.values()) {
+                    SkinStore.BoardSkin shown = item == SkinStore.BoardSkin.CLASSIC ? null : item;
+                    View preview = new Preview(ui, Sample.BOARD, shown, selection.tiles(), null);
+                    pieces.add(new Piece(item.name, item.detail, item.reward, shown == selection.board(),
+                            preview, () -> store.equip(item)));
+                }
             }
-        } else {
-            SkinStore.TileSkin[] skins = SkinStore.TileSkin.values();
-            total = skins.length;
-            for (SkinStore.TileSkin skin : skins) {
-                boolean classic = skin == SkinStore.TileSkin.CLASSIC;
-                boolean active = classic ? selection.tiles() == null : selection.tiles() == skin;
-                if (inventory.has(skin.reward)) available++;
-                Preview preview = new Preview(ui, false, selection.board(), classic ? null : skin);
-                addCard(skin.name, skin.detail, skin.reward, inventory, active, preview, () -> store.equip(skin));
+            case RACKS -> {
+                for (SkinStore.RackSkin item : SkinStore.RackSkin.values()) {
+                    SkinStore.RackSkin shown = item == SkinStore.RackSkin.CLASSIC ? null : item;
+                    View preview = new Preview(ui, Sample.RACK, null, selection.tiles(), shown);
+                    pieces.add(new Piece(item.name, item.detail, item.reward, shown == selection.rack(),
+                            preview, () -> store.equip(item)));
+                }
+            }
+            case TILES -> {
+                for (SkinStore.TileSkin item : SkinStore.TileSkin.values()) {
+                    SkinStore.TileSkin shown = item == SkinStore.TileSkin.CLASSIC ? null : item;
+                    View preview = new Preview(ui, Sample.TILES, null, shown, selection.rack());
+                    pieces.add(new Piece(item.name, item.detail, item.reward, shown == selection.tiles(),
+                            preview, () -> store.equip(item)));
+                }
+            }
+            case CARDS -> throw new IllegalStateException();
+        }
+        for (Piece piece : pieces) {
+            if (inventory.has(piece.reward())) {
+                addCard(piece, inventory, true);
+                available++;
             }
         }
-        count.setText(label(R.string.skins_available, available, total));
+        for (Piece piece : pieces) if (!inventory.has(piece.reward())) addCard(piece, inventory, false);
+        count.setText(label(R.string.skins_available, available, pieces.size()));
     }
 
-    private void tab(TextView tab, boolean selected) {
-        tab.setSelected(selected);
-        ui.styleKey(tab, selected);
+    private void updatePreviewSet(SkinStore.Selection selection) {
+        previewSet.removeAllViews();
+        Preview preview = new Preview(ui, Sample.SET, selection.board(), selection.tiles(), selection.rack());
+        previewSet.addView(preview, new FrameLayout.LayoutParams(-1, -1));
+        combination.setText(label(R.string.skins_preview_equipped,
+                label(selection.board() == null ? R.string.skins_classic : selection.board().name),
+                label(selection.rack() == null ? R.string.skins_classic : selection.rack().name),
+                label(selection.tiles() == null ? R.string.skins_classic : selection.tiles().name)));
     }
 
-    private void addCard(int name, int detail, SkinStore.Reward reward, SkinStore.Inventory inventory,
-                         boolean active, Preview preview, BooleanSupplier equip) {
+    private void addCard(Piece piece, SkinStore.Inventory inventory, boolean unlocked) {
         LinearLayout card = ui.card();
+        if (piece.equipped()) card.setBackground(ui.shape(ui.palette.paper(), 22, ui.palette.accent()));
         ui.inset(card, 12, 12);
-        card.addView(preview, new LinearLayout.LayoutParams(-1, ui.dp(116)));
+        card.addView(piece.preview(), new LinearLayout.LayoutParams(-1, ui.dp(94)));
         ui.gap(card, 10);
 
-        card.addView(styleHeader(name, active, inventory.has(reward), () -> {
-            if (!equip.getAsBoolean()) return false;
+        card.addView(styleHeader(piece.name(), piece.equipped(), unlocked, () -> {
+            if (!piece.equip().getAsBoolean()) return false;
             applied.run();
             return true;
         }));
-        card.addView(ui.body(label(detail)));
-        if (!inventory.has(reward)) {
+        card.addView(ui.body(label(piece.detail())));
+        if (!unlocked) {
+            SkinStore.Reward reward = piece.reward();
             ui.gap(card, 11);
             int value = reward.count(inventory.progress());
             int quantity = reward.daily ? R.plurals.skins_daily_requirement : R.plurals.skins_solo_requirement;
@@ -212,12 +275,13 @@ final class SkinPanel {
         if (Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
         if (stacked) header.addView(title);
         else ui.weight(header, title);
-        if (active) {
-            TextView badge = ui.text(label(R.string.skins_active), 13, ui.palette.ink(), ui.medium);
-            badge.setBackground(ui.shape(ui.palette.ordinary(), 9));
+        if (active || !unlocked) {
+            TextView badge = ui.text(label(active ? R.string.skins_active : R.string.skins_locked), 13,
+                    ui.palette.ink(), ui.medium);
+            badge.setBackground(ui.shape(active ? ui.palette.fresh() : ui.palette.ordinary(), 9));
             ui.inset(badge, 8, 6);
             addStyleAction(header, badge, stacked);
-        } else if (unlocked) {
+        } else {
             TextView action = ui.button(label(R.string.skins_equip), false, () -> {
                 if (!equip.getAsBoolean()) {
                     Toast.makeText(ui.context, R.string.skins_save_error, Toast.LENGTH_SHORT).show();
@@ -267,7 +331,8 @@ final class SkinPanel {
     @SuppressLint("ViewConstructor")
     private static final class Preview extends View {
         private static final int[] CELL_STYLES = {4, 0, 1, 0, 2, 0, 0, 1, 0, 0, 0, 3, 2, 0, 3, 1, 0, 4};
-        private final boolean board;
+        private final Sample sample;
+        private final Drawable rackBackground;
         private final GameLanguage language;
         private final String word;
         private final String[] marks;
@@ -285,9 +350,11 @@ final class SkinPanel {
         private final Typeface medium;
         private Shader frameShader;
 
-        Preview(ViewKit ui, boolean board, SkinStore.BoardSkin boardSkin, SkinStore.TileSkin tileSkin) {
+        Preview(ViewKit ui, Sample sample, SkinStore.BoardSkin boardSkin, SkinStore.TileSkin tileSkin,
+                SkinStore.RackSkin rackSkin) {
             super(ui.context);
-            this.board = board;
+            this.sample = sample;
+            rackBackground = ui.rackBackground(rackSkin, 9);
             language = ui.language;
             word = language.text("MOT", "CAT");
             marks = new String[]{"", ui.context.getString(R.string.board_letter_bonus, 2),
@@ -323,8 +390,17 @@ final class SkinPanel {
             paint.setShader(frameShader);
             canvas.drawRoundRect(0, 0, w, h, radius, radius, paint);
             paint.setShader(null);
-            if (board) drawBoard(canvas, w, h);
-            else drawTiles(canvas, w, h);
+            switch (sample) {
+                case BOARD -> drawBoard(canvas, w, h);
+                case RACK, TILES -> drawTiles(canvas, w, h);
+                case SET -> {
+                    drawBoard(canvas, w * 0.53f, h);
+                    canvas.save();
+                    canvas.translate(w * 0.53f, 0);
+                    drawTiles(canvas, w * 0.47f, h);
+                    canvas.restore();
+                }
+            }
         }
 
         private void drawBoard(Canvas canvas, float width, float height) {
@@ -347,17 +423,17 @@ final class SkinPanel {
         }
 
         private void drawTiles(Canvas canvas, float width, float height) {
-            float size = Math.min(width / 4.7f, height * 0.54f);
+            float size = Math.min(width / 5f, height * 0.5f);
             float pitch = size * 1.13f;
             float start = (width - (pitch * 2 + size)) / 2;
             float top = (height - size) / 2;
+            float rim = size * 0.25f;
+            rackBackground.setBounds(Math.round(start - rim), Math.round(top - rim),
+                    Math.round(start + pitch * 2 + size + rim), Math.round(top + size + rim));
+            rackBackground.draw(canvas);
             for (int i = 0; i < 3; i++) {
                 float x = start + i * pitch;
-                float y = top + (i == 1 ? -0.06f : 0.04f) * size;
-                canvas.save();
-                canvas.rotate((i - 1) * 8f, x + size / 2, y + size / 2);
-                drawTile(canvas, x, y, size, word.charAt(i), i == 2);
-                canvas.restore();
+                drawTile(canvas, x, top, size, word.charAt(i), i == 2);
             }
         }
 

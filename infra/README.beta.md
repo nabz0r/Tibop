@@ -17,9 +17,9 @@ Cette adresse de test reste valable tant que le connecteur tourne. Le Mac et Doc
 
 ## Mettre à jour la bêta
 
-La [publication GitHub de Tibop](https://github.com/nabz0r/Tibop/releases/tag/v0.16.6) distribue un seul APK signé depuis `main`. Le mini-site public est servi depuis `gh-pages`. Ses pages sources se trouvent dans `android/share-site/`. La page de connexion au serveur, `/beta`, est lue depuis `web/beta/`. Les deux pages téléchargent le même APK. Le studio redirige aussi vers cet APK via `/download/tibop.apk`.
+La [publication GitHub de Tibop](https://github.com/nabz0r/Tibop/releases/tag/v0.16.7) distribue un seul APK signé depuis `main`. Le mini-site public est servi depuis `gh-pages`. Ses pages sources se trouvent dans `android/share-site/`. La page de connexion au serveur, `/beta`, est lue depuis `web/beta/`. Les deux pages téléchargent le même APK. Le studio redirige aussi vers cet APK via `/download/tibop.apk`.
 
-Le site Pages de compatibilité redirige les anciens liens `/scrabnble/`, `/scrabnble/amis/` et `/scrabnble/defi/` vers le site Tibop en conservant les paramètres des invitations générées par l’APK 0.16.6.
+Le site Pages de compatibilité redirige les anciens liens `/scrabnble/`, `/scrabnble/amis/` et `/scrabnble/defi/` vers le site Tibop en conservant les paramètres des invitations générées par l’APK 0.16.7.
 
 Recompilez le service social seul pour conserver le proxy, le tunnel en service et les données des deux langues. Si la configuration Nginx évolue, vérifiez-la puis rechargez le proxy en place.
 

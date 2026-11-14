@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,6 +51,42 @@ public final class PersonalLexiconTest {
             }
         };
         assertThrows(IOException.class, () -> PersonalLexicon.prepare(endlessLines, GameLanguage.FRENCH));
+    }
+
+    @Test public void additionsPreserveTheClassicBaseAndIsolatePracticeSaves() throws IOException {
+        String source = "CHAT\nKM\nAS\n";
+        Lexicon base = Lexicon.read(new BufferedReader(new StringReader(source)), "Base", "test", "base", 3)
+                .filtered("Classic", "classic", List.of("KM"));
+        Lexicon practice = additions(source, base, List.of("œufs", "ok", "OK", "AS"));
+        Lexicon reordered = additions(source, base, List.of("OK", "OEUFS"));
+        Lexicon removed = additions(source, base, List.of("OEUFS"));
+
+        assertTrue(practice.contains("CHAT"));
+        assertTrue(practice.contains("OK"));
+        assertTrue(practice.contains("OEUFS"));
+        assertFalse(practice.contains("KM"));
+        assertFalse(base.contains("OK"));
+        assertFalse(removed.contains("OK"));
+        assertEquals(4, practice.size);
+        assertEquals(practice.hash, reordered.hash);
+        assertFalse(practice.hash.equals(removed.hash));
+        char[] board = new char[FrenchGame.CELLS];
+        boolean[] blanks = new boolean[FrenchGame.CELLS];
+        List<Character> rack = List.of('O', 'K');
+        List<FrenchGame.Tile> opening = List.of(new FrenchGame.Tile(FrenchGame.CENTER, 0, 'O', false),
+                new FrenchGame.Tile(FrenchGame.CENTER + 1, 1, 'K', false));
+        assertFalse(FrenchGame.preview(board, blanks, rack, base, opening).valid());
+        assertTrue(FrenchGame.preview(board, blanks, rack, practice, opening).valid());
+        var suggested = Bot.choose(board, blanks, rack, 0, practice, 4, 0L);
+        assertEquals("OK", FrenchGame.preview(board, blanks, rack, practice, suggested.tiles()).word());
+        int c = practice.child(practice.root(), 'C' - 'A');
+        int h = practice.child(c, 'H' - 'A');
+        int a = practice.child(h, 'A' - 'A');
+        assertEquals(1, practice.rank(practice.child(a, 'T' - 'A')));
+    }
+
+    private static Lexicon additions(String source, Lexicon base, List<String> words) throws IOException {
+        return PersonalLexicon.withAdditions(new BufferedReader(new StringReader(source)), base, words, "Test");
     }
 
     private static PersonalLexicon.Prepared prepare(String input, GameLanguage language) throws IOException {

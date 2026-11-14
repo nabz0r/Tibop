@@ -79,14 +79,22 @@ final class ViewKit {
     Drawable rackTile(boolean active) {
         SkinStore.TileSkin tile = skins.tiles();
         int color = tile == null ? (active ? palette.fresh() : palette.tile()) : (active ? tile.fresh() : tile.face());
-        int rim = active ? (skins.board() == null ? palette.accent() : skins.board().focus())
+        int rim = active ? (tile == null ? palette.accent() : tile.ink())
                 : tile == null ? palette.tileEdge() : tile.edge();
-        int light = Color.rgb((3 * Color.red(color) + 255) / 4,
-                (3 * Color.green(color) + 255) / 4, (3 * Color.blue(color) + 255) / 4);
+        int light = mix(color, Color.WHITE, Color.luminance(tileInk()) > 0.5f ? 0.10f : 0.25f);
         GradientDrawable face = shape(color, 9, rim);
+        if (active) face.setStroke(dp(2), rim);
         face.setOrientation(GradientDrawable.Orientation.TOP_BOTTOM);
         face.setColors(new int[]{light, color});
         return new RippleDrawable(ColorStateList.valueOf(0x26346149), face, null);
+    }
+
+    Drawable rackBackground(SkinStore.RackSkin rack, int radius) {
+        if (rack == null || rack == SkinStore.RackSkin.CLASSIC) return shape(palette.ordinary(), radius);
+        GradientDrawable surface = shape(rack.face(), radius, rack.edge());
+        surface.setOrientation(GradientDrawable.Orientation.TOP_BOTTOM);
+        surface.setColors(new int[]{mix(rack.face(), Color.WHITE, 0.16f), rack.face(), rack.edge()});
+        return surface;
     }
 
     int dp(float value) { return Math.round(value * context.getResources().getDisplayMetrics().density); }

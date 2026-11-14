@@ -45,6 +45,7 @@ final class BoardView extends View {
     private final int coordinates;
     private final int cellInk;
     private final int focus;
+    private final int dropTint;
     private final int tileFace;
     private final int freshFace;
     private final int tileInk;
@@ -103,6 +104,7 @@ final class BoardView extends View {
         coordinates = boardSkin == null ? palette.heroInk() : boardSkin.coordinates();
         cellInk = boardSkin == null ? palette.ink() : boardSkin.cellInk();
         focus = boardSkin == null ? palette.accent() : boardSkin.focus();
+        dropTint = boardSkin == null ? palette.fresh() : boardSkin.doubleLetter();
         tileFace = tileSkin == null ? palette.tile() : tileSkin.face();
         freshFace = tileSkin == null ? palette.fresh() : tileSkin.fresh();
         tileInk = ui.tileInk();
@@ -345,7 +347,7 @@ final class BoardView extends View {
             } else {
                 int cellColor = cellColors[i];
                 if (i == FrenchGame.CENTER) cellColor = defaultBoard ? 0xffffd66d : blend(cellColor, focus, 0.24f);
-                if (target == i) cellColor = blend(cellColor, freshFace, 0.68f);
+                if (target == i) cellColor = blend(cellColor, dropTint, 0.68f);
                 paint.setColor(cellColor);
                 canvas.drawRoundRect(rectangle, rounding, rounding, paint);
                 String mark = i == FrenchGame.CENTER ? "✦"

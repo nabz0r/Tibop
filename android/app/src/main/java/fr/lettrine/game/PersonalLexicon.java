@@ -3,6 +3,7 @@ package fr.lettrine.game;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.AtomicFile;
 
@@ -24,12 +25,17 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 final class PersonalLexicon {
     static final int MAX_SOURCE_BYTES = 12 * 1024 * 1024;
+    static final int MAX_ADDITIONS = 200;
     private static final int MAX_FORMS = 500_000;
     private static final int MAX_NODES = 1_500_000;
     private static final int MAX_LINE_LENGTH = 64;
@@ -37,6 +43,7 @@ final class PersonalLexicon {
     private static final Pattern WORD = Pattern.compile("[A-Z]{2," + MAX_WORD_LENGTH + "}");
     private static final Pattern MARKS = Pattern.compile("\\p{M}+");
     private static final int FORMAT = 0x57524c31;
+    private static final String EDITION = "edition/";
     private static final Object LOCK = new Object();
 
     record Entry(String hash, int count) {
@@ -52,11 +59,13 @@ final class PersonalLexicon {
     private final Context context;
     private final GameLanguage language;
     private final AtomicFile active;
+    private final SharedPreferences additions;
 
     PersonalLexicon(Context context, GameLanguage language) {
         this.context = context.getApplicationContext();
         this.language = language;
         active = new AtomicFile(new File(context.getFilesDir(), "personal-lexicon-" + language.code + ".bin"));
+        additions = this.context.getSharedPreferences("personal-additions-" + language.code, Context.MODE_PRIVATE);
     }
 
     static Intent picker() {
@@ -132,6 +141,65 @@ final class PersonalLexicon {
         }
     }
 
+    List<String> addedWords() {
+        synchronized (LOCK) {
+            return List.copyOf(new TreeSet<>(additions.getStringSet("words", Set.of())));
+        }
+    }
+
+    void updateAddition(String form, boolean add) throws IOException {
+        synchronized (LOCK) {
+            TreeSet<String> words = new TreeSet<>(addedWords());
+            if (add) words.add(normalizeForm(form, language));
+            else words.remove(form);
+            if (words.size() > MAX_ADDITIONS || !additions.edit().putStringSet("words", words).commit()) {
+                throw new IOException("Additions could not be saved");
+            }
+        }
+    }
+
+    List<List<String>> playedAdditions(Lexicon base) {
+        synchronized (LOCK) {
+            List<List<String>> editions = new ArrayList<>();
+            String prefix = EDITION + base.hash + "/";
+            for (String key : additions.getAll().keySet()) {
+                if (key.startsWith(prefix)) editions.add(List.copyOf(new TreeSet<>(additions.getStringSet(key, Set.of()))));
+            }
+            editions.sort(Comparator.comparing(words -> String.join(" ", words)));
+            return editions;
+        }
+    }
+
+    Lexicon loadWithAdditions(Lexicon base, List<String> words) throws IOException {
+        Lexicon dictionary;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                context.getAssets().open("words-" + language.code + ".txt"), StandardCharsets.US_ASCII), 65536)) {
+            dictionary = withAdditions(reader, base, words,
+                    AppLocale.wrap(context, language).getString(R.string.personal_lexicon_additions));
+        }
+        synchronized (LOCK) {
+            String key = EDITION + base.hash + "/" + dictionary.hash;
+            if (!additions.contains(key) && !additions.edit().putStringSet(key, new TreeSet<>(words)).commit()) {
+                throw new IOException("Practice edition could not be saved");
+            }
+        }
+        return dictionary;
+    }
+
+    static Lexicon withAdditions(BufferedReader words, Lexicon base, List<String> additions, String label)
+            throws IOException {
+        if (additions.size() > MAX_ADDITIONS) throw new IOException("Too many additions");
+        TreeSet<String> extra = new TreeSet<>();
+        for (String addition : additions) {
+            String form = normalizeForm(addition, base.language);
+            if (!base.contains(form)) extra.add(form);
+        }
+        String signature = base.hash + "\n" + String.join("\n", extra);
+        String fingerprint = hash(signature.getBytes(StandardCharsets.US_ASCII));
+        return Lexicon.read(words, label, base.license, fingerprint, base.size + extra.size(), base.language,
+                base::contains, extra);
+    }
+
     File matchDirectory(Entry entry) {
         return context.getDir("personal-matches-" + language.code + "-" + entry.hash(), Context.MODE_PRIVATE);
     }
@@ -194,6 +262,14 @@ final class PersonalLexicon {
     private static void addForm(TreeSet<String> forms, StringBuilder line, GameLanguage language) throws IOException {
         String value = line.toString().strip();
         if (value.isEmpty()) return;
+        if (forms.add(normalizeForm(value, language)) && forms.size() > MAX_FORMS) {
+            throw new IOException("Lexicon has too many words");
+        }
+    }
+
+    static String normalizeForm(String value, GameLanguage language) throws IOException {
+        value = value.strip();
+        if (value.length() > MAX_LINE_LENGTH) throw new IOException("Word line is too long");
         if (language == GameLanguage.FRENCH) {
             value = Normalizer.normalize(value.replace("Œ", "OE").replace("œ", "oe")
                     .replace("Æ", "AE").replace("æ", "ae"), Normalizer.Form.NFD);
@@ -204,7 +280,7 @@ final class PersonalLexicon {
         }
         String form = value.toUpperCase(Locale.ROOT);
         if (!WORD.matcher(form).matches()) throw new IOException("Expected a word of 2–15 letters");
-        if (forms.add(form) && forms.size() > MAX_FORMS) throw new IOException("Lexicon has too many words");
+        return form;
     }
 
     private static String hash(byte[] bytes) {

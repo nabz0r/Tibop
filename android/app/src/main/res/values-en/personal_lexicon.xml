@@ -2,8 +2,25 @@
 <resources>
     <string name="classic_dictionary_summary">Filtered French word list for new classic solo and same-device games.</string>
     <string name="personal_lexicon_title">Personal dictionary</string>
-    <string name="personal_lexicon_entry">Import a dictionary for offline practice games</string>
-    <string name="personal_lexicon_intro">Import a UTF-8 text file you have permission to use, with one word of 2 to 15 letters per line (up to 12 MiB). For tournament practice, use CSW24 (WESPA) or NWL2023 (NASPA). Your list stays on this device and applies to offline practice.</string>
+    <string name="personal_lexicon_entry">Add words or import a word list</string>
+    <string name="personal_lexicon_intro">Choose your words for offline practice against NAB or with others on this device.</string>
+    <string name="personal_lexicon_additions">Added words</string>
+    <string name="personal_lexicon_additions_empty">Add your own words to the game dictionary for practice.</string>
+    <string name="personal_lexicon_additions_count">Added words · %1$d of %2$d</string>
+    <string name="personal_lexicon_add_word">Add a word</string>
+    <string name="personal_lexicon_manage_words">Manage added words</string>
+    <string name="personal_lexicon_play_additions">Play with my words</string>
+    <string name="personal_lexicon_word_hint">One word, 2 to 15 letters</string>
+    <string name="personal_lexicon_word_scope">This word will be available in offline practice. Challenges, duels and Elo use the standard rules.</string>
+    <string name="personal_lexicon_word_invalid">Enter a single word of 2 to 15 letters, without spaces or punctuation.</string>
+    <string name="personal_lexicon_word_duplicate">%1$s is already accepted in this dictionary.</string>
+    <string name="personal_lexicon_remove_word">Remove %1$s?</string>
+    <string name="personal_lexicon_remove_action">Remove</string>
+    <string name="personal_lexicon_words_saved">You can resume games you have already started under Games with previous lists.</string>
+    <string name="personal_lexicon_previous">Games with previous lists</string>
+    <string name="personal_lexicon_edition_summary">%1$s… (%2$d words)</string>
+    <string name="personal_lexicon_import_heading">Full word list</string>
+    <string name="personal_lexicon_import_help">To play with your own list, choose a UTF-8 text file you have permission to use. One word of 2 to 15 letters per line, up to 12 MiB.</string>
     <string name="personal_lexicon_import">Import a text file</string>
     <string name="personal_lexicon_replace">Replace dictionary</string>
     <string name="personal_lexicon_remove">Remove dictionary</string>
@@ -14,7 +31,7 @@
     <string name="personal_lexicon_details">Dictionary fingerprint</string>
     <string name="personal_lexicon_copy">Copy fingerprint</string>
     <string name="personal_lexicon_loading">Loading personal dictionary…</string>
-    <string name="personal_lexicon_error">The dictionary could not be read or is too large. Check that it is a UTF-8 text file with one word of 2 to 15 letters per line.</string>
+    <string name="personal_lexicon_error">Could not load or save the dictionary. For a text file, check that it uses UTF-8 and contains one word of 2 to 15 letters per line.</string>
     <string name="personal_lexicon_play">Play with this dictionary</string>
     <string name="personal_lexicon_game_context">Offline practice with your personal dictionary</string>
     <string name="personal_lexicon_bluetooth">Finish or leave the Bluetooth game before opening your personal dictionary.</string>
