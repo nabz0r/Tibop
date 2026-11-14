@@ -93,7 +93,7 @@
     <p class="brand"><span aria-hidden="true">L</span> WordRivet</p>
     <article>
       <header class="hero">
-        <p id="date">WordRivet 0.16.1</p>
+        <p id="date">WordRivet 0.16.2</p>
         <h1 id="h1">Bêta Android</h1>
         <span class="tile" aria-hidden="true">L</span>
       </header>
@@ -106,8 +106,8 @@
         <p id="invalid">Jouez une partie de lettres classique hors ligne contre NAB ou à plusieurs sur le même appareil.</p>
         <div class="install">
           <p id="install">À partir d’Android 8.</p>
-          <p id="changes">Le lexique français filtré s’étend aux nouveaux défis et aux nouveaux duels entre joueurs à jour. Les invitations et duels existants restent jouables.</p>
-          <a id="download" class="button" href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.1/android/artifacts/lettrine.apk">Télécharger l’APK Android <span>0.16.1</span></a>
+          <p id="changes">Consultez les définitions des mots joués, même en mode avion. Les verbes français renvoient à leur infinitif et à leur conjugaison.</p>
+          <a id="download" class="button" href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.2/android/artifacts/lettrine.apk">Télécharger l’APK Android <span>0.16.2</span></a>
         </div>
       </div>
     </article>
@@ -120,7 +120,7 @@
     if (english) {
       document.documentElement.lang = 'en';
       document.title = "Beat my score \u00b7 WordRivet";
-      const labels = {"h1": "Beat my score", "date": "Word challenge", "target-label": "to beat", "intro": "Play the same board and rack in WordRivet.", "open": "Open in WordRivet", "invalid": "Open the complete link that came with the score card.", "install": "Install WordRivet on Android, then come back to this invitation.", "changes": "New French challenges and duels between players on the latest version use the filtered dictionary. Existing invitations and duels still work."};
+      const labels = {"h1": "Beat my score", "date": "Word challenge", "target-label": "to beat", "intro": "Play the same board and rack in WordRivet.", "open": "Open in WordRivet", "invalid": "Open the complete link that came with the score card.", "install": "Install WordRivet on Android, then come back to this invitation.", "changes": "Look up definitions and French conjugations even in airplane mode."};
       for (const [id, text] of Object.entries(labels)) document.getElementById(id).textContent = text;
       const download = document.getElementById("download");
       download.textContent = "Download Android APK " + download.querySelector("span").textContent;
