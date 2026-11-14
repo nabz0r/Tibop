@@ -86,11 +86,16 @@ final class SocialPanel {
     }
 
     private void load() {
+        load(null);
+    }
+
+    private void load(String confirmation) {
         if (!begin()) return;
         client.dashboard((result, error) -> {
             if (!finish(error)) return;
             dashboard = result;
             render();
+            if (confirmation != null) showNotice(confirmation);
         });
     }
 
@@ -219,7 +224,7 @@ final class SocialPanel {
             if (status.equals("your_turn")) {
                 addAction(card, R.string.social_play, true, () -> openLatestDuel(id));
             } else if (status.equals("waiting")) {
-                addAction(card, R.string.social_duel_details, false, () -> openLatestDuel(id));
+                addAction(card, R.string.social_duel_status, false, () -> openLatestDuel(id));
             }
             if (status.equals("finished")) {
                 addAction(card, mirror ? R.string.social_mirror_result : R.string.social_duel_details,
@@ -388,7 +393,13 @@ final class SocialPanel {
     }
 
     private void openLatestDuel(String id) {
-        if (begin()) client.duel(id, this::showRequestedDuel);
+        if (!begin()) return;
+        client.duel(id, (result, error, unavailable) -> {
+            if (unavailable) {
+                finish(null);
+                if (root.isAttachedToWindow()) load(label(R.string.social_duel_unavailable));
+            } else showRequestedDuel(result, error);
+        });
     }
 
     private void showRequestedDuel(JSONObject result, String error) {

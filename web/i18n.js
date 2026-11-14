@@ -461,7 +461,7 @@ Outils|Tools
 Retrouvez vos fichiers de parties et téléchargez Tibop pour Android.|Find your game files and download Tibop for Android.
 Télécharger des parties|Download games
 Utilisez le format CSV pour ouvrir les résultats dans un tableur.|Use CSV to open results in a spreadsheet.
-Version 0.16.5|Version 0.16.5
+Version 0.16.6|Version 0.16.6
 Circuit bonus|Bonus Circuit
 Trois nouveaux défis à enchaîner hors ligne avec un ticket. La première entrée est offerte.|One ticket gives you three new offline puzzles. Your first entry is free.
 Tibop pour Android|Tibop for Android

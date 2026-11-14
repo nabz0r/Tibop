@@ -116,6 +116,26 @@ public class TwoMoveChallengeTest {
         }
     }
 
+    @Test public void validFirstMoveCanLeaveNoSecondMoveInTheFrenchCatalog() throws Exception {
+        Lexicon classic = french.filtered("Classique", "filtered",
+                Files.readAllLines(Path.of("../../data/fr/classic-exclusions.txt")));
+        var puzzle = TwoMoveChallenge.catalog(classic).stream()
+                .filter(candidate -> candidate.id().equals("ponts")).findFirst().orElseThrow();
+        var deadEnd = TwoMoveChallenge.play(puzzle.initial(), List.of(
+                new FrenchGame.Tile(cell('K', 5), 0, 'S', false),
+                new FrenchGame.Tile(cell('K', 6), 2, 'U', false),
+                new FrenchGame.Tile(cell('K', 7), 5, 'R', false),
+                new FrenchGame.Tile(cell('K', 9), 3, 'E', false),
+                new FrenchGame.Tile(cell('K', 10), 6, 'N', false),
+                new FrenchGame.Tile(cell('K', 11), 4, 'E', false)), classic);
+
+        assertTrue(deadEnd.preview().valid());
+        assertEquals("SURMENE", deadEnd.preview().word());
+        assertEquals(List.of('F'), deadEnd.after().rack());
+        assertFalse(TwoMoveChallenge.hasSecondMove(deadEnd.after(), classic));
+        assertTrue(TwoMoveChallenge.hasSecondMove(puzzle.solution().get(0).after(), classic));
+    }
+
     private static void verifyCatalog(List<TwoMoveChallenge.Puzzle> catalog, Lexicon lexicon, String finishedError) {
         verifyCatalog(catalog, lexicon, finishedError, 12);
     }

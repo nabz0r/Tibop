@@ -862,7 +862,7 @@ pub async fn serve(app_db: PathBuf, engine: Engine, address: String, web: PathBu
     let downloads = match apk {
         Some(apk) => Router::new().route_service("/download/lettrine.apk", ServeFile::new(apk)),
         None => Router::new().route("/download/lettrine.apk", get(|| async {
-            Redirect::temporary("https://github.com/nabz0r/scrabnble/releases/download/v0.16.5/Tibop-0.16.5.apk")
+            Redirect::temporary("https://github.com/nabz0r/scrabnble/releases/download/v0.16.6/Tibop-0.16.6.apk")
         })),
     };
     let router = Router::new()

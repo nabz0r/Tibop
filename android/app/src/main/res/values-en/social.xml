@@ -33,6 +33,9 @@
     <string name="social_duel_result">%1$s · %2$d–%3$d</string>
     <string name="social_duel_your_result">Your score · %1$d</string>
     <string name="social_duel_details">See result</string>
+    <string name="social_duel_status">Follow duel</string>
+    <string name="social_duel_unavailable">This duel is no longer available.</string>
+    <string name="social_duel_unavailable_detail">Your friend may have cancelled the duel. Go back to your duels to refresh the list.</string>
     <string name="social_duel_your_move">Your move</string>
     <string name="social_duel_opponent_move">Your friend’s move</string>
     <string name="social_duel_cancel">Cancel duel</string>

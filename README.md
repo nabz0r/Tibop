@@ -7,7 +7,7 @@
 <p align="center">Affrontez NAB, le Maine Coon, dans un jeu de lettres classique pour Android. Jouez en français ou en anglais et revenez sur vos meilleurs coups.</p>
 
 <p align="center">
-  <strong><a href="https://github.com/nabz0r/scrabnble/releases/download/v0.16.5/Tibop-0.16.5.apk">Télécharger Tibop 0.16.5</a></strong> ·
+  <strong><a href="https://github.com/nabz0r/scrabnble/releases/download/v0.16.6/Tibop-0.16.6.apk">Télécharger Tibop 0.16.6</a></strong> ·
   <a href="https://nabz0r.github.io/scrabnble/">Page de la bêta</a> ·
   <a href="android/README.md">Guide Android</a> ·
   <a href="#lettrine-studio">Studio sur Mac</a>
@@ -38,7 +38,7 @@ En fin de partie, NAB peut mettre un coup à revoir en évidence avec les cases,
 
 **Expliquer ce coup** affiche immédiatement le score et son premier détail vérifié, même en mode avion. Ouvrez les autres détails pour lire les mots croisés, les primes ou le rôle des jokers. Sur demande, SmolLM2 135M Instruct Q4_0 sélectionne un détail à mettre en avant. Le moteur Android joue les coups de NAB et calcule les scores. [Modèle, empreinte et licences](android/app/src/main/assets/SmolLM2-NOTICE.md)
 
-[Essai sur téléphone et vérifications](android/README.md#tester-la-bêta-sur-son-téléphone) · [Mesures du modèle embarqué](docs/SIMULATIONS_ANDROID.md#vérifier-wordrivet-0152-sur-android)
+[Essai sur téléphone](android/README.md#tester-la-bêta-sur-son-téléphone) · [Vérifications de Tibop 0.16.6](docs/SIMULATIONS_ANDROID.md#vérification-de-tibop-0166) · [Mesures du modèle embarqué](docs/SIMULATIONS_ANDROID.md#vérifier-wordrivet-0152-sur-android)
 
 ### Garder votre progression
 

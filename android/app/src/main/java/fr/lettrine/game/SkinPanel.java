@@ -51,7 +51,9 @@ final class SkinPanel {
         cover.setCornerRadius(ui.dp(24));
         hero.setBackground(cover);
         ui.inset(hero, 20, 19);
-        TextView title = ui.text(label(R.string.skins_title), 38, ui.palette.heroInk(), ui.display);
+        var configuration = ui.context.getResources().getConfiguration();
+        boolean compact = configuration.screenWidthDp < 340 || configuration.fontScale > 1.35f;
+        TextView title = ui.text(label(R.string.skins_title), compact ? 29 : 38, ui.palette.heroInk(), ui.display);
         if (Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
         hero.addView(title);
         ui.gap(hero, 8);
@@ -65,11 +67,14 @@ final class SkinPanel {
         boardsTab = ui.button(label(R.string.skins_boards), true, () -> select(Category.BOARDS));
         tilesTab = ui.button(label(R.string.skins_tiles), false, () -> select(Category.TILES));
         cardsTab = ui.button(label(R.string.card_styles), false, () -> select(Category.CARDS));
-        ui.weight(tabs, boardsTab);
-        ui.space(tabs, 6);
-        ui.weight(tabs, tilesTab);
-        ui.space(tabs, 6);
-        ui.weight(tabs, cardsTab);
+        arrangeTabs(tabs, compact);
+        tabs.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            boolean stackTabs = right - left < ui.dp(306)
+                    || ui.context.getResources().getConfiguration().fontScale > 1.35f;
+            if (stackTabs != (tabs.getOrientation() == LinearLayout.VERTICAL)) {
+                tabs.post(() -> arrangeTabs(tabs, stackTabs));
+            }
+        });
         root.addView(tabs);
         ui.gap(root, 11);
         count = ui.body("");
@@ -81,6 +86,21 @@ final class SkinPanel {
     }
 
     View view() { return root; }
+
+    private void arrangeTabs(LinearLayout tabs, boolean stacked) {
+        tabs.removeAllViews();
+        tabs.setOrientation(stacked ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        boolean first = true;
+        for (TextView tab : new TextView[]{boardsTab, tilesTab, cardsTab}) {
+            if (!first) {
+                if (stacked) ui.gap(tabs, 5);
+                else ui.space(tabs, 6);
+            }
+            if (stacked) tabs.addView(tab, new LinearLayout.LayoutParams(-1, -2));
+            else ui.weight(tabs, tab);
+            first = false;
+        }
+    }
 
     private void select(Category category) {
         if (this.category == category) return;
@@ -185,15 +205,18 @@ final class SkinPanel {
     }
 
     private View styleHeader(int name, boolean active, boolean unlocked, BooleanSupplier equip) {
-        LinearLayout header = ui.row();
+        var configuration = ui.context.getResources().getConfiguration();
+        boolean stacked = configuration.screenWidthDp < 340 || configuration.fontScale > 1.35f;
+        LinearLayout header = stacked ? ui.column() : ui.row();
         TextView title = ui.title(label(name), 25);
         if (Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
-        ui.weight(header, title);
+        if (stacked) header.addView(title);
+        else ui.weight(header, title);
         if (active) {
             TextView badge = ui.text(label(R.string.skins_active), 13, ui.palette.ink(), ui.medium);
             badge.setBackground(ui.shape(ui.palette.ordinary(), 9));
             ui.inset(badge, 8, 6);
-            header.addView(badge);
+            addStyleAction(header, badge, stacked);
         } else if (unlocked) {
             TextView action = ui.button(label(R.string.skins_equip), false, () -> {
                 if (!equip.getAsBoolean()) {
@@ -204,9 +227,15 @@ final class SkinPanel {
                 root.announceForAccessibility(label(R.string.skins_equipped_notice, label(name)));
             });
             action.setContentDescription(label(R.string.skins_equip_named, label(name)));
-            header.addView(action);
+            addStyleAction(header, action, stacked);
         }
         return header;
+    }
+
+    private void addStyleAction(LinearLayout header, View action, boolean stacked) {
+        if (stacked) ui.gap(header, 6);
+        else ui.space(header, 6);
+        header.addView(action, new LinearLayout.LayoutParams(-2, -2));
     }
 
     private String label(int resource, Object... values) { return ui.context.getString(resource, values); }
@@ -238,8 +267,10 @@ final class SkinPanel {
     @SuppressLint("ViewConstructor")
     private static final class Preview extends View {
         private static final int[] CELL_STYLES = {4, 0, 1, 0, 2, 0, 0, 1, 0, 0, 0, 3, 2, 0, 3, 1, 0, 4};
-        private static final String[] MARKS = {"", "L2", "L3", "M2", "M3"};
         private final boolean board;
+        private final GameLanguage language;
+        private final String word;
+        private final String[] marks;
         private final int frame;
         private final int coordinates;
         private final int cellInk;
@@ -257,6 +288,12 @@ final class SkinPanel {
         Preview(ViewKit ui, boolean board, SkinStore.BoardSkin boardSkin, SkinStore.TileSkin tileSkin) {
             super(ui.context);
             this.board = board;
+            language = ui.language;
+            word = language.text("MOT", "CAT");
+            marks = new String[]{"", ui.context.getString(R.string.board_letter_bonus, 2),
+                    ui.context.getString(R.string.board_letter_bonus, 3),
+                    ui.context.getString(R.string.board_word_bonus, 2),
+                    ui.context.getString(R.string.board_word_bonus, 3)};
             Palette palette = ui.palette;
             frame = boardSkin == null ? palette.deep() : boardSkin.frame();
             coordinates = boardSkin == null ? palette.heroInk() : boardSkin.coordinates();
@@ -298,13 +335,13 @@ final class SkinPanel {
                 float x = startX + i % 6 * size;
                 float y = startY + i / 6 * size;
                 if (i >= 8 && i <= 10) {
-                    drawTile(canvas, x + size * 0.06f, y + size * 0.05f, size * 0.9f, "MOT".charAt(i - 8), i == 10);
+                    drawTile(canvas, x + size * 0.06f, y + size * 0.05f, size * 0.9f, word.charAt(i - 8), i == 10);
                 } else {
                     int kind = CELL_STYLES[i];
                     paint.setColor(cells[kind]);
                     canvas.drawRoundRect(x + size * 0.055f, y + size * 0.055f, x + size * 0.945f,
                             y + size * 0.945f, size * 0.11f, size * 0.11f, paint);
-                    if (kind > 0) drawText(canvas, MARKS[kind], x + size / 2, y + size / 2, size * 0.25f, cellInk, medium);
+                    if (kind > 0) drawText(canvas, marks[kind], x + size / 2, y + size / 2, size * 0.25f, cellInk, medium);
                 }
             }
         }
@@ -319,7 +356,7 @@ final class SkinPanel {
                 float y = top + (i == 1 ? -0.06f : 0.04f) * size;
                 canvas.save();
                 canvas.rotate((i - 1) * 8f, x + size / 2, y + size / 2);
-                drawTile(canvas, x, y, size, "MOT".charAt(i), i == 2);
+                drawTile(canvas, x, y, size, word.charAt(i), i == 2);
                 canvas.restore();
             }
         }
@@ -336,7 +373,7 @@ final class SkinPanel {
             canvas.drawRoundRect(x + size * 0.15f, y + size * 0.06f, x + size * 0.85f, y + size * 0.105f,
                     radius, radius, paint);
             drawText(canvas, String.valueOf(letter), x + size * 0.46f, y + size * 0.43f, size * 0.54f, tileInk, serif);
-            drawText(canvas, String.valueOf(FrenchGame.value(letter)), x + size * 0.79f, y + size * 0.70f,
+            drawText(canvas, String.valueOf(language.value(letter)), x + size * 0.79f, y + size * 0.70f,
                     size * 0.18f, tileInk, medium);
         }
 

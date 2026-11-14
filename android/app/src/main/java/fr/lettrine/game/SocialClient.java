@@ -26,6 +26,8 @@ import java.util.function.Consumer;
 
 final class SocialClient {
     interface Callback { void onResult(JSONObject result, String error); }
+    interface DuelCallback { void onResult(JSONObject result, String error, boolean unavailable); }
+    private interface RequestCallback { void onResult(JSONObject result, String error, int status); }
 
     static String api(GameLanguage language) { return language.storageName("/api/social"); }
     private static final int RESPONSE_LIMIT = 2 * 1024 * 1024;
@@ -126,8 +128,10 @@ final class SocialClient {
         request("POST", "/duels/" + segment(duel) + "/mirror", new JSONObject(), callback);
     }
 
-    void duel(String duel, Callback callback) {
-        request("GET", "/duels/" + segment(duel), null, callback);
+    void duel(String duel, DuelCallback callback) {
+        requestWithStatus("GET", "/duels/" + segment(duel), null,
+                (result, error, status) -> callback.onResult(result, error, status == HttpURLConnection.HTTP_NOT_FOUND),
+                true);
     }
 
     void cancelDuel(String duel, Callback callback) {
@@ -195,9 +199,14 @@ final class SocialClient {
     }
 
     private void request(String method, String path, JSONObject body, Callback callback, boolean createSession) {
+        requestWithStatus(method, path, body, (result, error, status) -> callback.onResult(result, error), createSession);
+    }
+
+    private void requestWithStatus(String method, String path, JSONObject body, RequestCallback callback,
+                                   boolean createSession) {
         String origin = origin(base.get());
         if (origin == null) {
-            callback.onResult(null, context.getString(R.string.social_not_configured));
+            callback.onResult(null, context.getString(R.string.social_not_configured), 0);
             return;
         }
         String name = nickname.get();
@@ -206,7 +215,7 @@ final class SocialClient {
             try {
                 String token = createSession ? session(origin, name, lexicon) : existingSession(origin);
                 if (token == null) {
-                    deliver(origin, callback, null, context.getString(R.string.turn_notification_unavailable), false);
+                    deliver(origin, callback, null, context.getString(R.string.turn_notification_unavailable), 0, false);
                     return;
                 }
                 JSONObject result;
@@ -225,25 +234,26 @@ final class SocialClient {
                     }
                     edit.apply();
                 }
-                deliver(origin, callback, result, null, path.equals("/google"));
+                deliver(origin, callback, result, null, 0, path.equals("/google"));
             } catch (ApiError exception) {
-                deliver(origin, callback, null, exception.getMessage(), false);
+                deliver(origin, callback, null, exception.getMessage(), exception.status, false);
             } catch (IOException | JSONException exception) {
-                deliver(origin, callback, null, context.getString(R.string.social_network_error), false);
+                deliver(origin, callback, null, context.getString(R.string.social_network_error), 0, false);
             }
         });
     }
 
-    private void deliver(String origin, Callback callback, JSONObject result, String error, boolean accountChanged) {
+    private void deliver(String origin, RequestCallback callback, JSONObject result, String error, int status,
+                         boolean accountChanged) {
         main.post(() -> {
             if (worker.isShutdown()) return;
             if (origin.equals(origin(base.get()))) {
                 if (accountChanged) TurnNotifications.accountChanged(context, language);
                 JSONObject referral = result == null ? null : result.optJSONObject("referral");
                 if (referral != null) referralBalance.accept(referral);
-                callback.onResult(result, error);
+                callback.onResult(result, error, status);
                 if (error == null && origin.equals(origin(base.get()))) TurnNotifications.refresh(context, origin);
-            } else callback.onResult(null, context.getString(R.string.social_endpoint_changed));
+            } else callback.onResult(null, context.getString(R.string.social_endpoint_changed), 0);
         });
     }
 

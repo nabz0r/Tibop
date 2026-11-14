@@ -46,24 +46,28 @@ final class DailyResult {
 
         LinearLayout resultCopy = ui.column();
         score = ui.title("", 38);
-        word = ui.text("", 18, ui.palette.ink(), ui.medium);
+        word = ui.text("", 18, ui.palette.ink(), ui.display);
         best = ui.text("", 13, ui.palette.ink(), ui.medium);
         streak = ui.text("", 13, ui.palette.accent(), ui.medium);
-        LinearLayout stats = ui.row();
+        var config = ui.context.getResources().getConfiguration();
+        boolean compact = config.screenWidthDp < 340 || config.fontScale > 1.3f;
+        LinearLayout stats = compact ? ui.column() : ui.row();
         LinearLayout points = ui.column();
         points.addView(score);
         TextView pointsLabel = ui.micro(label(R.string.daily_points_label), ui.palette.accent());
         pointsLabel.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         points.addView(pointsLabel);
         stats.addView(points);
-        ui.space(stats, 16);
+        if (compact) ui.gap(stats, 6);
+        else ui.space(stats, 12);
         LinearLayout details = ui.column();
         details.addView(word);
         ui.gap(details, 4);
         details.addView(best);
         ui.gap(details, 4);
         details.addView(streak);
-        ui.weight(stats, details);
+        if (compact) stats.addView(details);
+        else ui.weight(stats, details);
         resultCopy.addView(stats);
         comparison = ui.body("");
         if (invitation != null) {
@@ -71,13 +75,18 @@ final class DailyResult {
             resultCopy.addView(comparison);
         }
         summary = ui.illustratedCard(R.drawable.nab_arcade_cheer, 66, resultCopy, ui.palette.fresh());
-        sharing = ui.column();
+        sharing = compact ? ui.column() : ui.row();
         TextView share = ui.button(label(R.string.daily_share), true, this::share);
-        share.setMinHeight(ui.dp(48));
-        sharing.addView(share);
         TextView copy = ui.textButton(label(R.string.daily_share_link), this::copy);
-        copy.setMinHeight(ui.dp(48));
-        sharing.addView(copy);
+        if (compact) {
+            sharing.addView(share);
+            ui.gap(sharing, 5);
+            sharing.addView(copy);
+        } else {
+            ui.weight(sharing, share);
+            ui.space(sharing, 5);
+            ui.weight(sharing, copy);
+        }
     }
 
     View summary() { return summary; }

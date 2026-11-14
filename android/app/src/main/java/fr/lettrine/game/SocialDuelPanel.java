@@ -138,9 +138,11 @@ final class SocialDuelPanel {
         client.play(duelId, tiles, (result, error) -> {
             JSONObject duel = result == null ? null : result.optJSONObject("duel");
             if (duel == null) {
-                client.duel(duelId, (latest, refreshError) -> {
+                client.duel(duelId, (latest, refreshError, unavailable) -> {
                     JSONObject recovered = latest == null ? null : latest.optJSONObject("duel");
-                    if (recovered != null && !"your_turn".equals(recovered.optString("status"))) {
+                    if (unavailable) {
+                        showUnavailable();
+                    } else if (recovered != null && !"your_turn".equals(recovered.optString("status"))) {
                         showResult(recovered);
                     } else showSubmitError(error);
                 });
@@ -157,16 +159,33 @@ final class SocialDuelPanel {
         notice.requestRectangleOnScreen(new android.graphics.Rect(0, 0, notice.getWidth(), ui.dp(48)));
     }
 
+    private void showUnavailable() {
+        client.saveDuelDraft(draftKey, List.of());
+        root.removeAllViews();
+        practice = null;
+        LinearLayout message = ui.card();
+        message.addView(ui.title(label(R.string.social_duel_unavailable), 23));
+        ui.gap(message, 7);
+        message.addView(ui.body(label(R.string.social_duel_unavailable_detail)));
+        root.addView(message);
+        message.announceForAccessibility(label(R.string.social_duel_unavailable));
+        backButton();
+    }
+
     private void showResult(JSONObject duel) {
         client.saveDuelDraft(draftKey, List.of());
         root.removeAllViews();
-        LinearLayout result = ui.card();
+        LinearLayout result = ui.column();
         int score = duel.optInt("score");
         boolean finished = duel.optString("status").equals("finished");
+        int sprite = R.drawable.nab_arcade_think;
+        int fill = ui.palette.ordinary();
         if (finished) {
             int opponentScore = duel.optInt("opponent_score");
             int outcome = score == opponentScore ? R.string.social_duel_draw
                     : score > opponentScore ? R.string.social_duel_win : R.string.social_duel_loss;
+            sprite = score < opponentScore ? R.drawable.nab_arcade_sad : R.drawable.nab_arcade_cheer;
+            fill = score < opponentScore ? ui.palette.doubleWord() : ui.palette.doubleLetter();
             result.addView(ui.title(label(R.string.social_duel_result, label(outcome), score, opponentScore), 25));
             if (isMirror(duel) && !duel.isNull("original_score") && !duel.isNull("original_opponent_score")) {
                 ui.gap(result, 10);
@@ -178,17 +197,19 @@ final class SocialDuelPanel {
             ui.gap(result, 6);
             result.addView(ui.body(label(R.string.social_waiting)));
         }
-        root.addView(result);
+        root.addView(ui.illustratedCard(sprite, 64, result, fill));
         if (finished) showMoves(duel);
         else {
             TextView refresh = ui.button(label(R.string.social_refresh), false, () -> {});
             ui.gap(root, 10);
             root.addView(refresh);
             refresh.setOnClickListener(view -> {
+                notice.setVisibility(View.GONE);
                 ui.enabled(refresh, false);
-                client.duel(duelId, (latest, error) -> {
+                client.duel(duelId, (latest, error, unavailable) -> {
                     JSONObject current = latest == null ? null : latest.optJSONObject("duel");
-                    if (current != null && "finished".equals(current.optString("status"))) showResult(current);
+                    if (unavailable) showUnavailable();
+                    else if (current != null && "finished".equals(current.optString("status"))) showResult(current);
                     else {
                         ui.enabled(refresh, true);
                         if (error != null) {

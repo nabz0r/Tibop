@@ -1,5 +1,6 @@
 package fr.lettrine.game;
 
+import android.app.AlertDialog;
 import android.graphics.Rect;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -79,7 +80,8 @@ final class BonusCircuitScreen {
         if (resumable) start.setText(R.string.bonus_resume);
         else start.setText(wallet.freeEntry() ? R.string.bonus_start_free : R.string.bonus_start_ticket);
         ui.enabled(start, resumable || wallet.canStart());
-        ui.enabled(exchange, wallet.coins() >= BonusEconomy.EXCHANGE_COST);
+        ui.enabled(exchange, wallet.coins() >= BonusEconomy.EXCHANGE_COST
+                && wallet.bonusTickets() < Integer.MAX_VALUE);
         boolean supported = videoAvailable.getAsBoolean();
         boolean availableToday = economy.videoAvailable(LocalDate.now());
         video.setText(!supported ? R.string.bonus_video_unavailable
@@ -120,10 +122,7 @@ final class BonusCircuitScreen {
         start = ui.button("", true, this::startOrResume);
         panel.addView(start);
         ui.gap(panel, 8);
-        exchange = ui.button(label(R.string.bonus_exchange, BonusEconomy.EXCHANGE_COST), false, () -> {
-            if (!economy.exchange()) Toast.makeText(ui.context, R.string.bonus_save_error, Toast.LENGTH_SHORT).show();
-            refresh();
-        });
+        exchange = ui.button(label(R.string.bonus_exchange, BonusEconomy.EXCHANGE_COST), false, this::confirmExchange);
         panel.addView(exchange);
         ui.gap(panel, 7);
         video = ui.button("", false, () -> {
@@ -138,8 +137,19 @@ final class BonusCircuitScreen {
         scrollToStart();
     }
 
+    private void confirmExchange() {
+        new AlertDialog.Builder(ui.context).setTitle(R.string.shop_exchange_title)
+                .setMessage(label(R.string.shop_exchange_confirm, BonusEconomy.EXCHANGE_COST))
+                .setNegativeButton(R.string.practice_cancel, null)
+                .setPositiveButton(R.string.shop_exchange_action, (dialog, which) -> {
+                    int message = economy.exchange() ? R.string.shop_ticket_added : R.string.shop_exchange_error;
+                    Toast.makeText(ui.context, message, Toast.LENGTH_SHORT).show();
+                    refresh();
+                }).show();
+    }
+
     private void showProgress(BonusEconomy.Circuit run, List<TwoMoveChallenge.Puzzle> puzzles) {
-        LinearLayout progress = ui.card();
+        LinearLayout progress = ui.column();
         progress.addView(ui.title(label(run.complete() ? R.string.bonus_complete : R.string.bonus_in_progress,
                 run.complete() ? run.totalScore() : run.round() + 1), 21));
         Integer best = economy.bestScore(ui.language);
@@ -152,7 +162,8 @@ final class BonusCircuitScreen {
             progress.addView(ui.body(label(R.string.bonus_round_score, i + 1, puzzles.get(i).title(),
                     run.scores().get(i))));
         }
-        panel.addView(progress);
+        panel.addView(ui.illustratedCard(run.complete() ? R.drawable.nab_arcade_cheer : R.drawable.nab_arcade_think,
+                58, progress, run.complete() ? ui.palette.fresh() : ui.palette.ordinary()));
         ui.gap(panel, 12);
     }
 

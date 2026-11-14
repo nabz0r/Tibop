@@ -380,8 +380,16 @@ public final class MainActivity extends Activity {
 
     @Override public void onConfigurationChanged(Configuration configuration) {
         super.onConfigurationChanged(configuration);
-        if (screen == Screen.HOME) showHome();
-        else frame.requestLayout();
+        if (screen == Screen.HOME) {
+            showHome();
+        } else {
+            MatchCodec.State current = screen == Screen.GAME ? state() : null;
+            if (current != null && arena != null) {
+                arena.renderedTurn = -1;
+                renderScores(current);
+            }
+            frame.requestLayout();
+        }
     }
 
     @Override protected void onStart() {
@@ -404,7 +412,13 @@ public final class MainActivity extends Activity {
     }
 
     @Override protected void onPause() {
-        if (screen == Screen.GAME) persist();
+        if (screen == Screen.GAME) {
+            persist();
+            if (mode.equals("local") && !privacy && arena != null) {
+                privacy = true;
+                updateArena(-1);
+            }
+        }
         audio.foreground(false);
         super.onPause();
     }
@@ -664,22 +678,11 @@ public final class MainActivity extends Activity {
         }));
         ui.gap(content, 10);
 
-        LinearLayout quick = compact ? ui.column() : ui.row();
-        quick.setGravity(Gravity.TOP);
         View local = homeShortcut("2–4", R.string.app_home_local, 0xffffdeef, compact, () -> {
             if (ready()) openLocal(Screen.HOME);
         });
         View matches = homeShortcut("▤", R.string.games_title, 0xffeee4fd, compact, this::showGames);
-        if (compact) {
-            quick.addView(local);
-            ui.gap(quick, 6);
-            quick.addView(matches);
-        } else {
-            ui.weight(quick, local);
-            ui.space(quick, 8);
-            ui.weight(quick, matches);
-        }
-        content.addView(quick);
+        addHomePair(local, matches, compact);
         ui.gap(content, 11);
 
         DailyProgress.Snapshot today = dailyProgress.snapshot(homeDate);
@@ -688,6 +691,12 @@ public final class MainActivity extends Activity {
         content.addView(homeDaily(DailyResult.dateLabel(ui, homeDate), status,
                 today.streak() == 0 ? "" : DailyResult.streakLabel(ui, today.streak()),
                 () -> openChallenge(() -> openDailyChallenge(null))));
+        ui.gap(content, 8);
+        View twoMoves = homeShortcut("↝", R.string.two_move_title, ui.palette.tripleLetter(), compact,
+                () -> openChallenge(this::openTwoMoves));
+        View bonus = homeShortcut("◇", R.string.bonus_home_title, ui.palette.doubleWord(), compact,
+                () -> openChallenge(this::openBonusCircuit));
+        addHomePair(twoMoves, bonus, compact);
         if (hasGameToResume) {
             ui.gap(content, 4);
             content.addView(ui.textButton(getString(R.string.games_new_solo), playSolo));
@@ -701,12 +710,6 @@ public final class MainActivity extends Activity {
         content.addView(ui.option("↔", "Bluetooth", getString(R.string.app_bluetooth_detail), () -> {
             if (ready()) showBluetooth();
         }));
-        ui.gap(content, 9);
-        content.addView(ui.option("↝", getString(R.string.two_move_title), getString(R.string.two_move_home),
-                () -> openChallenge(this::openTwoMoves)));
-        ui.gap(content, 9);
-        content.addView(ui.option("◇", getString(R.string.bonus_home_title), getString(R.string.bonus_home_detail),
-                () -> openChallenge(this::openBonusCircuit)));
         ui.gap(content, 9);
         content.addView(ui.option("✦", getString(R.string.practice_first), getString(R.string.practice_first_home),
                 () -> openChallenge(() -> openFirstChallenge(this::showHome, false))));
@@ -722,6 +725,21 @@ public final class MainActivity extends Activity {
         TextView title = ui.text(label, size, color, ui.display);
         if (Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
         return title;
+    }
+
+    private void addHomePair(View first, View second, boolean stacked) {
+        LinearLayout pair = stacked ? ui.column() : ui.row();
+        pair.setGravity(Gravity.TOP);
+        if (stacked) {
+            pair.addView(first);
+            ui.gap(pair, 6);
+            pair.addView(second);
+        } else {
+            ui.weight(pair, first);
+            ui.space(pair, 8);
+            ui.weight(pair, second);
+        }
+        content.addView(pair);
     }
 
     private View homeClassic(String actionLabel, Runnable play) {
@@ -1235,9 +1253,7 @@ public final class MainActivity extends Activity {
             TextView choice = choices.get(i);
             boolean active = i + 2 == count;
             choice.setSelected(active);
-            choice.setTextColor(active ? ui.palette.heroInk() : ui.palette.ink());
-            choice.setBackground(ui.touch(active ? ui.palette.deep() : ui.palette.paper(), 15,
-                    active ? 0 : ui.palette.line()));
+            ui.styleKey(choice, active);
         }
         for (int i = 0; i < slots.size(); i++) slots.get(i).setVisibility(i < count ? View.VISIBLE : View.GONE);
     }
@@ -1592,7 +1608,8 @@ public final class MainActivity extends Activity {
             Configuration config = getResources().getConfiguration();
             int width = scrollContent.getWidth() - scrollContent.getPaddingLeft() - scrollContent.getPaddingRight();
             int lastMoveHeight = opened.explain.getVisibility() == View.VISIBLE ? opened.explain.getHeight() : 0;
-            int available = dockArenaTray(config) ? scroll.getHeight() - opened.board.getTop() - ui.dp(4) - lastMoveHeight
+            int available = dockArenaTray(config, current.names().length)
+                    ? scroll.getHeight() - opened.board.getTop() - ui.dp(4) - lastMoveHeight
                     : config.orientation == Configuration.ORIENTATION_LANDSCAPE ? ui.dp(config.screenHeightDp - 84) : width;
             int side = Math.min(width, Math.max(ui.dp(208), available));
             if (side > 0 && boardBox.width != side) {
@@ -1632,17 +1649,18 @@ public final class MainActivity extends Activity {
         ui.gap(content, 3);
         content.addView(arena.board, boardBox);
         content.addView(arena.explain);
-        addArenaTray(opened);
+        addArenaTray(opened, current.names().length);
         updateArena(-1);
         startBotIfNeeded();
     }
 
-    private boolean dockArenaTray(Configuration config) {
-        return config.orientation == Configuration.ORIENTATION_PORTRAIT && config.screenHeightDp >= 580
-                && config.fontScale <= 1.3f;
+    private boolean dockArenaTray(Configuration config, int players) {
+        return config.orientation == Configuration.ORIENTATION_PORTRAIT
+                && config.screenHeightDp >= (players > 2 ? 660 : 580)
+                && config.screenWidthDp >= 340 && config.fontScale <= 1.3f;
     }
 
-    private void addArenaTray(Arena opened) {
+    private void addArenaTray(Arena opened, int players) {
         LinearLayout tray = ui.column();
         ui.inset(tray, 10, 7);
         tray.setBackground(ui.shape(ui.palette.paper(), 20, ui.palette.line()));
@@ -1679,7 +1697,7 @@ public final class MainActivity extends Activity {
         Runnable fit = () -> {
             if (arena != opened) return;
             Configuration config = getResources().getConfiguration();
-            if (dockArenaTray(config)) {
+            if (dockArenaTray(config, players)) {
                 int width = ui.dp(Math.min(510, config.screenWidthDp - 20));
                 if (tray.getParent() != footer) {
                     scrollContent.removeView(tray);
@@ -1792,9 +1810,11 @@ public final class MainActivity extends Activity {
         arena.renderedScores = current.scores().clone();
         arena.scores.removeAllViews();
         arena.nab = null;
-        boolean stacked = current.names().length > 2;
-        int columns = stacked && getResources().getConfiguration().fontScale > 1.3f
-                ? 2 : current.names().length;
+        int players = current.names().length;
+        boolean stacked = players > 2;
+        Configuration config = getResources().getConfiguration();
+        boolean wrap = stacked && (config.fontScale > 1.3f || players == 4 && config.screenWidthDp < 350);
+        int columns = wrap ? 2 : players;
         LinearLayout row = ui.row();
         arena.scores.addView(row);
         for (int i = 0; i < current.names().length; i++) {
@@ -2822,10 +2842,13 @@ public final class MainActivity extends Activity {
     }
 
     private void equipTheme(int theme) {
+        int offset = screenScroll.getScrollY();
         skin = theme;
         preferences.edit().putInt("skin", skin).apply();
         updateAppearance();
         showShop(shopBack);
+        ScrollView shopScroll = screenScroll;
+        shopScroll.post(() -> shopScroll.scrollTo(0, offset));
     }
 
     private void selectLanguage(GameLanguage language) {
@@ -3261,18 +3284,23 @@ public final class MainActivity extends Activity {
     private void showMatchResult(MatchCodec.State finished) {
         page(Screen.RESULT, false);
         top(getString(R.string.app_game_finished), this::leaveGame, null);
-        List<String> scores = new ArrayList<>();
-        for (int i = 0; i < finished.names().length; i++) {
-            scores.add(finished.names()[i] + " " + finished.scores()[i]);
-        }
         boolean nabWon = mode.equals("solo") && finished.scores()[1] > finished.scores()[0];
         LinearLayout resultCopy = ui.column();
         resultCopy.addView(ui.title(resultTitle(finished), 28));
-        ui.gap(resultCopy, 5);
-        resultCopy.addView(ui.body(String.join("  ·  ", scores)));
         ui.gap(content, 6);
         content.addView(ui.illustratedCard(nabWon ? R.drawable.nab_arcade_sad : R.drawable.nab_arcade_cheer,
                 92, resultCopy, nabWon ? ui.palette.ordinary() : ui.palette.fresh()));
+        ui.gap(content, 8);
+        LinearLayout scoreboard = ui.card();
+        for (int i = 0; i < finished.names().length; i++) {
+            if (i > 0) ui.gap(scoreboard, 7);
+            LinearLayout row = ui.row();
+            ui.weight(row, ui.body(mode.equals("solo") && i == 1 ? "NAB" : finished.names()[i]));
+            ui.space(row, 12);
+            row.addView(ui.title(Integer.toString(finished.scores()[i]), 18));
+            scoreboard.addView(row);
+        }
+        content.addView(scoreboard);
         ui.gap(content, 12);
 
         if (mode.equals("bluetooth") && bluetoothHost && !bluetoothReady) {
@@ -3290,10 +3318,10 @@ public final class MainActivity extends Activity {
             }
         }));
         ui.gap(content, 10);
-        LinearLayout featured = ui.column();
-        content.addView(featured);
         content.addView(ui.button(getString(R.string.match_review), false, this::reviewFinishedGame));
         content.addView(ui.textButton(getString(R.string.app_view_history), this::showHistory));
+        LinearLayout featured = ui.column();
+        content.addView(featured);
 
         Lexicon dictionary = matchLexicon();
         if (mode.equals("bluetooth") || dictionary == null) {

@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
 final class ShopPanel {
+    private static final long MINUTE_MILLIS = 60_000;
     private record ThemeOffer(int index, TextView price, TextView action) {}
 
     private final ViewKit ui;
@@ -21,9 +22,11 @@ final class ShopPanel {
     private final LinearLayout panel;
     private final TextView coins;
     private final TextView tickets;
+    private final TextView refill;
     private final TextView exchange;
     private final TextView video;
     private final List<ThemeOffer> themes = new ArrayList<>();
+    private final Runnable refreshBalance = this::refresh;
 
     ShopPanel(ViewKit ui, BonusEconomy economy, int currentTheme, BooleanSupplier adAvailable,
               Consumer<LocalDate> onWatchVideo, Runnable onExchange, IntConsumer onChooseTheme,
@@ -44,11 +47,17 @@ final class ShopPanel {
         wallet.addView(tickets);
         panel.addView(ui.illustratedCard(R.drawable.nab_arcade_shop, 104, wallet, ui.palette.ordinary()));
         ui.gap(panel, 12);
+        panel.addView(ui.option("◇", label(R.string.skins_title), label(R.string.collection_profile_detail),
+                onOpenCollection));
+        ui.gap(panel, 10);
 
         LinearLayout ticketCard = ui.card();
         ticketCard.addView(ui.title(label(R.string.shop_tickets), 21));
         ui.gap(ticketCard, 4);
         ticketCard.addView(ui.body(label(R.string.shop_tickets_detail)));
+        refill = ui.body("");
+        ui.gap(ticketCard, 4);
+        ticketCard.addView(refill);
         ui.gap(ticketCard, 9);
         exchange = ui.button(label(R.string.bonus_exchange, BonusEconomy.EXCHANGE_COST), true, onExchange);
         ticketCard.addView(exchange);
@@ -63,19 +72,28 @@ final class ShopPanel {
             ui.gap(panel, 8);
             panel.addView(themeCard(i, onChooseTheme));
         }
-        ui.gap(panel, 12);
-        panel.addView(ui.option("◇", label(R.string.skins_title), label(R.string.collection_profile_detail),
-                onOpenCollection));
+        panel.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override public void onViewAttachedToWindow(View view) { refresh(); }
+            @Override public void onViewDetachedFromWindow(View view) { panel.removeCallbacks(refreshBalance); }
+        });
         refresh();
     }
 
     View view() { return panel; }
 
     void refresh() {
-        BonusEconomy.Wallet wallet = economy.wallet(System.currentTimeMillis());
+        panel.removeCallbacks(refreshBalance);
+        long now = System.currentTimeMillis();
+        BonusEconomy.Wallet wallet = economy.wallet(now);
         coins.setText(ui.context.getResources().getQuantityString(R.plurals.shop_coins, wallet.coins(), wallet.coins()));
         tickets.setText(label(R.string.shop_ticket_balance, wallet.freeTickets(), BonusEconomy.FREE_CAP,
                 wallet.bonusTickets()));
+        long wait = wallet.nextRefillAtMillis() - now;
+        if (wait > 0) {
+            int minutes = (int) Math.min(Integer.MAX_VALUE, 1 + (wait - 1) / MINUTE_MILLIS);
+            refill.setText(minutes >= 60 ? label(R.string.bonus_refill_hours, minutes / 60, minutes % 60)
+                    : label(R.string.bonus_refill_minutes, minutes));
+        } else refill.setText(R.string.bonus_refill_full);
         ui.enabled(exchange, wallet.coins() >= BonusEconomy.EXCHANGE_COST && wallet.bonusTickets() < Integer.MAX_VALUE);
 
         boolean supported = adAvailable.getAsBoolean();
@@ -99,6 +117,8 @@ final class ShopPanel {
                     : unlocked ? R.string.skins_equip_named : R.string.shop_unlock_named, theme));
             ui.enabled(offer.action(), !equipped && (unlocked || wallet.coins() >= cost));
         }
+        long nextCheck = wait > 0 ? Math.min(wait, MINUTE_MILLIS) : MINUTE_MILLIS;
+        if (panel.isAttachedToWindow()) panel.postDelayed(refreshBalance, Math.max(1, nextCheck));
     }
 
     private View themeCard(int index, IntConsumer onChooseTheme) {

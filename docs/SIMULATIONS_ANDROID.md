@@ -21,6 +21,24 @@ Le moteur Java d’Android a terminé **1 200 parties** avec Grammalecte 7.7 �
 
 En complément, six scénarios sur l’émulateur Android 8 ont vérifié la reprise avant le dernier tour, le chevalet vidé, les gagnants ex æquo et l’archivage unique. Un test de stockage concurrent a conservé 48 archives et les parties en cours.
 
+### Vérification de Tibop 0.16.6
+
+À partir de 100 graines rejouées dans chaque groupe, le moteur Android a terminé 600 parties à deux, trois et quatre joueurs en français et en anglais. Les 19 710 tours ont tous été sauvegardés et rechargés. Le contrôle a vérifié 1 073 jokers, 1 117 poses à sept lettres, 2 627 échanges et 8 parties à égalité. Il a refusé 20 564 actions invalides sans modifier l’état.
+
+```sh
+./tools/android_gameplay/run-multiplayer.py 100 2026111409 6
+```
+
+Quatre essais sur un serveur local isolé ont terminé des salons web à deux, trois et quatre humains et à deux humains avec deux bots. Chaque participant a retrouvé le même plateau et les mêmes scores, y compris après reconnexion. Les envois répétés d’un même tour ont été refusés, et le journal de rejeu est devenu accessible à la fin.
+
+Sur Android 16, le passage de l’appareil au joueur suivant, la reprise du brouillon après arrêt forcé, le résultat et le bilan ont été contrôlés à deux, trois et quatre. Le chevalet à tour de rôle se masque aussi au passage en arrière-plan. Sur un écran de 298 dp de large, quatre joueurs tiennent sur deux lignes et le plateau et le chevalet défilent ensemble. Les noms restent visibles à 160 %.
+
+Deux émulateurs Android 16 ont terminé un duel en ligne à 4–4 puis une revanche miroir à 8–8 au cumul, avec échange des chevalets. Une invitation a survécu à une panne temporaire et un coup déjà enregistré a été récupéré après perte de sa réponse. Une annulation adverse pendant l’attente ou le brouillon ramène désormais à une liste de duels à jour. En Bluetooth, deux coupures radio ont préservé le brouillon privé et une passe déjà enregistrée. Les deux émulateurs affichent le même résultat final. La reconnexion sur deux téléphones physiques reste à vérifier.
+
+Sur Android 8 en mode avion, le défi quotidien a repris un brouillon, partagé son score et ouvert les invitations française et anglaise. Le circuit anglais a terminé ses trois défis à 66 points avec un seul ticket débité, malgré un arrêt forcé entre les deux coups. Dans le catalogue français, une première pose de SURMENE laissant un chevalet bloqué peut être reprise. À 320 dp et 145 % de taille de texte, le plateau du défi s’ouvre à 100 % et la page défile jusqu’à ses actions.
+
+La boutique a conservé le solde après annulation d’un échange et redémarrage. Elle a rechargé un ticket en restant ouverte et crédité un seul ticket partagé entre les deux langues après une annonce AdMob de démonstration. La Collection a été contrôlée à 284 dp et 200 % de taille de texte. Les aperçus anglais utilisent les repères et les valeurs du lexique anglais.
+
 ## Duels en ligne et Bluetooth de la bêta 0.16.4
 
 La campagne HTTP a terminé **656 duels**, dont 328 revanches miroir, sur les 164 plateaux français et les 164 plateaux anglais. Elle a recalculé les 1 312 poses, effectué 1 330 contrôles de renvoi ou de concurrence et provoqué dix pertes de réponse après enregistrement et dix redémarrages du serveur sur des bases isolées. Les invitations, les scores et les classements ont été vérifiés après la reprise. Les deux placements restent réservés aux participants et apparaissent après leurs deux coups. Une demande de revanche renvoyée après la fin retrouve aussi les placements du rejeu.

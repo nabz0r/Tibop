@@ -30,7 +30,8 @@ final class AppLocale {
     }
 
     static Context wrap(Context context, GameLanguage language) {
-        Configuration configuration = new Configuration(context.getResources().getConfiguration());
+        // Override the language alone so screen size, orientation and font scale stay live.
+        Configuration configuration = new Configuration();
         configuration.setLocales(new LocaleList(Locale.forLanguageTag(language.code)));
         return context.createConfigurationContext(configuration);
     }

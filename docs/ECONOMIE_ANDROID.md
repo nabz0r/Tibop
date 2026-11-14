@@ -1,6 +1,6 @@
 # Économie de Tibop sur Android
 
-La bêta 0.16.5 propose un circuit solo avec trois parcours par langue. La Boutique affiche les pièces et les tickets de l’appareil, permet d’échanger 100 pièces contre un ticket et propose des thèmes à équiper ou à débloquer. La partie classique, le défi du jour, le bilan NAB, les duels et le tournoi restent en accès libre. Les achats en argent réel sont désactivés.
+La bêta 0.16.6 propose un circuit solo avec trois parcours par langue. La Boutique affiche les pièces et les tickets de l’appareil, permet d’échanger 100 pièces contre un ticket et propose des thèmes à équiper ou à débloquer. La partie classique, le défi du jour, le bilan NAB, les duels et le tournoi restent en accès libre. Les achats en argent réel sont désactivés.
 
 ## Publicité choisie par le joueur
 

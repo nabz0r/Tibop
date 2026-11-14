@@ -131,7 +131,9 @@ final class TwoMoveChallengeScreen {
         private final List<TextView> rackButtons = new ArrayList<>();
         private final TextView phase;
         private final TextView objective;
+        private final NabView portrait;
         private final BoardView board;
+        private final boolean compact;
         private final TextView feedback;
         private final TextView definition;
         private final TextView submit;
@@ -142,6 +144,7 @@ final class TwoMoveChallengeScreen {
         private final TextView replayStep;
         private final TextView retry;
         private final TextView next;
+        private final LinearLayout nabCard;
         private final TextView nabText;
         private final LinearLayout rackRow;
         private final RackDrop rackDrop;
@@ -158,14 +161,27 @@ final class TwoMoveChallengeScreen {
             this.puzzle = puzzle;
             this.lexicon = lexicon;
             position = puzzle.initial();
-            layout.addView(ui.title(puzzle.title(), 24));
-            ui.gap(layout, 4);
+            var config = ui.context.getResources().getConfiguration();
+            compact = config.screenWidthDp < 340 || config.fontScale > 1.3f;
+            LinearLayout heading = ui.row();
+            heading.setBackground(ui.shape(ui.palette.tripleLetter(), 20, ui.palette.line()));
+            ui.inset(heading, 11, 9);
+            LinearLayout copy = ui.column();
+            copy.addView(ui.title(puzzle.title(), 23));
+            ui.gap(copy, 4);
             phase = ui.text("", 15, ui.palette.accent(), ui.medium);
             phase.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-            layout.addView(phase);
+            copy.addView(phase);
+            ui.weight(heading, copy);
+            portrait = ui.mascot(R.drawable.nab_arcade_focus);
+            if (!compact) {
+                ui.space(heading, 5);
+                heading.addView(portrait, new LinearLayout.LayoutParams(ui.dp(50), ui.dp(50)));
+            }
+            layout.addView(heading);
             objective = ui.body("");
             objective.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-            ui.gap(layout, 4);
+            ui.gap(layout, 6);
             layout.addView(objective);
             ui.gap(layout, 8);
             board = new BoardView(ui, this);
@@ -183,19 +199,31 @@ final class TwoMoveChallengeScreen {
             feedback = ui.text("", 14, ui.palette.ink(), ui.medium);
             ui.inset(feedback, 9, 8);
             feedback.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-            ui.weight(tools, feedback);
-            ui.space(tools, 5);
+            if (compact) tools.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+            else {
+                ui.weight(tools, feedback);
+                ui.space(tools, 5);
+            }
             tools.addView(zoomControls());
             layout.addView(tools);
+            if (compact) {
+                ui.gap(layout, 5);
+                layout.addView(feedback);
+            }
             definition = DefinitionAction.button(ui);
             layout.addView(definition);
             ui.gap(layout, 6);
 
-            playRow = ui.row();
+            playRow = compact ? ui.column() : ui.row();
             submit = ui.button("", true, this::submit);
             clear = ui.textButton(label(R.string.practice_clear), this::clear);
-            ui.weight(playRow, submit);
-            ui.space(playRow, 7);
+            if (compact) {
+                playRow.addView(submit);
+                ui.gap(playRow, 5);
+            } else {
+                ui.weight(playRow, submit);
+                ui.space(playRow, 7);
+            }
             playRow.addView(clear);
             layout.addView(playRow);
             edit = ui.textButton(label(R.string.two_move_edit_first), this::editFirst);
@@ -206,11 +234,12 @@ final class TwoMoveChallengeScreen {
                 render(-1);
             });
             layout.addView(hint);
+            LinearLayout advice = ui.column();
             nabText = ui.body("");
-            ui.inset(nabText, 10, 9);
-            nabText.setBackground(ui.shape(ui.palette.ordinary(), 12));
             nabText.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-            layout.addView(nabText);
+            advice.addView(nabText);
+            nabCard = ui.illustratedCard(R.drawable.nab_arcade_think, 44, advice, ui.palette.ordinary());
+            layout.addView(nabCard);
             replayStep = ui.button("", true, () -> showReplay(1 - replay));
             layout.addView(replayStep);
             replayToggle = ui.textButton("", this::toggleReplay);
@@ -225,7 +254,7 @@ final class TwoMoveChallengeScreen {
                 layout.addView(next);
             }
             restoreDraft();
-            blocked = circuit != null && first != null && !TwoMoveChallenge.hasSecondMove(position, lexicon);
+            blocked = first != null && !TwoMoveChallenge.hasSecondMove(position, lexicon);
 
             buildRack();
             render(-1);
@@ -250,16 +279,17 @@ final class TwoMoveChallengeScreen {
         }
 
         private TextView zoomButton(String text, int description, Runnable action) {
-            TextView button = ui.text(text, 13, ui.palette.ink(), ui.medium);
-            button.setGravity(Gravity.CENTER);
-            button.setMinimumHeight(ui.dp(48));
+            TextView button = ui.textButton(text, action);
             button.setMinWidth(ui.dp(40));
             button.setContentDescription(label(description));
-            button.setOnClickListener(view -> action.run());
+            ui.styleKey(button, false);
             return button;
         }
 
         private void fitBoard() {
+            // A zoomed board can consume vertical scroll gestures over a small viewport.
+            // Keep the controls reachable and leave zoom changes to the player here.
+            if (compact) return;
             char[] cells = puzzle.solution().get(1).after().board();
             int minRow = FrenchGame.SIZE;
             int minCol = FrenchGame.SIZE;
@@ -417,7 +447,7 @@ final class TwoMoveChallengeScreen {
             position = step.after();
             if (first == null) {
                 first = step;
-                blocked = circuit != null && !TwoMoveChallenge.hasSecondMove(position, lexicon);
+                blocked = !TwoMoveChallenge.hasSecondMove(position, lexicon);
             } else {
                 second = step;
                 if (drafts != null) {
@@ -428,7 +458,8 @@ final class TwoMoveChallengeScreen {
                     removeDraft();
                 }
             }
-            ui.audio.played();
+            if (second != null && ui.celebrations) ui.audio.celebrate();
+            else ui.audio.played();
             hintVisible = false;
             staged.clear();
             selected = -1;
@@ -537,10 +568,11 @@ final class TwoMoveChallengeScreen {
             boolean playing = playing();
             boolean showHint = playing && first == null;
             show(rackRow, playing);
+            show(feedback, !playing || !blocked);
             show(playRow, playing && !blocked);
             show(edit, playing && first != null);
             show(hint, showHint);
-            show(nabText, reviewing || showHint && hintVisible);
+            show(nabCard, reviewing || showHint && hintVisible);
             show(replayStep, reviewing);
             show(replayToggle, reviewing || !playing || showHint && hintVisible);
             show(retry, circuit == null && !playing && !reviewing);
@@ -548,6 +580,9 @@ final class TwoMoveChallengeScreen {
             hint.setText(hintVisible ? R.string.two_move_hint_hide : R.string.two_move_hint);
             replayToggle.setText(reviewing ? R.string.two_move_yours : R.string.two_move_replay);
             board.guide(showHint && hintVisible ? puzzle.hintPosition() : -1);
+            portrait.pose(reviewing || showHint && hintVisible ? R.drawable.nab_arcade_think
+                    : blocked ? R.drawable.nab_arcade_sad
+                    : playing ? R.drawable.nab_arcade_focus : R.drawable.nab_arcade_cheer);
 
             if (reviewing) {
                 renderReplay(animate);

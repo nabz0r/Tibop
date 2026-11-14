@@ -118,13 +118,12 @@ final class PracticePanel {
             showStart();
         });
         if (dailyResult != null) {
-            ui.gap(result, 9);
-            LinearLayout next = ui.row();
-            next.addView(dailyResult.shareButton(), new LinearLayout.LayoutParams(0, -2, 1.55f));
-            LinearLayout.LayoutParams replay = new LinearLayout.LayoutParams(0, -2, 1);
-            replay.leftMargin = ui.dp(7);
-            next.addView(retry, replay);
-            result.addView(next);
+            LinearLayout.LayoutParams sharing = new LinearLayout.LayoutParams(-1, -2);
+            sharing.topMargin = ui.dp(8);
+            result.addView(dailyResult.shareButton(), sharing);
+            LinearLayout.LayoutParams replay = new LinearLayout.LayoutParams(-1, -2);
+            replay.topMargin = ui.dp(5);
+            result.addView(retry, replay);
         }
         panel.addView(result);
 
