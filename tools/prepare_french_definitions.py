@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Join Grammalecte verb forms to native French Wiktionary glosses from Verbarium."""
+"""Join Grammalecte inflected forms to French Wiktionary glosses from Verbarium."""
 import argparse
 import collections
 import csv
@@ -51,6 +51,7 @@ def clean_gloss(value):
 def definitions(cache_dir, word_list):
     direct = collections.defaultdict(dict)
     by_verb = {}
+    by_noun = {}
     with ThreadPoolExecutor() as executor:
         inputs = list(executor.map(functools.partial(csv_input, cache_dir), INPUTS))
     for source in inputs:
@@ -63,6 +64,8 @@ def definitions(cache_dir, word_list):
                     continue
                 if row['pos'] == 'verb':
                     by_verb.setdefault(lemma, gloss)
+                if row['pos'] == 'noun':
+                    by_noun.setdefault(lemma, gloss)
                 if word not in word_list:
                     continue
                 pos = row.get('pos_fr') or {'noun':'nom', 'adjective':'adjectif'}.get(row['pos'], row['pos'])
@@ -70,11 +73,12 @@ def definitions(cache_dir, word_list):
                 detail = f'{lemma} ({pos}) — {gloss}'
                 priority = float(row['zipf_frequency'] or 0)
                 direct[word].setdefault(key, (priority, detail))
-    return direct, by_verb
+    return direct, by_verb, by_noun
 
 
-def conjugations(archive, word_list):
+def inflections(archive, word_list, by_noun):
     verbs = collections.defaultdict(dict)
+    plurals = collections.defaultdict(dict)
     # Match exact spelling to an exact lemma, then expose each accent variant under the normalized board form.
     for word, row in source_forms(archive):
         if word not in word_list:
@@ -84,6 +88,9 @@ def conjugations(archive, word_list):
         if form == lemma:
             continue
         tags = row['Étiquettes'].split()
+        if tags[0] == 'nom' and 'pl' in tags and lemma in by_noun:
+            plurals[word][form, lemma] = float(row['Fréquence'])
+            continue
         if not re.fullmatch(r'v[0-3][a-z_]*', tags[0]):
             continue
         tenses = [VERB_TENSES[tag] for tag in tags if tag in VERB_TENSES]
@@ -98,7 +105,7 @@ def conjugations(archive, word_list):
         current[0] = max(current[0], frequency)
         if detail not in current[1]:
             current[1].append(detail)
-    return verbs
+    return verbs, plurals
 
 
 def shorten(text, limit):
@@ -107,8 +114,8 @@ def shorten(text, limit):
     return text[:limit - 1].rsplit(' ', 1)[0].rstrip('.,;:') + '…'
 
 
-def compile_entries(direct, by_verb, conjugated, limit, gloss_limit):
-    for word in sorted(direct.keys() | conjugated.keys()):
+def compile_entries(direct, by_verb, by_noun, conjugated, plurals, limit, gloss_limit):
+    for word in sorted(direct.keys() | conjugated.keys() | plurals.keys()):
         direct_entries = sorted(direct.get(word, {}).items(), key=lambda item: -item[1][0])
         verb_entries = sorted(conjugated.get(word, {}).items(), key=lambda item: -item[1][0])
         meanings = []
@@ -130,6 +137,12 @@ def compile_entries(direct, by_verb, conjugated, limit, gloss_limit):
                 visible_spellings.add(spelling)
             if len(meanings) >= limit:
                 break
+        if len(meanings) < limit:
+            noun_entries = sorted(plurals.get(word, {}).items(), key=lambda item: -item[1])
+            for (form, lemma), _ in noun_entries:
+                meanings.append(f'{form} → {lemma} (nom, pluriel) — {by_noun[lemma]}')
+                if len(meanings) == limit:
+                    break
         for text in meanings[:limit]:
             yield word, shorten(text, gloss_limit)
 
@@ -147,10 +160,10 @@ def main():
     allowed = set((REPO / 'data/fr/words.txt').read_text().splitlines())
     if args.only_classic:
         allowed -= set((REPO / 'data/fr/classic-exclusions.txt').read_text().splitlines())
-    direct, by_verb = definitions(args.cache, allowed)
-    verbs = conjugations(args.archive, allowed)
-    entries = compile_entries(direct, by_verb, verbs, args.max_entries, args.max_length)
-    shortlisted = {'CHAT','NAIF','ECOLE','COEUR','SAIS','SUIS','REGARDES','MANGEAIENT','ELEVE','FUT','PASSAMES','MANGIONS','AURIONS','AIES','TENASSIONS','ASSERVISSAIENT'}
+    direct, by_verb, by_noun = definitions(args.cache, allowed)
+    verbs, plurals = inflections(args.archive, allowed, by_noun)
+    entries = compile_entries(direct, by_verb, by_noun, verbs, plurals, args.max_entries, args.max_length)
+    shortlisted = {'CHAT','CHATS','CHATONS','CHEVAUX','NAIF','ECOLE','COEUR','SAIS','SUIS','REGARDES','MANGEAIENT','ELEVE','FUT','PASSAMES','MANGIONS','AURIONS','AIES','TENASSIONS','ASSERVISSAIENT'}
     senses = 0
     with args.output.open('w', encoding='utf-8', newline='\n') as target:
         for word, definition in entries:
@@ -158,7 +171,9 @@ def main():
             senses += 1
             if word in shortlisted:
                 print(word, definition)
-    print('Forms covered:', len(direct.keys() | verbs.keys()), 'of', len(allowed), 'Direct definitions:', len(direct), 'Conjugated keys:', len(verbs), 'Senses:', senses, flush=True)
+    print('Forms covered:', len(direct.keys() | verbs.keys() | plurals.keys()), 'of', len(allowed),
+          'Direct definitions:', len(direct), 'Conjugated keys:', len(verbs), 'Noun plurals:', len(plurals),
+          'Senses:', senses, flush=True)
 
 if __name__ == '__main__':
     main()

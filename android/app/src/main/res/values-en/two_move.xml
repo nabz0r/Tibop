@@ -3,7 +3,7 @@
     <string name="two_move_intro">Play twice on the same board. Save some tiles for your second move.</string>
     <string name="two_move_catalog_progress">%1$d of %2$d complete</string>
     <string name="two_move_catalog_record">Best · %1$s</string>
-    <string name="two_move_unavailable">These puzzles require the built-in WordRivet dictionary.</string>
+    <string name="two_move_unavailable">These puzzles require the built-in Tibop dictionary.</string>
     <string name="two_move_phase">Move %1$d of 2</string>
     <string name="two_move_first">Play first move</string>
     <string name="two_move_second">Play second move</string>

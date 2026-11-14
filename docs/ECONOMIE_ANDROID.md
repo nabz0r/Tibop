@@ -1,10 +1,10 @@
-# Économie de WordRivet Android
+# Économie de Tibop sur Android
 
-La bêta 0.16.0 propose un circuit solo avec trois parcours par langue et un solde de pièces et de tickets sur l’appareil. La partie classique, le défi du jour, le bilan NAB, les duels et le tournoi restent en accès libre. Les achats en argent réel sont désactivés.
+La bêta 0.16.5 propose un circuit solo avec trois parcours par langue. La Boutique affiche les pièces et les tickets de l’appareil, permet d’échanger 100 pièces contre un ticket et propose des thèmes à équiper ou à débloquer. La partie classique, le défi du jour, le bilan NAB, les duels et le tournoi restent en accès libre. Les achats en argent réel sont désactivés.
 
 ## Publicité choisie par le joueur
 
-Le joueur choisit **Regarder une vidéo** dans le circuit pour gagner un ticket bonus. Le SDK doit confirmer la récompense. La limite est d’un ticket vidéo par date locale et par appareil, toutes langues confondues. Le ticket gagné reste disponible hors ligne. Une interruption, un refus de consentement ou l’absence d’annonce laissent les autres parcours accessibles.
+Le joueur choisit **Regarder une vidéo** dans le circuit ou la Boutique pour gagner un ticket bonus. Le SDK doit confirmer la récompense. La limite est d’un ticket vidéo par date locale et par appareil, toutes langues confondues. Le ticket gagné reste disponible hors ligne. Une interruption, un refus de consentement ou l’absence d’annonce laissent les autres parcours accessibles.
 
 L’intégration utilise UMP avant de demander une annonce. Le lien vers les choix de confidentialité apparaît lorsque UMP le demande. La demande publicitaire ne prend aucun champ du profil Lettrine. [Documentation UMP](https://developers.google.com/admob/android/privacy) · [Règles des annonces récompensées](https://support.google.com/admob/answer/7313578)
 
@@ -20,7 +20,7 @@ L’intégration utilise UMP avant de demander une annonce. Le lien vers les cho
 | Words With Friends Classic | Objectifs adaptés au joueur, coffres, clés et paliers de récompenses. [Aide Zynga](https://zyngasupport.helpshift.com/hc/en/26-words-with-friends-classic/faq/20962-what-are-daily-goals/) |
 | Brawl Stars | Les victoires quotidiennes peuvent donner des récompenses aléatoires. Le classé donne accès à des skins, sprays ou icônes de saison. Certains skins se prévisualisent à l’entraînement. [Récompenses](https://support.supercell.com/brawl-stars/en/articles/starr-drops-5.html) · [Skins](https://support.supercell.com/brawl-stars/en/articles/skins-8.html) |
 
-Lettrine débloque déjà Porcelaine après un jour de défi quotidien, Marée après trois jours joués, Ambre après trois parties solo terminées et Ardoise après cinq. Le profil affiche notamment la première victoire, le premier coup à sept lettres et la série de trois jours.
+Tibop débloque Porcelaine et Ramune après un jour de défi quotidien, Marée et Sakura après trois jours joués, Ambre après trois parties solo terminées et Ardoise après cinq. Le profil affiche notamment la première victoire, le premier coup à sept lettres et la série de trois jours.
 
 Terminer les trois manches d’un même week-end débloque **Nocturne dorée**, un fond à choisir pour les cartes **Bats mon score**. Le tournoi montre l’aperçu et confirme le déblocage.
 
@@ -32,7 +32,7 @@ Le circuit propose trois parcours de trois positions par langue. Chaque nouvelle
 
 La réserve de trois tickets gratuits récupère un ticket toutes les deux heures. Le circuit affiche le solde et le temps avant la prochaine recharge. Les tickets bonus restent en réserve quand les tickets gratuits se rechargent. Les tentatives supplémentaires servent uniquement au circuit solo.
 
-Words With Friends 2 régénère les tickets de ses mini-ligues solo toutes les 12 minutes et les vend aussi en pièces. Scrabble GO offre une première entrée sur certaines épreuves, puis accepte gemmes ou tickets. Candy Crush recharge une vie toutes les 30 minutes et propose les achats et l’aide des amis. Ces rythmes illustrent des mécaniques différentes. La durée du circuit WordRivet et la fréquence de retour doivent déterminer la recharge. [Zynga](https://zyngasupport.helpshift.com/hc/en/63-words-with-friends-2/faq/18333-what-is-solo-challenge/) · [Scopely](https://scopely.helpshift.com/hc/en/28-scrabble-go/faq/4206-tournament-entry-1697368709/) · [King](https://candycrush.zendesk.com/hc/en-us/articles/360000750878-How-do-lives-work)
+Words With Friends 2 régénère les tickets de ses mini-ligues solo toutes les 12 minutes et les vend aussi en pièces. Scrabble GO offre une première entrée sur certaines épreuves, puis accepte gemmes ou tickets. Candy Crush recharge une vie toutes les 30 minutes et propose les achats et l’aide des amis. Ces rythmes illustrent des mécaniques différentes. La durée du circuit de Tibop et la fréquence de retour doivent déterminer la recharge. [Zynga](https://zyngasupport.helpshift.com/hc/en/63-words-with-friends-2/faq/18333-what-is-solo-challenge/) · [Scopely](https://scopely.helpshift.com/hc/en/28-scrabble-go/faq/4206-tournament-entry-1697368709/) · [King](https://candycrush.zendesk.com/hc/en-us/articles/360000750878-How-do-lives-work)
 
 ### Pièces, parrainage et achats
 

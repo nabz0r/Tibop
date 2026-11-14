@@ -1,10 +1,8 @@
 package fr.lettrine.game;
 
-import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -18,11 +16,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
 final class TournamentPanel {
-    private static final int FOREST = 0xff17352a;
-    private static final int DARK = 0xff0e251c;
-    private static final int IVORY = 0xfffff6df;
-    private static final int GOLD = 0xffe8c88d;
-    private static final int SAGE = 0xffd1e2c7;
     private static final long LAST_SUPPORTED_SECOND = 253_402_300_799L;
 
     private final ViewKit ui;
@@ -59,72 +52,24 @@ final class TournamentPanel {
     View view() { return root; }
 
     static View entry(ViewKit ui, Runnable action) {
-        LinearLayout card = ui.row();
-        card.setBackground(ui.touch(FOREST, 19, 0));
-        ui.inset(card, 12, 11);
-        ImageView art = art(ui);
-        art.setBackground(ui.shape(DARK, 12));
-        art.setClipToOutline(true);
-        card.addView(art, new LinearLayout.LayoutParams(ui.dp(57), ui.dp(57)));
-        ui.space(card, 11);
         LinearLayout copy = ui.column();
-        copy.addView(ui.text(ui.context.getString(R.string.tournament_title), 20, IVORY, ui.serif));
+        copy.addView(ui.title(ui.context.getString(R.string.tournament_title), 20));
         ui.gap(copy, 4);
-        copy.addView(ui.text(ui.context.getString(R.string.tournament_entry_detail), 12, SAGE, ui.medium));
-        ui.weight(card, copy);
-        ui.space(card, 5);
-        TextView arrow = ui.text("›", 25, GOLD, ui.serif);
-        arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        card.addView(arrow);
+        copy.addView(ui.body(ui.context.getString(R.string.tournament_entry_detail)));
+        LinearLayout card = ui.illustratedCard(R.drawable.nab_arcade_invite, 64, copy, ui.palette.doubleWord());
+        card.setBackground(ui.touch(ui.palette.doubleWord(), 23, 0));
         card.setOnClickListener(view -> action.run());
         return card;
     }
 
     private static View hero(ViewKit ui) {
-        LinearLayout strip = ui.row();
-        strip.addView(new View(ui.context), new LinearLayout.LayoutParams(0, -1, 59));
-        ImageView photo = art(ui);
-        photo.setForeground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{FOREST, 0x4017352a, 0x0017352a}));
-        strip.addView(photo, new LinearLayout.LayoutParams(0, -1, 41));
-        FrameLayout card = new FrameLayout(ui.context) {
-            @Override protected void onMeasure(int widthSpec, int heightSpec) {
-                super.onMeasure(widthSpec, heightSpec);
-                strip.measure(MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY),
-                        MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
-            }
-        };
-        card.setBackground(ui.shape(FOREST, 23));
-        card.setClipToOutline(true);
-        card.setMinimumHeight(ui.dp(176));
-        card.addView(strip, new FrameLayout.LayoutParams(-1, -1));
-
-        LinearLayout row = ui.row();
         LinearLayout copy = ui.column();
-        copy.setPadding(ui.dp(19), ui.dp(23), ui.dp(3), ui.dp(24));
-        TextView heading = ui.text(ui.context.getString(R.string.tournament_title), 32, IVORY, ui.serif);
+        TextView heading = ui.title(ui.context.getString(R.string.tournament_title), 30);
         if (Build.VERSION.SDK_INT >= 28) heading.setAccessibilityHeading(true);
         copy.addView(heading);
-        ui.gap(copy, 10);
-        TextView summary = ui.text(ui.context.getString(R.string.tournament_summary), 14, SAGE, ui.regular);
-        summary.setLineSpacing(ui.dp(3), 1);
-        copy.addView(summary);
-        row.addView(copy, new LinearLayout.LayoutParams(0, -2, 69));
-        row.addView(new View(ui.context), new LinearLayout.LayoutParams(0, 1, 31));
-        card.addView(row, new FrameLayout.LayoutParams(-1, -2));
-        return card;
-    }
-
-    private static ImageView art(ViewKit ui) {
-        ImageView view = new ImageView(ui.context) {
-            @Override protected void onMeasure(int widthSpec, int heightSpec) {
-                setMeasuredDimension(MeasureSpec.getSize(widthSpec), resolveSize(0, heightSpec));
-            }
-        };
-        view.setImageResource(R.drawable.tournament_art);
-        view.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        return view;
+        ui.gap(copy, 7);
+        copy.addView(ui.body(ui.context.getString(R.string.tournament_summary)));
+        return ui.illustratedCard(R.drawable.nab_arcade_invite, 99, copy, ui.palette.doubleWord());
     }
 
     private void load() {
@@ -225,7 +170,7 @@ final class TournamentPanel {
         boolean scored = slot != null && !slot.isNull("score");
         boolean playable = open && !scored && puzzle != null;
         TextView numeral = ui.text(scored ? "✓" : Integer.toString(number), 17,
-                playable || scored ? ui.palette.ink() : ui.palette.muted(), ui.serif);
+                playable || scored ? ui.palette.ink() : ui.palette.muted(), ui.display);
         numeral.setGravity(Gravity.CENTER);
         numeral.setBackground(ui.shape(ui.palette.ordinary(), 10));
         numeral.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -245,7 +190,7 @@ final class TournamentPanel {
         ui.space(header, 6);
         if (scored) header.addView(ui.text(points(ui, slot.optInt("score")), 14, ui.palette.accent(), ui.medium));
         if (playable) {
-            TextView arrow = ui.text("›", 23, ui.palette.accent(), ui.serif);
+            TextView arrow = ui.text("›", 23, ui.palette.accent(), ui.display);
             arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             header.addView(arrow);
             header.setBackground(ui.touch(ui.palette.paper(), 10, 0));

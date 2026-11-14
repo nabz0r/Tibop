@@ -11,7 +11,7 @@
     <string name="backup_restored">Progression restaurée.</string>
     <string name="backup_picker_error">Le sélecteur de fichiers Android est indisponible.</string>
     <string name="backup_write_error">Impossible de créer la sauvegarde. Vérifiez l’espace disponible et le dossier choisi.</string>
-    <string name="backup_read_error">Impossible de restaurer ce fichier. Sélectionnez une sauvegarde WordRivet valide et vérifiez l’espace disponible.</string>
+    <string name="backup_read_error">Impossible de restaurer ce fichier. Sélectionnez une sauvegarde Tibop valide et vérifiez l’espace disponible.</string>
     <string name="privacy_title">Confidentialité</string>
     <string name="privacy_details">Vos parties, l’Elo, la photo, le pays, l’âge et le sexe du profil restent sur l’appareil. Vous choisissez le fichier de transfert et les destinataires des cartes partagées. NAB explique les coups sur l’appareil. Lorsque vous ouvrez une définition, le navigateur recherche le mot choisi sur le Wiktionnaire.\n\nDans Amis, le serveur de votre groupe conserve votre pseudo, votre compte, vos invitations et vos résultats en ligne. Vous pouvez supprimer ce compte depuis Amis. La connexion Google est facultative et dépend de la configuration de votre serveur.\n\nLes vidéos récompensées sont facultatives. Lorsqu’elles sont activées, le SDK Google gère la demande publicitaire et les choix de confidentialité. Les préférences publicitaires sont proposées dans les réglages lorsque le SDK les rend disponibles.</string>
     <string name="backup_recovery_error">Une restauration a été interrompue. Libérez de l’espace si nécessaire, puis réessayez de récupérer la progression précédente.</string>

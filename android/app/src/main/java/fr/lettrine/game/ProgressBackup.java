@@ -35,10 +35,13 @@ final class ProgressBackup {
     private static final String PHOTO = "profile-photo.jpg";
     private static final String[] MATCH_FILES = {"current-match.json", "saved-matches.json", "history.json"};
     private static final int MAX_BYTES = 48 * 1024 * 1024;
-    private static final Map<String, Class<?>> SETTINGS = Map.of(
-            "app_language", String.class, "solo_level", Integer.class, "skin", Integer.class,
-            "music", Boolean.class, "music_track", Integer.class, "music_volume", Integer.class,
-            "effects", Boolean.class);
+    private static final Map<String, Class<?>> SETTINGS = Map.ofEntries(
+            Map.entry("app_language", String.class), Map.entry("solo_level", Integer.class),
+            Map.entry("skin", Integer.class), Map.entry("music", Boolean.class),
+            Map.entry("music_track", Integer.class), Map.entry("music_volume", Integer.class),
+            Map.entry("effects", Boolean.class), Map.entry("effects_volume", Integer.class),
+            Map.entry("ui_motion", Boolean.class), Map.entry("ui_celebrations", Boolean.class),
+            Map.entry("ui_haptics", Boolean.class));
     private static final Map<String, Map<String, Class<?>>> PREFS = Map.ofEntries(
             Map.entry("preferences", SETTINGS),
             Map.entry("player_profile", Map.of("nickname", String.class, "country", String.class,

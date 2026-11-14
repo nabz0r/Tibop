@@ -1,4 +1,4 @@
-# Serveur de bêta Android
+# Serveur de bêta Android Tibop
 
 La bêta dispose de son propre projet Compose et de son volume `lettrine-beta_beta_social_data`. Le français conserve sa base SQLite. L’anglais utilise une seconde base, `social.sqlite.en` par défaut, dans le même volume. Le tunnel HTTPS vers Nginx dessert `/beta`, `/health`, `/api/social/` pour le français et `/api/social-en/` pour l’anglais. Nginx limite le débit global et par adresse, avec un plafond séparé pour les inscriptions.
 
@@ -17,10 +17,14 @@ Cette adresse de test reste valable tant que le connecteur tourne. Le Mac et Doc
 
 ## Mettre à jour la bêta
 
-Les fichiers de la page `/beta` sont lus depuis `web/beta/`. Recompilez le service social seul pour conserver le proxy, le tunnel en service et les données des deux langues.
+La version GitHub et son APK signé proviennent de `main`. Le mini-site public est servi depuis `gh-pages`. Ses pages sources se trouvent dans `android/share-site/`. La page de connexion au serveur, `/beta`, est lue depuis `web/beta/`. Les deux surfaces pointent vers le même APK GitHub.
+
+Recompilez le service social seul pour conserver le proxy, le tunnel en service et les données des deux langues. Si la configuration Nginx évolue, vérifiez-la puis rechargez le proxy en place.
 
 ```sh
 docker compose -f compose.social.yaml -f compose.social-beta.yaml up -d --build --no-deps --wait social
+docker compose -f compose.social.yaml -f compose.social-beta.yaml exec -T beta_proxy nginx -t
+docker compose -f compose.social.yaml -f compose.social-beta.yaml exec -T beta_proxy nginx -s reload
 ```
 
 Le service ajoute ses tables SQLite de prise en charge du lexique filtré dans le volume existant. Les duels déjà créés et les invitations précédentes gardent leurs identifiants. Chaque nouveau duel français choisit ses règles lors de sa création. La date de bascule du tournoi est enregistrée dans la base et préserve le tournoi de la semaine en cours. Sauvegardez les bases française et anglaise avant la mise à jour et conservez le même domaine pour que les liens envoyés continuent d’ouvrir le bon serveur.

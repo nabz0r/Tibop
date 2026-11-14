@@ -259,10 +259,8 @@ final class SocialDuelPanel {
         }
         selected.setSelected(true);
         other.setSelected(false);
-        selected.setBackground(ui.touch(ui.palette.deep(), 12, 0));
-        selected.setTextColor(ui.palette.heroInk());
-        other.setBackground(ui.touch(ui.palette.paper(), 12, ui.palette.line()));
-        other.setTextColor(ui.palette.ink());
+        ui.styleKey(selected, true);
+        ui.styleKey(other, false);
         board.update(letters, blanks, List.of(), tiles, -1);
     }
 

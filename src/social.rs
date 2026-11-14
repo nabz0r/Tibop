@@ -38,6 +38,8 @@ const CLASSIC_EXCLUSIONS: &str = include_str!("../data/fr/classic-exclusions.txt
 const INVITE_SECONDS: i64 = 2 * 24 * 60 * 60;
 const NONCE_SECONDS: i64 = 5 * 60;
 const MAX_FRIENDS: i64 = 100;
+const GOOGLE_PROFILE_CONFLICT: &str =
+    "Ce compte Google utilise déjà un autre profil Tibop. Votre profil invité est conservé.";
 const SCHEMA: &str = "
     CREATE TABLE IF NOT EXISTS social_users(
         id TEXT PRIMARY KEY,
@@ -189,7 +191,7 @@ async fn english_errors(mut response: Response) -> Response {
                 "Impossible de vérifier ce compte Google." => "This Google account could not be verified.",
                 "La session a changé. Réessayez." => "The session changed. Try again.",
                 "Ce profil est déjà associé à un autre compte Google." => "This profile is linked to another Google account.",
-                "Ce compte Google utilise déjà un autre profil Lettrine. Votre profil invité est conservé." => "This Google account already uses another WordRivet profile. Your guest profile is still available.",
+                GOOGLE_PROFILE_CONFLICT => "This Google account already uses another Tibop profile. Your guest profile is still available.",
                 "Défi introuvable." => "Challenge not found.",
                 "Ce tournoi n’est plus disponible." => "This tournament is no longer available.",
                 "Vous avez déjà joué ce défi." => "You already played this challenge.",
@@ -500,7 +502,7 @@ pub(crate) async fn serve(
     let app = Arc::new(Social::open(db, engine)?);
     let english = Arc::new(Social::open(en_db, en_engine)?);
     let listener = tokio::net::TcpListener::bind(address).await?;
-    eprintln!("Lettrine social sur http://{address}");
+    eprintln!("Service social Tibop sur http://{address}");
     axum::serve(listener, bilingual_router(app, english)).await?;
     Ok(())
 }
@@ -1757,9 +1759,7 @@ fn attach_google(db: &Connection, session: &str, user: &str, sub: &str) -> Api<S
         [user],
         |row| row.get::<_, bool>(0),
     )? {
-        return Err(conflict(
-            "Ce compte Google utilise déjà un autre profil Lettrine. Votre profil invité est conservé.",
-        ));
+        return Err(conflict(GOOGLE_PROFILE_CONFLICT));
     }
     db.execute(
         "UPDATE social_sessions SET user_id=?1 WHERE token=?2",

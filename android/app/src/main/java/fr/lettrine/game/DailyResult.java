@@ -44,9 +44,7 @@ final class DailyResult {
         opening = label(R.string.daily_board, challenge.openingWord(),
                 square(challenge.openingStart()), square(challenge.openingEnd()));
 
-        summary = ui.column();
-        summary.setBackground(ui.shape(ui.palette.ordinary(), 15));
-        ui.inset(summary, 13, 10);
+        LinearLayout resultCopy = ui.column();
         score = ui.title("", 38);
         word = ui.text("", 18, ui.palette.ink(), ui.medium);
         best = ui.text("", 13, ui.palette.ink(), ui.medium);
@@ -66,12 +64,13 @@ final class DailyResult {
         ui.gap(details, 4);
         details.addView(streak);
         ui.weight(stats, details);
-        summary.addView(stats);
+        resultCopy.addView(stats);
         comparison = ui.body("");
         if (invitation != null) {
-            ui.gap(summary, 7);
-            summary.addView(comparison);
+            ui.gap(resultCopy, 7);
+            resultCopy.addView(comparison);
         }
+        summary = ui.illustratedCard(R.drawable.nab_arcade_cheer, 66, resultCopy, ui.palette.fresh());
         sharing = ui.column();
         TextView share = ui.button(label(R.string.daily_share), true, this::share);
         share.setMinHeight(ui.dp(48));

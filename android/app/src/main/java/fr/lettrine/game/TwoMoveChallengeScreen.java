@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
 import android.view.Gravity;
-import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -71,12 +70,10 @@ final class TwoMoveChallengeScreen {
     private void showCatalog() {
         active = null;
         panel.removeAllViews();
-        LinearLayout intro = ui.card();
-        intro.setBackground(ui.shape(ui.palette.deep(), 18));
-        intro.addView(ui.text(label(R.string.two_move_title), 28, ui.palette.heroInk(), ui.serif));
+        LinearLayout intro = ui.column();
+        intro.addView(ui.title(label(R.string.two_move_title), 27));
         ui.gap(intro, 8);
         TextView rules = ui.body(label(catalog.isEmpty() ? R.string.two_move_unavailable : R.string.two_move_intro));
-        rules.setTextColor(ui.palette.heroInk());
         intro.addView(rules);
         if (!catalog.isEmpty()) {
             int completed = 0;
@@ -85,9 +82,9 @@ final class TwoMoveChallengeScreen {
             }
             ui.gap(intro, 9);
             intro.addView(ui.text(label(R.string.two_move_catalog_progress, completed, catalog.size()),
-                    13, ui.palette.heroInk(), ui.medium));
+                    13, ui.palette.accent(), ui.medium));
         }
-        panel.addView(intro);
+        panel.addView(ui.illustratedCard(R.drawable.nab_arcade_think, 85, intro, ui.palette.tripleLetter()));
         for (int i = 0; i < catalog.size(); i++) {
             TwoMoveChallenge.Puzzle puzzle = catalog.get(i);
             int record = progress.getInt(puzzle.id(), -1);
@@ -384,7 +381,7 @@ final class TwoMoveChallengeScreen {
         private void stage(int square, int index, char letter, boolean blank) {
             staged.add(new FrenchGame.Tile(square, index, letter, blank));
             selected = -1;
-            board.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+            ui.tick(board);
             ui.audio.tile();
             saveDraft();
             render(square);

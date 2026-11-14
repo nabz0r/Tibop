@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shop_title">Boutique</string>
+    <string name="shop_entry_detail">Tickets du circuit et thèmes à débloquer.</string>
+    <plurals name="shop_coins">
+        <item quantity="one">%d pièce</item>
+        <item quantity="other">%d pièces</item>
+    </plurals>
+    <string name="shop_ticket_balance">Tickets gratuits %1$d/%2$d · Bonus %3$d</string>
+    <string name="shop_tickets">Tickets du circuit</string>
+    <string name="shop_tickets_detail">Un ticket donne accès aux trois défis du circuit.</string>
+    <string name="shop_exchange_title">Un ticket du circuit</string>
+    <string name="shop_exchange_confirm">Échanger %1$d pièces contre un ticket bonus ?</string>
+    <string name="shop_ticket_added">Un ticket bonus ajouté.</string>
+    <string name="shop_exchange_error">Échange impossible. Vérifiez votre solde et réessayez.</string>
+    <string name="shop_themes">Thèmes</string>
+    <string name="shop_unlocked">Débloqué</string>
+    <string name="shop_included">Inclus</string>
+    <string name="shop_unlock_named">Débloquer %1$s</string>
+</resources>

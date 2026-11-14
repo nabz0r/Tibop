@@ -3,7 +3,7 @@ Source: https://en-word.net/downloads
 License: Creative Commons Attribution 4.0 International
 https://creativecommons.org/licenses/by/4.0/
 
-WordRivet modifications: selected and shortened English glosses, with inflected forms from the source exception files.
+Tibop modifications: selected and shortened English glosses, with inflected forms from the source exception files.
 
 Source archive notice:
 

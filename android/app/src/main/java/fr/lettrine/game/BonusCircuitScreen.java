@@ -92,14 +92,11 @@ final class BonusCircuitScreen {
         play = null;
         balance = null;
         panel.removeAllViews();
-        LinearLayout intro = ui.card();
-        intro.setBackground(ui.shape(ui.palette.deep(), 20));
-        intro.addView(ui.text(label(R.string.bonus_home_title), 29, ui.palette.heroInk(), ui.serif));
-        ui.gap(intro, 7);
-        TextView rules = ui.body(label(R.string.bonus_rules));
-        rules.setTextColor(ui.palette.heroInk());
-        intro.addView(rules);
-        panel.addView(intro);
+        LinearLayout copy = ui.column();
+        copy.addView(ui.title(label(R.string.bonus_home_title), 27));
+        ui.gap(copy, 5);
+        copy.addView(ui.body(label(R.string.bonus_rules)));
+        panel.addView(ui.illustratedCard(R.drawable.nab_arcade_focus, 89, copy, ui.palette.doubleWord()));
         ui.gap(panel, 10);
         BonusEconomy.Circuit run = economy.active(ui.language);
         if (run != null && !run.complete() ? puzzlesFor(run).isEmpty() : circuits.isEmpty()) {

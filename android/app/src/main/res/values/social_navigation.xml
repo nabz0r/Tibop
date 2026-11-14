@@ -3,7 +3,7 @@
     <string name="social_navigation_profile">Profil</string>
     <string name="social_navigation_duel">Duel</string>
     <string name="social_navigation_endpoint">Serveur des amis</string>
-    <string name="social_navigation_endpoint_help">Saisissez l’adresse HTTPS du serveur de votre groupe, sans /beta. WordRivet utilise votre pseudo pour créer ou retrouver votre profil en ligne.</string>
+    <string name="social_navigation_endpoint_help">Saisissez l’adresse HTTPS du serveur de votre groupe, sans /beta. Tibop utilise votre pseudo pour créer ou retrouver votre profil en ligne.</string>
     <string name="social_navigation_endpoint_hint">https://</string>
     <string name="social_navigation_endpoint_invalid">Saisissez une adresse HTTPS valide, sans chemin.</string>
     <string name="social_navigation_endpoint_default">Adresse par défaut</string>

@@ -3,7 +3,6 @@ package fr.lettrine.game;
 import android.app.AlertDialog;
 import android.graphics.Rect;
 import android.view.Gravity;
-import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -323,7 +322,7 @@ final class PracticePanel {
         staged.add(new FrenchGame.Tile(square, index, letter, blank));
         saveDraft();
         selected = -1;
-        board.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        ui.tick(board);
         ui.audio.tile();
         renderAttempt(square);
     }
@@ -443,9 +442,7 @@ final class PracticePanel {
 
     private void highlight(TextView button, boolean active) {
         button.setSelected(active);
-        button.setTextColor(active ? ui.palette.heroInk() : ui.palette.ink());
-        button.setBackground(ui.touch(active ? ui.palette.deep() : ui.palette.paper(), 12,
-                active ? 0 : ui.palette.line()));
+        ui.styleKey(button, active);
     }
 
     private String tileSummary(List<FrenchGame.Tile> tiles) {

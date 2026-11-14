@@ -34,7 +34,10 @@ final class SkinStore {
                 0xffe8cebe, 0xffd69b82, 0xff326679),
         SLATE(Reward.FIVE_GAMES, R.string.skins_slate, R.string.skins_board_slate,
                 0xff2d2636, 0xfff6ebf3, 0xff352c40, 0xffdcdbe4, 0xffbcd3dc, 0xff9daacb,
-                0xffe2bdd0, 0xffdba1aa, 0xff624873);
+                0xffe2bdd0, 0xffdba1aa, 0xff624873),
+        SAKURA(Reward.THREE_DAYS, R.string.skins_sakura, R.string.skins_board_sakura,
+                0xff943768, 0xfffff5fb, 0xff52183f, 0xffffedf5, 0xffd7eedf, 0xffacdbee,
+                0xffffc5df, 0xfff597be, 0xff97306c);
 
         final Reward reward;
         final int name;
@@ -81,7 +84,9 @@ final class SkinStore {
         PORCELAIN(Reward.FIRST_DAY, R.string.skins_porcelain, R.string.skins_tile_porcelain,
                 0xffebf5f3, 0xff78969e, 0xffb3dadd, 0xff1c3d4a),
         AMBER(Reward.THREE_GAMES, R.string.skins_amber, R.string.skins_tile_amber,
-                0xfff3c56d, 0xff8a5c27, 0xffe2e8a4, 0xff452b1f);
+                0xfff3c56d, 0xff8a5c27, 0xffe2e8a4, 0xff452b1f),
+        RAMUNE(Reward.FIRST_DAY, R.string.skins_ramune, R.string.skins_tile_ramune,
+                0xffd9fff6, 0xff428f83, 0xffa9e6ff, 0xff184254);
 
         final Reward reward;
         final int name;

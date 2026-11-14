@@ -12,7 +12,7 @@ use axum::{
     extract::{DefaultBodyLimit, Path, Query, State},
     http::{HeaderValue, StatusCode, header},
     response::{
-        IntoResponse, Response,
+        IntoResponse, Redirect, Response,
         sse::{Event, KeepAlive, Sse},
     },
     routing::{get, post},
@@ -837,7 +837,9 @@ pub async fn serve(app_db: PathBuf, engine: Engine, address: String, web: PathBu
             .timeout(Duration::from_secs(90))
             .build()?,
     };
-    let apk = env::var("LETTRINE_APK").unwrap_or_else(|_| "android/artifacts/lettrine.apk".into());
+    let apk = env::var("LETTRINE_APK")
+        .ok()
+        .filter(|path| !path.is_empty());
     let aab = env::var("LETTRINE_AAB").unwrap_or_else(|_| "android/artifacts/lettrine.aab".into());
     let room_engine = if app.engine.profile.id == pg::FRENCH {
         Some(app.engine.clone())
@@ -857,8 +859,15 @@ pub async fn serve(app_db: PathBuf, engine: Engine, address: String, web: PathBu
     } else {
         Router::new()
     };
+    let downloads = match apk {
+        Some(apk) => Router::new().route_service("/download/lettrine.apk", ServeFile::new(apk)),
+        None => Router::new().route("/download/lettrine.apk", get(|| async {
+            Redirect::temporary("https://github.com/nabz0r/scrabnble/releases/download/v0.16.5/Tibop-0.16.5.apk")
+        })),
+    };
     let router = Router::new()
         .merge(rooms)
+        .merge(downloads)
         .route_service("/", ServeFile::new(web.join("salons.html")))
         .route("/api/telemetry", get(crate::telemetry::snapshot))
         .route("/api/legacy", get(|| file_json("data/expert/legacy.json")))
@@ -896,7 +905,6 @@ pub async fn serve(app_db: PathBuf, engine: Engine, address: String, web: PathBu
         .route("/api/imports", get(imports))
         .route("/api/imports/export", get(dump_imports))
         .route("/api/imports/{id}", get(imported))
-        .route_service("/download/lettrine.apk", ServeFile::new(apk))
         .route_service(
             "/download/lettrine.aab",
             ServeFile::new_with_mime(aab, &"application/octet-stream".parse()?),

@@ -8,6 +8,10 @@
     <string name="skins_slate">Slate</string>
     <string name="skins_porcelain">Porcelain</string>
     <string name="skins_amber">Amber</string>
+    <string name="skins_sakura">Sakura</string>
+    <string name="skins_ramune">Ramune</string>
+    <string name="skins_board_sakura">Pink squares in a plum frame.</string>
+    <string name="skins_tile_ramune">Mint tiles with blue highlights.</string>
     <string name="skins_board_classic">The colors of your current theme.</string>
     <string name="skins_board_tide">Deep blue with glass-like squares.</string>
     <string name="skins_board_slate">A graphite frame with mineral-toned squares.</string>

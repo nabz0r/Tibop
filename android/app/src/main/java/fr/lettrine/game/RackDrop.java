@@ -70,7 +70,7 @@ final class RackDrop {
         for (int index = end; index >= start; index--) row.removeView(ordered.get(index));
         ordered.add(to, ordered.remove(from));
         for (int slot = 0; slot < slots.size(); slot++) row.addView(ordered.get(start + slot), slots.get(slot));
-        row.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+        ui.tick(row);
         refreshActions();
     }
 

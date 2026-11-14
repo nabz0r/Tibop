@@ -85,7 +85,7 @@ final class ProfilePanel {
         avatar.addView(image, new FrameLayout.LayoutParams(-1, -1));
         identity.addView(avatar, new LinearLayout.LayoutParams(ui.dp(68), ui.dp(68)));
         ui.space(identity, 14);
-        displayedName = ui.text("", 26, ui.palette.heroInk(), ui.serif);
+        displayedName = ui.text("", 26, ui.palette.heroInk(), ui.display);
         displayedName.setMaxLines(2);
         displayedName.setEllipsize(TextUtils.TruncateAt.END);
         ui.weight(identity, displayedName);

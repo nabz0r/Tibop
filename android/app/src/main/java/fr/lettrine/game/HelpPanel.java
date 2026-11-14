@@ -53,9 +53,7 @@ final class HelpPanel {
 
     private void select(TextView tab, boolean active) {
         tab.setSelected(active);
-        tab.setTextColor(active ? ui.palette.heroInk() : ui.palette.ink());
-        tab.setBackground(ui.touch(active ? ui.palette.deep() : ui.palette.paper(), 12,
-                active ? 0 : ui.palette.line()));
+        ui.styleKey(tab, active);
     }
 
     private void section(int title, int copy) {

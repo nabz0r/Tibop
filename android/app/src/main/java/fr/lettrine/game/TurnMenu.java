@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.view.Gravity;
-import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -122,7 +121,7 @@ final class TurnMenu {
                     selected[index] = !selected[index];
                     view.setSelected(selected[index]);
                     view.setBackground(ui.rackTile(selected[index]));
-                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+                    ui.tick(view);
                     int total = 0;
                     for (boolean item : selected) if (item) total++;
                     count.setText(total == 0 ? label(R.string.turn_exchange_none) : ui.context.getResources()

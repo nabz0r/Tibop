@@ -66,7 +66,7 @@ python3 tools/import_campaign.py \
 curl -fsS http://127.0.0.1:8787/api/stats
 ```
 
-La restauration charge les parties et les deux métadonnées dans une seule transaction. Elle accepte la relance sur la même campagne et refuse une campagne différente dans la même collection. Les parties importées depuis Android ont leur propre table. L’API lit le dossier `android/artifacts/` monté en lecture seule. Le studio sert l’APK et l’AAB via `/download/lettrine.apk` et `/download/lettrine.aab`. [Import de la campagne](../tools/import_campaign.py) · [Compilation Android](../android/README.md)
+La restauration charge les parties et les deux métadonnées dans une seule transaction. Elle accepte la relance sur la même campagne et refuse une campagne différente dans la même collection. Les parties importées depuis Android ont leur propre table. Le studio redirige vers l’APK public de Tibop et lit l’AAB archivé depuis le dossier `android/artifacts/` monté en lecture seule. [Import de la campagne](../tools/import_campaign.py) · [Compilation Android](../android/README.md)
 
 ## Données et provenance
 
@@ -100,8 +100,8 @@ Les coordonnées des jetons sont des entiers de 0 à 14, ligne puis colonne. Les
 | `GET /api/llm-benchmarks` | Duels pilotes par modèle Ollama, adversaire, taille et intervalle |
 | `GET /api/adaptive?elo=1200` | Niveau le plus proche selon les cotes de la campagne et score attendu |
 | `GET /api/search?q=jouer+le+joker` | Jusqu’à huit extraits et leurs sources, classés par similarité cosinus |
-| `GET /download/lettrine.apk` | APK Android de test |
-| `GET /download/lettrine.aab` | Bundle Android signé pour Google Play |
+| `GET /download/lettrine.apk` | Redirection vers l’APK de Tibop sur GitHub, ou APK local si `LETTRINE_APK` indique un fichier |
+| `GET /download/lettrine.aab` | Bundle Android WordRivet 0.16.4 signé pour Google Play |
 
 ```sh
 curl -fsS 'http://127.0.0.1:8787/api/games/100000/review?turn=1'

@@ -8,13 +8,13 @@
     <string name="daily_streak">Série · %1$s</string>
     <string name="daily_points_label">POINTS</string>
     <string name="daily_share">Bats mon score</string>
-    <string name="daily_share_text">WordRivet · Défi du %1$s\nBats mon score de %2$s !\n%3$s</string>
+    <string name="daily_share_text">Tibop · Défi du %1$s\nBats mon score de %2$s !\n%3$s</string>
     <string name="daily_share_link">Copier le lien</string>
     <string name="daily_share_link_copied">Lien copié.</string>
     <string name="daily_invitation_title">Bats mon score</string>
     <string name="daily_invitation_goal">Score à battre · %1$s</string>
     <string name="daily_invitation_invalid">Ce lien de défi est invalide.</string>
-    <string name="daily_invitation_incompatible">Cette position demande une autre version de WordRivet ou du lexique.</string>
+    <string name="daily_invitation_incompatible">Cette position demande une autre version de Tibop ou du lexique.</string>
     <string name="daily_invitation_beat">Score battu ! Vous marquez %1$s de plus.</string>
     <string name="daily_invitation_tie">Égalité avec le score partagé.</string>
     <string name="daily_invitation_short">Il vous manque %1$s pour égaler le score partagé.</string>

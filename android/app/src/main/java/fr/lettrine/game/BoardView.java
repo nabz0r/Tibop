@@ -48,6 +48,8 @@ final class BoardView extends View {
     private final int tileFace;
     private final int freshFace;
     private final int tileInk;
+    private final boolean defaultBoard;
+    private final boolean motion;
     private final GameLanguage language;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rectangle = new RectF();
@@ -95,6 +97,8 @@ final class BoardView extends View {
         SkinStore.BoardSkin boardSkin = ui.skins.board();
         SkinStore.TileSkin tileSkin = ui.skins.tiles();
         this.interaction = interaction;
+        motion = ui.animate;
+        defaultBoard = palette == Palette.THEMES[0] && boardSkin == null;
         frame = boardSkin == null ? palette.deep() : boardSkin.frame();
         coordinates = boardSkin == null ? palette.heroInk() : boardSkin.coordinates();
         cellInk = boardSkin == null ? palette.ink() : boardSkin.cellInk();
@@ -162,7 +166,7 @@ final class BoardView extends View {
         java.util.Arrays.fill(highlights, false);
         for (FrenchGame.Tile tile : staged) pending[tile.position()] = tile;
         for (FrenchGame.Tile tile : recent) highlights[tile.position()] = true;
-        if (animatePosition >= 0 && ValueAnimator.areAnimatorsEnabled()) {
+        if (animatePosition >= 0 && motion) {
             if (animator != null) animator.cancel();
             animated = animatePosition;
             animation = 0.76f;
@@ -276,7 +280,7 @@ final class BoardView extends View {
             frameClip.rewind();
             frameClip.addRoundRect(rectangle, corner, corner, Path.Direction.CW);
             frameShading = new LinearGradient(0, 0, side, side,
-                    blend(frame, coordinates, 0.13f),
+                    defaultBoard ? frame : blend(frame, coordinates, 0.13f),
                     blend(frame, 0xff000000, 0.28f), Shader.TileMode.CLAMP);
         }
         clamp();
@@ -291,8 +295,8 @@ final class BoardView extends View {
         super.onDraw(canvas);
         float unit = unit();
         float start = gridStart();
-        float inset = unit * 0.055f;
-        float rounding = unit * 0.23f;
+        float inset = unit * (defaultBoard ? 0.062f : 0.055f);
+        float rounding = unit * (defaultBoard ? 0.18f : 0.23f);
         canvas.save();
         canvas.clipPath(frameClip);
         paint.setShader(frameShading);
@@ -303,9 +307,9 @@ final class BoardView extends View {
         int target = tileDragged ? position(touchX, touchY) : rackDropTarget;
         for (int i = 0; i < FrenchGame.SIZE; i++) {
             label(canvas, String.valueOf(i + 1), start + (i + 0.5f) * unit, start * 0.53f,
-                    unit * 0.36f, coordinates, regular);
+                    unit * 0.36f, coordinates, defaultBoard ? bold : regular);
             label(canvas, String.valueOf((char) ('A' + i)), start * 0.45f, start + (i + 0.5f) * unit,
-                    unit * 0.36f, coordinates, regular);
+                    unit * 0.36f, coordinates, defaultBoard ? bold : regular);
         }
         for (int i = 0; i < FrenchGame.CELLS; i++) {
             float x = start + i % FrenchGame.SIZE * unit;
@@ -340,7 +344,7 @@ final class BoardView extends View {
                 }
             } else {
                 int cellColor = cellColors[i];
-                if (i == FrenchGame.CENTER) cellColor = blend(cellColor, focus, 0.24f);
+                if (i == FrenchGame.CENTER) cellColor = defaultBoard ? 0xffffd66d : blend(cellColor, focus, 0.24f);
                 if (target == i) cellColor = blend(cellColor, freshFace, 0.68f);
                 paint.setColor(cellColor);
                 canvas.drawRoundRect(rectangle, rounding, rounding, paint);

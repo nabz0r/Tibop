@@ -23,11 +23,11 @@ import java.util.concurrent.TimeUnit;
 
 final class ScoreCard {
     private static final int SIZE = 1080;
-    private static final int COBALT = 0xff233e91;
-    private static final int INK = 0xff101f49;
+    private static final int COBALT = 0xff5844ed;
+    private static final int INK = 0xff272049;
     private static final int IVORY = 0xfffcf5e5;
-    private static final int ICE = 0xffd3ddff;
-    private static final int VERMILION = 0xfff18a69;
+    private static final int ICE = 0xffeae1fb;
+    private static final int VERMILION = 0xffff9eaf;
     private static final int NIGHT = 0xff101829;
     private static final int NIGHT_INK = 0xff080e19;
     private static final int AMBER = 0xfff1c47a;
@@ -83,7 +83,7 @@ final class ScoreCard {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         boolean nocturne = style == CardStyleStore.Style.NOCTURNE;
         if (nocturne) drawNocturne(canvas, paint);
-        else drawCobalt(ui, canvas, paint, size);
+        else drawCobalt(ui, canvas, paint);
 
         int light = nocturne ? MOONLIGHT : IVORY;
         int secondary = nocturne ? AMBER : ICE;
@@ -97,34 +97,30 @@ final class ScoreCard {
         paint.setColor(light);
         canvas.drawRoundRect(74, 74, 137, 137, 13, 13, paint);
         String brand = ui.context.getString(R.string.app_name);
-        text(canvas, paint, brand.substring(0, 1), 84, 122, 45, nocturne ? NIGHT : COBALT, SERIF, 45);
-        text(canvas, paint, brand, 155, 120, 42, light, SERIF, 350);
-        text(canvas, paint, title, 73, 300, 90, light, SERIF, 600);
+        text(canvas, paint, brand.substring(0, 1), 84, 122, 45, nocturne ? NIGHT : COBALT, ui.display, 45);
+        text(canvas, paint, brand, 155, 120, 42, light, ui.display, 350);
+        text(canvas, paint, title, 73, 300, 90, light, ui.display, 600);
         text(canvas, paint, date, 78, 373, 38, secondary, MEDIUM, 535);
 
         paint.setColor(accent);
         canvas.drawRoundRect(79, 442, 178, 448, 3, 3, paint);
-        text(canvas, paint, points, 68, 664, 138, light, SERIF, 590);
+        text(canvas, paint, points, 68, 664, 138, light, ui.display, 590);
         text(canvas, paint, streak, 80, 744, 43, secondary, MEDIUM, 530);
         return image;
     }
 
-    private static void drawCobalt(ViewKit ui, Canvas canvas, Paint paint, int size) {
-        canvas.drawColor(COBALT);
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inSampleSize = size <= 480 ? 2 : 1;
-        Bitmap photo = BitmapFactory.decodeResource(ui.context.getResources(), R.drawable.daily_letter_board, options);
-        if (photo != null) {
-            float width = SIZE * (float) photo.getWidth() / photo.getHeight();
-            canvas.drawBitmap(photo, null, new RectF(SIZE - width, 0, SIZE, SIZE), paint);
-            photo.recycle();
-            paint.setShader(new LinearGradient(SIZE - width, 0, 850, 0, new int[]{COBALT, COBALT, COBALT & 0xffffff},
-                    new float[]{0, 0.34f, 1}, Shader.TileMode.CLAMP));
-            canvas.drawRect(SIZE - width, 0, SIZE, SIZE, paint);
-        }
-        paint.setShader(new LinearGradient(0, 770, 0, SIZE, INK & 0xffffff, INK, Shader.TileMode.CLAMP));
-        canvas.drawRect(0, 770, SIZE, SIZE, paint);
+    private static void drawCobalt(ViewKit ui, Canvas canvas, Paint paint) {
+        paint.setShader(new LinearGradient(0, 0, SIZE, SIZE, COBALT, INK, Shader.TileMode.CLAMP));
+        canvas.drawRect(0, 0, SIZE, SIZE, paint);
         paint.setShader(null);
+        paint.setColor(0xffb9a8fd);
+        canvas.drawCircle(856, 575, 192, paint);
+        Bitmap mascot = BitmapFactory.decodeResource(ui.context.getResources(), R.drawable.nab_arcade_cheer);
+        if (mascot != null) {
+            float height = 388 * mascot.getHeight() / (float) mascot.getWidth();
+            canvas.drawBitmap(mascot, null, new RectF(665, 590 - height / 2, 1053, 590 + height / 2), paint);
+            mascot.recycle();
+        }
     }
 
     private static void drawNocturne(Canvas canvas, Paint paint) {

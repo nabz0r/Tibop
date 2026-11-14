@@ -1,13 +1,13 @@
 <p align="center">
-  <img src="web/assets/lettrine-mark.png" width="88" alt="Logo de Lettrine">
+  <img src="android/share-site/tibop-icon.png" width="88" alt="NAB, le Maine Coon de Tibop">
 </p>
 
-<h1 align="center">WordRivet</h1>
+<h1 align="center">Tibop</h1>
 
-<p align="center">Le jeu de lettres de Lettrine pour Android. Affrontez NAB en français ou en anglais et revenez sur vos meilleurs coups.</p>
+<p align="center">Affrontez NAB, le Maine Coon, dans un jeu de lettres classique pour Android. Jouez en français ou en anglais et revenez sur vos meilleurs coups.</p>
 
 <p align="center">
-  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.4/android/artifacts/lettrine.apk">Télécharger l’APK 0.16.4</a></strong> ·
+  <strong><a href="https://github.com/nabz0r/scrabnble/releases/download/v0.16.5/Tibop-0.16.5.apk">Télécharger Tibop 0.16.5</a></strong> ·
   <a href="https://nabz0r.github.io/scrabnble/">Page de la bêta</a> ·
   <a href="android/README.md">Guide Android</a> ·
   <a href="#lettrine-studio">Studio sur Mac</a>
@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <img src="web/assets/lettrine-table.webp" width="690" alt="Illustration Lettrine avec un plateau de lettres et des tuiles en bois sur une table">
+  <img src="docs/media/tibop-android.webp" width="690" alt="Accueil de Tibop avec NAB, plateau d’une partie solo et résultat du défi du jour">
 </p>
 
 ## Jouer sur Android
@@ -31,10 +31,6 @@
 Glissez les tuiles de gauche à droite dans le chevalet pour essayer un mot. Pour le jouer, glissez les tuiles sur le plateau ou touchez une lettre puis une case. Le jeu affiche les mots formés et les points avant validation. Agrandissez le plateau si besoin et parcourez ses cases avec TalkBack.
 
 **Grammalecte 7.7 · Classique** filtre 258 formes, dont `KM`, `KG` et `HLM`. Il s’applique aux nouvelles parties solo et locales, aux nouveaux défis français et aux nouveaux duels entre deux joueurs à jour. Les parties en cours et les liens de défi déjà partagés gardent leur lexique. Les invitations d’amitié restent utilisables. [Lexique français et exclusions](data/fr/README.md#lexique-des-nouvelles-parties-classiques-sur-android)
-
-<p align="center">
-  <img src="docs/media/wordrivet-android.webp" width="330" alt="Partie classique à deux dans WordRivet sur Android. Le placement d’AS affiche quatre points avant validation.">
-</p>
 
 ### Revoir vos coups
 
@@ -74,7 +70,7 @@ Le dernier test sur **Lettres en vrac** a comparé deux réglages de NAB Recherc
 | Réglage de base | 630 · 1 · 369 | **63,05 %** |
 | Réglage sélectionné contre Macondo, 22 coups présélectionnés | 626 · 1 · 373 | **62,65 %** |
 
-L’écart apparié est de **−0,40 point de pourcentage** (IC à 95 % de −1,73 à +0,93). L’essai ne montre pas de gain sur les tirages réservés. La mesure concerne le moteur du laboratoire. Dans WordRivet, l’Elo se calcule à partir des parties solo cotées sur l’appareil. [Protocole et résultats détaillés](docs/SIMULATION_FISF.md) · [Entraînement et Elo](docs/ENTRAINEMENT.md)
+L’écart apparié est de **−0,40 point de pourcentage** (IC à 95 % de −1,73 à +0,93). L’essai ne montre pas de gain sur les tirages réservés. La mesure concerne le moteur du laboratoire. Dans Tibop, l’Elo se calcule à partir des parties solo cotées sur l’appareil. [Protocole et résultats détaillés](docs/SIMULATION_FISF.md) · [Entraînement et Elo](docs/ENTRAINEMENT.md)
 
 ## Compiler et vérifier
 
@@ -86,7 +82,7 @@ Pour compiler l’APK sur le Mac, installez Java 17, Python 3, le SDK Android 36
 cargo test --locked
 ```
 
-[Compilation, signature et installation](android/README.md#compiler-sur-le-mac) · [Bundle Android pour la bêta Google Play](android/artifacts/lettrine.aab) · [Simulations Android](docs/SIMULATIONS_ANDROID.md)
+[Compilation, signature et installation](android/README.md#compiler-sur-le-mac) · [Bundle Android 0.16.4 pour Google Play](android/artifacts/lettrine.aab) · [Simulations Android](docs/SIMULATIONS_ANDROID.md)
 
 ### Aller plus loin
 

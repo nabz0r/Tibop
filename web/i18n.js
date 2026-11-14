@@ -150,7 +150,7 @@ Exporter les parties importées en JSON|Export imported games as JSON
 Exporter les parties importées en JSONL|Export imported games as JSONL
 Prototype Android|Android prototype
 Le jeu et l’historique de vos parties.|Play and keep your game history.
-Télécharger Lettrine pour Android|Download Lettrine for Android
+Télécharger Tibop pour Android|Download Tibop for Android
 Importer des parties|Import games
 Ajoutez un export Lettrine ou un fichier de parties.|Upload a Lettrine export or a game file.
 Choisir un fichier|Choose a file
@@ -458,14 +458,17 @@ Suivez leur classement au fil des ans, selon les règles de chaque compétition.
 Les finales sur la carte|Finals on the map
 Choisissez un lieu ou parcourez les années pour retrouver les résultats.|Choose a location or browse the years to see the results.
 Outils|Tools
-Retrouvez vos fichiers de parties et téléchargez Lettrine pour Android.|Find your game files and download Lettrine for Android.
+Retrouvez vos fichiers de parties et téléchargez Tibop pour Android.|Find your game files and download Tibop for Android.
 Télécharger des parties|Download games
 Utilisez le format CSV pour ouvrir les résultats dans un tableur.|Use CSV to open results in a spreadsheet.
-Lettrine pour Android|Lettrine for Android
-Version 0.14.0|Version 0.14.0
+Version 0.16.5|Version 0.16.5
 Circuit bonus|Bonus Circuit
 Trois nouveaux défis à enchaîner hors ligne avec un ticket. La première entrée est offerte.|One ticket gives you three new offline puzzles. Your first entry is free.
-WordRivet pour Android|WordRivet for Android
+Tibop pour Android|Tibop for Android
+NAB le Maine Coon|NAB the Maine Coon
+Retrouvez NAB dans les défis, sur le nouveau plateau et dans le bilan de vos parties.|Find NAB in challenges, on the new board and in your game reviews.
+Définitions hors ligne|Offline definitions
+Consultez les mots du coup joué sans connexion. Les fiches françaises relient aussi les verbes conjugués à leur infinitif et les noms au pluriel à leur singulier.|Look up played words offline. French entries also link inflected verbs to their infinitive and plural nouns to their singular form.
 Deux coups d’avance|Two Moves Ahead
 Douze défis hors ligne par langue. Jouez deux mots avec le même chevalet, puis regardez le rejeu de NAB.|Twelve offline puzzles in each language. Play two words from one rack, then watch NAB’s replay.
 Duels et tournoi en ligne|Online duels and tournament
@@ -473,7 +476,7 @@ Ouvrez le lien de la bêta Android pour rejoindre vos amis. Activez les notifica
 Terminez les trois défis d’un week-end pour débloquer ce fond de carte à partager. Retrouvez-le dans votre collection.|Finish all three challenges on a weekend to unlock this share-card background. Find it in your collection.
 Aperçu de Nocturne dorée, une carte bleu nuit avec des tuiles dorées|Preview of Nocturne dorée, a midnight-blue card with golden tiles
 APK Android|Android APK
-AAB Google Play|Google Play AAB
+AAB WordRivet 0.16.4|WordRivet 0.16.4 AAB
 Version de test à installer sur un appareil Android.|Test version for Android devices.
 Télécharger l’APK|Download APK
 État de la simulation et du service|Simulation and service status

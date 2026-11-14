@@ -1,8 +1,8 @@
 :root {
-  color-scheme: dark;
-  font: 16px/1.6 system-ui, sans-serif;
-  color: #f8edcf;
-  background: #151c37;
+  color-scheme: light;
+  font: 16px/1.55 system-ui, sans-serif;
+  color: #272049;
+  background: #f7f3ff;
 }
 
 * { box-sizing: border-box; }
@@ -14,25 +14,31 @@ body {
   padding: clamp(16px, 5vw, 56px);
   display: grid;
   place-items: center;
-  background: radial-gradient(ellipse at 75% 10%, #3c4da0, #151c37 66%);
+  background: radial-gradient(ellipse at 75% 10%, #e6d9fc, #f7f3ff 66%);
 }
 
 main {
   width: min(100%, 35rem);
   padding: clamp(24px, 6vw, 52px);
-  background: #1c2440e8;
-  border: 1px solid #c6bfdd78;
+  background: #fffaff;
+  border: 1px solid #e4d9f5;
   border-radius: 26px;
 }
 
-header, h1 { font-family: system-ui, sans-serif; }
-header { display: flex; gap: 10px; align-items: center; font-size: 1.35rem; }
-header span { padding: 0 9px; color: #1c2440; background: #f6e3cb; border-radius: 6px; }
-.eyebrow { margin: 2.8rem 0 0.4rem; color: #e0c58d; font-size: 0.85rem; letter-spacing: 0.12em; text-transform: uppercase; }
-h1 { margin: 0; font-size: clamp(2.1rem, 8vw, 3.35rem); font-weight: 400; line-height: 1.08; }
-p { margin: 1.2rem 0; color: #eee8f2; }
-.detail { margin-bottom: 0; font-size: 0.875rem; color: #d3cce2; }
+header { display: flex; gap: 10px; align-items: center; font-size: 1.35rem; font-weight: 750; }
+header img { border-radius: 12px; }
+h1 { margin: 1.5rem 0 0; font-size: clamp(2.05rem, 8vw, 3.15rem); line-height: 1.08; }
+p { margin: 1rem 0; }
+.detail { margin-bottom: 0; font-size: .9rem; color: #625877; }
 .download { margin-bottom: 0; }
-.download a { color: #f6e3b1; text-underline-offset: 0.24em; }
-.action { display: inline-block; margin: 0.65rem 0; padding: 0.7rem 1.3rem; border-radius: 12px; color: #211622; background: #ff9f83; font-weight: 700; text-decoration: none; }
-.action:focus-visible { outline: 2px solid #fff7df; outline-offset: 5px; }
+.action, .download a {
+  display: inline-block;
+  padding: .7rem 1.15rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.action { margin-top: .35rem; color: #38245d; background: #ffc5cd; }
+.download a { color: #fff; background: #5844ed; }
+.action:focus-visible, .download a:focus-visible { outline: 2px solid #38245d; outline-offset: 4px; }

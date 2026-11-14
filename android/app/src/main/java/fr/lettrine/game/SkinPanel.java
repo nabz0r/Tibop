@@ -51,7 +51,7 @@ final class SkinPanel {
         cover.setCornerRadius(ui.dp(24));
         hero.setBackground(cover);
         ui.inset(hero, 20, 19);
-        TextView title = ui.text(label(R.string.skins_title), 38, ui.palette.heroInk(), ui.serif);
+        TextView title = ui.text(label(R.string.skins_title), 38, ui.palette.heroInk(), ui.display);
         if (Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
         hero.addView(title);
         ui.gap(hero, 8);
@@ -131,9 +131,7 @@ final class SkinPanel {
 
     private void tab(TextView tab, boolean selected) {
         tab.setSelected(selected);
-        tab.setTextColor(selected ? ui.palette.heroInk() : ui.palette.ink());
-        tab.setBackground(ui.touch(selected ? ui.palette.deep() : ui.palette.paper(), 12,
-                selected ? 0 : ui.palette.line()));
+        ui.styleKey(tab, selected);
     }
 
     private void addCard(int name, int detail, SkinStore.Reward reward, SkinStore.Inventory inventory,
@@ -270,7 +268,7 @@ final class SkinPanel {
             tileEdge = tileSkin == null ? palette.tileEdge() : tileSkin.edge();
             tileFresh = tileSkin == null ? palette.fresh() : tileSkin.fresh();
             tileInk = tileSkin == null ? palette.ink() : tileSkin.ink();
-            serif = ui.serif;
+            serif = ui.display;
             medium = ui.medium;
             setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         }

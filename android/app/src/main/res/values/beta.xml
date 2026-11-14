@@ -1,13 +1,13 @@
 <resources>
     <string name="social_beta_title">Rejoindre la bêta en ligne</string>
-    <string name="social_beta_confirm">Utiliser %1$s pour les amis, les duels et le tournoi ? WordRivet enverra votre pseudo à ce serveur pour créer ou retrouver votre profil en ligne.</string>
+    <string name="social_beta_confirm">Utiliser %1$s pour les amis, les duels et le tournoi ? Tibop enverra votre pseudo à ce serveur pour créer ou retrouver votre profil en ligne.</string>
     <string name="social_beta_connect">Se connecter</string>
     <string name="social_beta_invalid">Ce lien de bêta est invalide.</string>
     <string name="turn_notifications_title">Notifications de tour</string>
     <string name="turn_notifications_on">Activées</string>
     <string name="turn_notifications_off">Désactivées</string>
     <string name="turn_notifications_detail">Recevez une notification lorsqu’un duel entre amis attend votre coup. Android peut retarder la vérification en arrière-plan.</string>
-    <string name="turn_notifications_system">Autorisez les notifications de WordRivet dans les réglages Android.</string>
+    <string name="turn_notifications_system">Autorisez les notifications de Tibop dans les réglages Android.</string>
     <string name="turn_notifications_enable">Activer</string>
     <string name="turn_notifications_disable">Désactiver</string>
     <string name="turn_notifications_open_settings">Réglages Android</string>

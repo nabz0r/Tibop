@@ -8,6 +8,10 @@
     <string name="skins_slate">Ardoise</string>
     <string name="skins_porcelain">Porcelaine</string>
     <string name="skins_amber">Ambre</string>
+    <string name="skins_sakura">Sakura</string>
+    <string name="skins_ramune">Ramune</string>
+    <string name="skins_board_sakura">Cases roses et cadre prune.</string>
+    <string name="skins_tile_ramune">Tuiles menthe aux reflets bleus.</string>
     <string name="skins_board_classic">Les couleurs de votre thème.</string>
     <string name="skins_board_tide">Bleu profond et cases aux reflets de verre.</string>
     <string name="skins_board_slate">Cadre graphite et cases aux nuances minérales.</string>

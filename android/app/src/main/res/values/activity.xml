@@ -47,8 +47,8 @@
     <string name="app_bluetooth_pair_settings">Ouvrir les réglages Bluetooth</string>
     <string name="app_bluetooth_cancel">Annuler la connexion</string>
     <string name="app_bluetooth_missing">Cet appareil ne propose pas le Bluetooth classique.</string>
-    <string name="app_bluetooth_nearby_hint">Autorisez les appareils à proximité dans les réglages de Lettrine.</string>
-    <string name="app_bluetooth_settings">Ouvrir les réglages de Lettrine</string>
+    <string name="app_bluetooth_nearby_hint">Autorisez les appareils à proximité dans les réglages de Tibop.</string>
+    <string name="app_bluetooth_settings">Ouvrir les réglages de Tibop</string>
     <string name="app_bluetooth_nearby">Autoriser les appareils à proximité</string>
     <string name="app_bluetooth_enable">Activer le Bluetooth</string>
     <string name="app_bluetooth_permission">L’autorisation Bluetooth n’est plus disponible.</string>

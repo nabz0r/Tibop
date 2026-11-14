@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shop_title">Shop</string>
+    <string name="shop_entry_detail">Circuit tickets and themes to unlock.</string>
+    <plurals name="shop_coins">
+        <item quantity="one">%d coin</item>
+        <item quantity="other">%d coins</item>
+    </plurals>
+    <string name="shop_ticket_balance">Free tickets %1$d/%2$d · Bonus %3$d</string>
+    <string name="shop_tickets">Circuit tickets</string>
+    <string name="shop_tickets_detail">One ticket lets you play all three puzzles in a circuit.</string>
+    <string name="shop_exchange_title">One circuit ticket</string>
+    <string name="shop_exchange_confirm">Exchange %1$d coins for one bonus ticket?</string>
+    <string name="shop_ticket_added">One bonus ticket added.</string>
+    <string name="shop_exchange_error">Couldn’t exchange coins. Check your balance and try again.</string>
+    <string name="shop_themes">Themes</string>
+    <string name="shop_unlocked">Unlocked</string>
+    <string name="shop_included">Included</string>
+    <string name="shop_unlock_named">Unlock %1$s</string>
+</resources>

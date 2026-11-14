@@ -3,6 +3,7 @@ package fr.lettrine.game;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -18,7 +19,7 @@ final class GameNavigation {
         item.setGravity(Gravity.CENTER);
         item.setMinimumHeight(ui.dp(58));
         ui.inset(item, 1, 5);
-        item.setBackground(ui.touch(ui.palette.paper(), 16, 0));
+        item.setBackground(ui.touch(active ? ui.palette.ordinary() : ui.palette.paper(), 16, 0));
         item.setContentDescription(name);
         item.setSelected(active);
         item.setFocusable(true);
@@ -26,11 +27,15 @@ final class GameNavigation {
 
         int color = active ? ui.palette.deep() : ui.palette.muted();
         TabIcon icon = new TabIcon(ui, tab, color);
-        if (active) icon.setBackground(ui.shape(ui.palette.ordinary(), 13));
+        if (active) icon.setBackground(ui.arcadeKey(ui.palette.paper(), ui.palette.paper(), ui.palette.line()));
         icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         item.addView(icon, new LinearLayout.LayoutParams(ui.dp(46), ui.dp(26)));
         ui.gap(item, 3);
-        TextView title = ui.text(name, 11, color, active ? ui.medium : ui.regular);
+        var configuration = ui.context.getResources().getConfiguration();
+        int labelSize = configuration.screenWidthDp < 340 && configuration.fontScale > 1.3f ? 10 : 11;
+        TextView title = ui.text(name, labelSize, color, active ? ui.display : ui.medium);
+        title.setMaxLines(1);
+        title.setEllipsize(TextUtils.TruncateAt.END);
         title.setGravity(Gravity.CENTER);
         title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         item.addView(title, new LinearLayout.LayoutParams(-1, -2));

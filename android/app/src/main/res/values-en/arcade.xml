@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="arcade_sound">Music and sound</string>
+    <string name="arcade_motion">Animate NAB and tiles</string>
+    <string name="arcade_celebrations">Celebrate great moves</string>
+    <string name="arcade_haptics">Haptic feedback</string>
+    <string name="arcade_fever">Great move!</string>
+    <string name="arcade_bingo">Bingo!</string>
+    <string name="shop_exchange_action">Exchange</string>
+</resources>

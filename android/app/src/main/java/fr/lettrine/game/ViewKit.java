@@ -3,14 +3,17 @@ package fr.lettrine.game;
 import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.Context;
+import android.animation.ValueAnimator;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -24,16 +27,24 @@ final class ViewKit {
     final SkinStore.Selection skins;
     final GameAudio audio;
     final GameLanguage language;
-    final Typeface serif = Typeface.create("serif", Typeface.NORMAL);
+    final Typeface display;
     final Typeface medium = Typeface.create("sans-serif-medium", Typeface.NORMAL);
     final Typeface regular = Typeface.create("sans-serif", Typeface.NORMAL);
+    final boolean animate;
+    final boolean celebrations;
+    final boolean haptics;
 
     ViewKit(Context context, Palette palette, SkinStore.Selection skins, GameAudio audio, GameLanguage language) {
         this.context = context;
+        this.display = context.getResources().getFont(R.font.nunito_extrabold);
         this.palette = palette;
         this.skins = skins;
         this.audio = audio;
         this.language = language;
+        var preferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE);
+        animate = preferences.getBoolean("ui_motion", true) && ValueAnimator.areAnimatorsEnabled();
+        celebrations = preferences.getBoolean("ui_celebrations", true);
+        haptics = preferences.getBoolean("ui_haptics", true);
     }
 
     @SuppressLint("ClickableViewAccessibility") // Taps keep the accessible click action.
@@ -119,7 +130,24 @@ final class ViewKit {
         return label;
     }
 
-    TextView title(String content, int size) { return text(content, size, palette.ink(), serif); }
+    TextView title(String content, int size) { return text(content, size, palette.ink(), display); }
+
+    NabView mascot(int sprite) {
+        return new NabView(context, animate, sprite);
+    }
+
+    LinearLayout illustratedCard(int sprite, int size, LinearLayout copy, int color) {
+        LinearLayout card = row();
+        card.setBackground(shape(color, 23));
+        inset(card, 14, 11);
+        weight(card, copy);
+        var configuration = context.getResources().getConfiguration();
+        if (configuration.screenWidthDp >= 340 && configuration.fontScale <= 1.3f) {
+            space(card, 10);
+            card.addView(mascot(sprite), new LinearLayout.LayoutParams(dp(size), dp(size)));
+        }
+        return card;
+    }
 
     TextView body(String content) {
         TextView label = text(content, 14, palette.muted(), regular);
@@ -148,23 +176,59 @@ final class ViewKit {
                 shape(color, radius, outline), null);
     }
 
+    Drawable arcadeKey(int fill, int highlight, int edge) {
+        GradientDrawable face = shape(fill, 13);
+        face.setOrientation(GradientDrawable.Orientation.TOP_BOTTOM);
+        face.setColors(new int[]{highlight, fill});
+        LayerDrawable layers = new LayerDrawable(new Drawable[]{shape(edge, 13), face});
+        layers.setLayerInset(1, dp(1), dp(1), dp(1), dp(4));
+        return new RippleDrawable(ColorStateList.valueOf(0x33ffffff), layers, null);
+    }
+
+    void styleKey(TextView button, boolean primary) {
+        int fill = primary ? palette.deep() : palette.paper();
+        button.setTextColor(primary ? palette.heroInk() : palette.ink());
+        button.setBackground(arcadeKey(fill, mix(fill, primary ? palette.accent() : palette.ordinary(), .28f),
+                primary ? mix(fill, palette.ink(), .56f) : palette.line()));
+    }
+
+    void acknowledge(View view) {
+        if (haptics) {
+            view.performHapticFeedback(android.os.Build.VERSION.SDK_INT >= 30
+                    ? HapticFeedbackConstants.CONFIRM : HapticFeedbackConstants.CLOCK_TICK);
+        }
+    }
+
+    void tick(View view) {
+        if (haptics) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+    }
+
+    private static int mix(int from, int to, float amount) {
+        return Color.rgb(
+                Math.round(Color.red(from) + (Color.red(to) - Color.red(from)) * amount),
+                Math.round(Color.green(from) + (Color.green(to) - Color.green(from)) * amount),
+                Math.round(Color.blue(from) + (Color.blue(to) - Color.blue(from)) * amount));
+    }
+
     TextView button(String content, boolean primary, Runnable run) {
-        TextView button = text(content, 14, primary ? palette.heroInk() : palette.ink(), medium);
+        TextView button = text(content, 14, primary ? palette.heroInk() : palette.ink(), display);
         button.setGravity(Gravity.CENTER);
+        button.setFocusable(true);
         button.setMinimumHeight(dp(48));
-        inset(button, 12, 8);
-        button.setBackground(touch(primary ? palette.deep() : palette.paper(), 15, primary ? 0 : palette.line()));
+        button.setPadding(dp(12), dp(8), dp(12), dp(12));
+        styleKey(button, primary);
         button.setOnClickListener(view -> run.run());
         return button;
     }
 
     TextView textButton(String content, Runnable run) {
-        TextView button = text(content, 13, palette.accent(), medium);
+        TextView button = text(content, 13, palette.accent(), display);
         button.setGravity(Gravity.CENTER);
-        button.setMinHeight(dp(42));
-        button.setMinWidth(dp(42));
+        button.setFocusable(true);
+        button.setMinHeight(dp(48));
+        button.setMinWidth(dp(48));
         inset(button, 5, 7);
-        button.setBackground(touch(palette.page(), 10, 0));
+        button.setBackground(touch(palette.ordinary(), 12, 0));
         button.setOnClickListener(view -> run.run());
         return button;
     }
@@ -176,7 +240,7 @@ final class ViewKit {
 
     LinearLayout card() {
         LinearLayout card = column();
-        card.setBackground(shape(palette.paper(), 18, palette.line()));
+        card.setBackground(shape(palette.paper(), 22, palette.line()));
         inset(card, 16, 15);
         return card;
     }
@@ -186,13 +250,13 @@ final class ViewKit {
         option.setBackground(action == null ? shape(palette.page(), 18, palette.line())
                 : touch(palette.paper(), 18, palette.line()));
         inset(option, 13, 13);
-        TextView icon = text(mark, 20, palette.ink(), serif);
+        TextView icon = text(mark, 20, palette.ink(), display);
         icon.setGravity(Gravity.CENTER);
         icon.setBackground(shape(palette.ordinary(), 12));
         option.addView(icon, new LinearLayout.LayoutParams(dp(42), dp(42)));
         space(option, 12);
         LinearLayout content = column();
-        content.addView(text(title, 16, palette.ink(), medium));
+        content.addView(text(title, 16, palette.ink(), display));
         if (!detail.isEmpty()) {
             gap(content, 5);
             content.addView(text(detail, 12, palette.muted(), regular));
@@ -200,10 +264,11 @@ final class ViewKit {
         weight(option, content);
         icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         if (action != null) {
-            TextView arrow = text("›", 23, palette.accent(), serif);
+            TextView arrow = text("›", 23, palette.accent(), display);
             arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             option.addView(arrow);
             option.setOnClickListener(view -> action.run());
+            option.setFocusable(true);
         }
         return option;
     }

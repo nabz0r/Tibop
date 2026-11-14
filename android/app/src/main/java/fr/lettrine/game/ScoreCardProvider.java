@@ -39,7 +39,7 @@ public final class ScoreCardProvider extends ContentProvider {
             Object[] row = new Object[columns.length];
             for (int i = 0; i < columns.length; i++) {
                 row[i] = switch (columns[i]) {
-                    case OpenableColumns.DISPLAY_NAME -> "lettrine-bats-mon-score.png";
+                    case OpenableColumns.DISPLAY_NAME -> "tibop-bats-mon-score.png";
                     case OpenableColumns.SIZE -> file.length();
                     default -> null;
                 };

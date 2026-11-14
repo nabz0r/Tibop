@@ -1,6 +1,6 @@
 <resources>
     <string name="card_styles">Cards</string>
-    <string name="card_style_classic_detail">The cobalt background for Beat My Score cards.</string>
+    <string name="card_style_classic_detail">NAB on a purple background.</string>
     <string name="card_style_nocturne">Golden Nocturne</string>
     <string name="card_style_nocturne_detail">Blue ink, Art Deco lines, and golden tiles.</string>
     <string name="card_style_unlock_requirement">Finish all three puzzles in a single weekend.</string>

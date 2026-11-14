@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f3ff">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Téléchargez Tibop pour Android, le jeu de lettres de NAB le Maine Coon.">
+  <title>Bêta Android · Tibop</title>
+  <link rel="icon" href="./tibop-icon.png" type="image/png">
+  <link rel="stylesheet" href="./tibop.css">
+</head>
+<body>
+  <main>
+    <p class="brand"><img src="./tibop-icon.png" width="40" height="40" alt=""> Tibop</p>
+    <article>
+      <header class="hero"><h1>Bêta Android</h1></header>
+      <div class="body">
+        <p>Jouez une partie classique contre NAB, le Maine Coon de Tibop, ou défiez vos amis. Les défis et les définitions sont accessibles hors ligne.</p>
+        <a class="button primary" href="https://github.com/nabz0r/scrabnble/releases/download/v0.16.5/Tibop-0.16.5.apk">Télécharger l’APK 0.16.5</a>
+        <div class="install">
+          <p>Android 8 ou plus récent. Si vous avez installé la bêta précédente, ouvrez l’APK et choisissez <strong>Mettre à jour</strong> pour garder vos parties.</p>
+        </div>
+      </div>
+    </article>
+  </main>
+  <script>
+    if (/^#v1\//.test(location.hash)) {
+      location.replace(new URL('./defi/' + location.hash, location.href));
+    }
+  </script>
+</body>
+</html>

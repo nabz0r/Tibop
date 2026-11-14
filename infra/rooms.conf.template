@@ -26,7 +26,7 @@ server {
     location = / {
         rewrite ^ /salons.html last;
     }
-    location ~ ^/(salons\.(html|css|js)|board-rules\.js|assets/(lettrine-mark\.png|lettrine-table\.webp|(bricolage-grotesque|inter)-latin-wght-normal\.woff2))$ {
+    location ~ ^/(salons\.(html|css|js)|board-rules\.js|assets/(lettrine-mark\.png|lettrine-table\.webp|tibop-icon\.png|(bricolage-grotesque|inter)-latin-wght-normal\.woff2))$ {
         expires -1;
         try_files $uri =404;
     }

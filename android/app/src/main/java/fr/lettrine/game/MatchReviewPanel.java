@@ -192,9 +192,7 @@ final class MatchReviewPanel {
 
     private void highlight(TextView button, boolean active) {
         button.setSelected(active);
-        button.setTextColor(active ? ui.palette.heroInk() : ui.palette.ink());
-        button.setBackground(ui.touch(active ? ui.palette.deep() : ui.palette.paper(), 12,
-                active ? 0 : ui.palette.line()));
+        ui.styleKey(button, active);
     }
 
     private String playedWord(FrenchGame.Move move) {
