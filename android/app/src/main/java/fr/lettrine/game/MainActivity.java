@@ -69,7 +69,9 @@ public final class MainActivity extends Activity {
     private static final int BACKUP_EXPORT = 47;
     private static final int BACKUP_IMPORT = 48;
     private static final int PERSONAL_LEXICON_IMPORT = 49;
+    private static final int BLUETOOTH_SETTINGS = 50;
     private static final int DEFAULT_RATING = GameStore.BASE_ELO;
+    private static final long BLUETOOTH_HANDSHAKE_TIMEOUT_MS = 15_000;
 
     private enum Screen { HOME, GAMES, SOLO, LOCAL, BLUETOOTH, SETTINGS, HISTORY, DETAIL, GAME, RESULT, REVIEW, PRACTICE,
         SOCIAL, SOCIAL_DUEL, PROFILE, COLLECTION, TOURNAMENT, TOURNAMENT_ROUND, HELP, TWO_MOVES, BONUS_CIRCUIT, BACKUP,
@@ -128,8 +130,11 @@ public final class MainActivity extends Activity {
     private boolean waiting;
     private boolean bluetoothHost;
     private boolean bluetoothReady;
+    private boolean bluetoothHelloReceived;
     private String bluetoothStatus = "";
     private String bluetoothName = "";
+    private String bluetoothPeerAddress;
+    private BluetoothDevice bluetoothDevice;
     private BluetoothLink link;
     private Arena arena;
     private FrameLayout frame;
@@ -173,13 +178,11 @@ public final class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        if (state != null) {
-            pendingSocialInvite = state.getString("pendingSocialInvite");
-            pendingSocialInviteOrigin = state.getString("pendingSocialInviteOrigin");
-        }
         gameLanguage = AppLocale.language(this);
         personalLexicon = new PersonalLexicon(this, gameLanguage);
         preferences = getSharedPreferences("preferences", MODE_PRIVATE);
+        pendingSocialInvite = preferences.getString(gameLanguage.storageName("pending_social_invite"), pendingSocialInvite);
+        pendingSocialInviteOrigin = preferences.getString(gameLanguage.storageName("pending_social_invite_origin"), pendingSocialInviteOrigin);
         audio = new GameAudio(this, preferences);
         audio.prepareEffects();
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
@@ -255,12 +258,6 @@ public final class MainActivity extends Activity {
                 });
             }
         });
-    }
-
-    @Override protected void onSaveInstanceState(Bundle state) {
-        super.onSaveInstanceState(state);
-        state.putString("pendingSocialInvite", pendingSocialInvite);
-        state.putString("pendingSocialInviteOrigin", pendingSocialInviteOrigin);
     }
 
     @Override protected void onNewIntent(Intent intent) {
@@ -373,6 +370,7 @@ public final class MainActivity extends Activity {
         setIntent(new Intent(this, MainActivity.class));
         pendingSocialInvite = invitation.token();
         pendingSocialInviteOrigin = SocialClient.origin(socialBaseUrl());
+        rememberSocialInvitation();
         showSocial();
     }
 
@@ -621,7 +619,7 @@ public final class MainActivity extends Activity {
         top(getString(R.string.app_name), null, rating, language);
         ui.gap(content, 8);
         MatchCodec.State ongoing = state();
-        boolean canResume = ongoing != null && ongoing.end() == null && (!mode.equals("bluetooth") || bluetoothReady);
+        boolean canResume = ongoing != null && ongoing.end() == null;
         String savedId = canResume ? "" : savedGameToResume();
         Runnable playSolo = () -> {
             if (ready()) openSolo(Screen.HOME);
@@ -893,8 +891,9 @@ public final class MainActivity extends Activity {
                 toast(getString(R.string.games_read_error));
             }
         }
-        if (link != null && bluetoothReady && state() != null && state().end() == null) {
-            content.addView(ui.option("↔", "Bluetooth", getString(R.string.games_bluetooth_active), () -> {
+        if (mode.equals("bluetooth") && state() != null && state().end() == null) {
+            content.addView(ui.option("↔", "Bluetooth", getString(bluetoothReady ? R.string.games_bluetooth_active
+                    : R.string.app_bluetooth_resume_status), () -> {
                 gameBack = Screen.GAMES;
                 showGame();
             }));
@@ -1108,7 +1107,7 @@ public final class MainActivity extends Activity {
 
     private void switchMatch(Runnable next) {
         if (!persist()) return;
-        if (link == null) {
+        if (link == null && !(mode.equals("bluetooth") && state() != null && state().end() == null)) {
             next.run();
             return;
         }
@@ -1190,7 +1189,7 @@ public final class MainActivity extends Activity {
 
     private boolean myTurn(MatchCodec.State state) {
         return state != null && state.end() == null && state.active() == state.seat()
-                && !privacy && !waiting && (mode.equals("local") || !mode.equals("bluetooth") || link != null);
+                && !privacy && !waiting && (!mode.equals("bluetooth") || bluetoothReady);
     }
 
     private void clearStaged() {
@@ -1200,6 +1199,8 @@ public final class MainActivity extends Activity {
 
     private void resetMatch() {
         closeLink();
+        bluetoothPeerAddress = null;
+        bluetoothDevice = null;
         mode = "";
         game = null;
         guestState = null;
@@ -1567,7 +1568,12 @@ public final class MainActivity extends Activity {
             }));
             arena.preview.setText(getString(R.string.local_pass_device, current.names()[current.active()]));
         } else if (mode.equals("bluetooth") && !bluetoothReady) {
-            arena.preview.setText(R.string.bluetooth_disconnected);
+            arena.preview.setText(bluetoothStatus.isEmpty() ? getString(R.string.bluetooth_disconnected) : bluetoothStatus);
+            ui.weight(arena.rack, ui.button(getString(link == null ? R.string.app_bluetooth_reconnect
+                    : R.string.app_bluetooth_cancel), true, link == null ? this::showBluetooth : () -> {
+                closeLink();
+                updateArena(-1);
+            }));
         } else if (!myTurn(current)) {
             if (mode.equals("solo")) renderRack(current, false);
             arena.preview.setText(waiting ? getString(R.string.app_host_validating)
@@ -2019,7 +2025,7 @@ public final class MainActivity extends Activity {
             showHome();
         }, null);
         heading(getString(R.string.app_bluetooth_two), getString(R.string.app_bluetooth_pair));
-        if (link != null && state() != null && mode.equals("bluetooth")) {
+        if (bluetoothReady && state() != null && mode.equals("bluetooth")) {
             content.addView(ui.button(getString(R.string.app_resume), true, this::showGame));
             return;
         }
@@ -2058,6 +2064,19 @@ public final class MainActivity extends Activity {
             content.addView(ui.button(getString(R.string.app_bluetooth_enable), true, this::enableBluetooth));
             return;
         }
+        MatchCodec.State current = state();
+        if (mode.equals("bluetooth") && current != null && (current.end() == null || bluetoothHost && !bluetoothReady)) {
+            content.addView(ui.body(bluetoothStatus.isEmpty()
+                    ? getString(R.string.app_bluetooth_resume_status) : bluetoothStatus));
+            ui.gap(content, 8);
+            content.addView(ui.button(getString(bluetoothHost ? R.string.app_bluetooth_resume_host
+                    : R.string.app_bluetooth_reconnect), true, () -> startBluetoothLink(bluetoothDevice, current.id())));
+            if (!bluetoothHost) content.addView(ui.body(getString(R.string.app_bluetooth_resume_guest_hint)));
+            ui.gap(content, 8);
+            content.addView(ui.textButton(getString(R.string.games_bluetooth_continue),
+                    () -> switchMatch(() -> { resetMatch(); showBluetooth(); })));
+            return;
+        }
         List<BluetoothDevice> devices;
         try {
             devices = new ArrayList<>(adapter.getBondedDevices());
@@ -2084,6 +2103,13 @@ public final class MainActivity extends Activity {
             }));
             ui.gap(content, 8);
         }
+        content.addView(ui.textButton(getString(R.string.app_bluetooth_pair_settings), () -> {
+            try {
+                startActivityForResult(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS), BLUETOOTH_SETTINGS);
+            } catch (android.content.ActivityNotFoundException unavailable) {
+                toast(getString(R.string.app_bluetooth_missing));
+            }
+        }));
         if (!bluetoothStatus.isEmpty()) {
             ui.gap(content, 8);
             content.addView(ui.body(bluetoothStatus));
@@ -2127,26 +2153,36 @@ public final class MainActivity extends Activity {
 
     private void beginLink(BluetoothDevice peer, String name) {
         if (!ready() || !bluetoothPermission()) return;
-        BluetoothAdapter adapter = adapter();
-        if (adapter == null || !adapter.isEnabled()) { toast(getString(R.string.app_bluetooth_enable_first)); return; }
         resetMatch();
         mode = "bluetooth";
         gameBack = Screen.HOME;
         bluetoothHost = peer == null;
+        bluetoothDevice = peer;
         bluetoothName = name.isEmpty() ? (bluetoothHost ? getString(R.string.app_bluetooth_host) : getString(R.string.profile_guest)) : name;
+        startBluetoothLink(peer, null);
+    }
+
+    private void startBluetoothLink(BluetoothDevice peer, String resumeId) {
+        if (!ready() || !bluetoothPermission()) return;
+        if (!bluetoothHost && peer == null) return;
+        BluetoothAdapter adapter = adapter();
+        if (adapter == null || !adapter.isEnabled()) { toast(getString(R.string.app_bluetooth_enable_first)); return; }
+        closeLink();
         bluetoothStatus = bluetoothHost ? getString(R.string.app_bluetooth_waiting) : getString(R.string.app_bluetooth_connecting, deviceName(peer));
         BluetoothLink next = new BluetoothLink(new BluetoothLink.Listener() {
             @Override public void connected(BluetoothLink connection) {
                 main.post(() -> {
                     if (link != connection) return;
-                    connection.send(MatchCodec.object("type", "hello", "version", MatchCodec.VERSION,
-                            "name", bluetoothName, "lexicon", lexicon.hash));
+                    connection.send(BluetoothSession.hello(bluetoothName, lexicon.hash, bluetoothHost, resumeId));
+                    main.postDelayed(() -> {
+                        if (link == connection && !bluetoothReady) rejectBluetooth(R.string.app_bluetooth_handshake_timeout);
+                    }, BLUETOOTH_HANDSHAKE_TIMEOUT_MS);
                 });
             }
 
             @Override public void received(BluetoothLink connection, JSONObject row) {
                 main.post(() -> {
-                    if (link == connection) receiveBluetooth(row);
+                    if (link == connection) receiveBluetooth(row, resumeId);
                 });
             }
 
@@ -2155,7 +2191,10 @@ public final class MainActivity extends Activity {
                     if (link != connection) return;
                     closeLink();
                     bluetoothStatus = getString(reason);
-                    if (state() == null) showBluetooth();
+                    if (screen == Screen.BLUETOOTH) showBluetooth();
+                    else if (screen == Screen.HOME) showHome();
+                    else if (screen == Screen.GAMES) showGames();
+                    else if (screen == Screen.RESULT && state() != null) showMatchResult(state());
                     else updateArena(-1);
                     toast(bluetoothStatus);
                 });
@@ -2163,7 +2202,7 @@ public final class MainActivity extends Activity {
         });
         link = next;
         showBluetooth();
-        next.start(adapter, peer);
+        next.start(adapter, peer, resumeId == null ? null : bluetoothPeerAddress);
     }
 
     private void closeLink() {
@@ -2171,32 +2210,44 @@ public final class MainActivity extends Activity {
         link = null;
         if (current != null) current.close();
         bluetoothReady = false;
+        bluetoothHelloReceived = false;
         bluetoothStatus = "";
         waiting = false;
     }
 
-    private void receiveBluetooth(JSONObject row) {
+    private void receiveBluetooth(JSONObject row, String resumeId) {
         try {
             switch (row.getString("type")) {
                 case "hello" -> {
-                    if (row.getInt("version") != MatchCodec.VERSION
-                            || !lexicon.hash.equals(row.getString("lexicon"))) {
-                        closeLink();
-                        bluetoothStatus = getString(R.string.app_bluetooth_incompatible);
-                        showBluetooth();
+                    if (bluetoothHelloReceived) return;
+                    BluetoothSession.Decision decision = BluetoothSession.negotiate(row, lexicon.hash, bluetoothHost, resumeId);
+                    String address = link.peerAddress();
+                    if (decision == BluetoothSession.Decision.INCOMPATIBLE) {
+                        rejectBluetooth(R.string.app_bluetooth_incompatible);
                         return;
                     }
-                    if (!bluetoothHost || game != null) return;
-                    String other = row.optString("name", getString(R.string.profile_guest)).trim();
-                    if (other.isEmpty()) other = getString(R.string.profile_guest);
-                    if (other.length() > 18) other = other.substring(0, 18);
-                    game = new FrenchGame(new String[]{bluetoothName, other}, new int[2], gameLanguage);
+                    if (decision == BluetoothSession.Decision.DIFFERENT_GAME
+                            || bluetoothPeerAddress != null && !bluetoothPeerAddress.equals(address)) {
+                        rejectBluetooth(R.string.app_bluetooth_wrong_match);
+                        return;
+                    }
+                    bluetoothHelloReceived = true;
+                    bluetoothPeerAddress = address;
+                    if (!bluetoothHost) return;
+                    if (game == null) {
+                        String other = row.optString("name", getString(R.string.profile_guest)).trim();
+                        if (other.isEmpty()) other = getString(R.string.profile_guest);
+                        if (other.length() > 18) other = other.substring(0, 18);
+                        game = new FrenchGame(new String[]{bluetoothName, other}, new int[2], gameLanguage);
+                    }
                     bluetoothReady = true;
                     link.send(MatchCodec.visible(game, 1));
-                    showGame();
+                    if (screen == Screen.BLUETOOTH) showGame();
+                    else updateArena(-1);
                 }
                 case "state" -> {
                     if (bluetoothHost) return;
+                    if (!bluetoothHelloReceived) throw new JSONException(getString(R.string.app_bluetooth_unexpected));
                     MatchCodec.State next = MatchCodec.readState(row);
                     if (next.language() != gameLanguage || next.seat() != 1 || next.names().length != 2
                             || row.getInt("version") != MatchCodec.VERSION
@@ -2204,17 +2255,20 @@ public final class MainActivity extends Activity {
                             || next.history().size() < guestState.history().size()))) {
                         throw new JSONException(getString(R.string.app_bluetooth_unexpected));
                     }
+                    boolean keepDraft = BluetoothSession.keepGuestDraft(guestState, next);
                     guestState = next;
                     bluetoothReady = true;
                     waiting = false;
-                    clearStaged();
-                    lastRackTurn = -1;
+                    if (!keepDraft) {
+                        clearStaged();
+                        lastRackTurn = -1;
+                    }
                     archiveIfFinished();
                     if (screen == Screen.BLUETOOTH) showGame();
                     else updateArena(-1);
                 }
                 case "move" -> {
-                    if (!bluetoothHost || game == null) return;
+                    if (!bluetoothHost || game == null || !bluetoothReady) return;
                     if (game.end != null || game.active != 1 || row.getInt("turn") != game.history.size()) {
                         link.send(MatchCodec.visible(game, 1));
                         return;
@@ -2227,7 +2281,7 @@ public final class MainActivity extends Activity {
                     else link.send(MatchCodec.object("type", "invalid", "message", error));
                 }
                 case "invalid" -> {
-                    if (bluetoothHost) return;
+                    if (bluetoothHost || !bluetoothReady) return;
                     waiting = false;
                     updateArena(-1);
                     toast(row.optString("message", getString(R.string.app_bluetooth_refused)));
@@ -2235,14 +2289,17 @@ public final class MainActivity extends Activity {
                 default -> { }
             }
         } catch (JSONException | IllegalArgumentException exception) {
-            if (link != null && bluetoothHost) link.send(MatchCodec.object("type", "invalid", "message", getString(R.string.app_invalid_move)));
-            else {
-                closeLink();
-                toast(getString(R.string.app_bluetooth_read_error));
-                if (state() == null) showBluetooth();
-                else updateArena(-1);
-            }
+            if (bluetoothReady && bluetoothHost) link.send(MatchCodec.object("type", "invalid", "message", getString(R.string.app_invalid_move)));
+            else rejectBluetooth(R.string.app_bluetooth_read_error);
         }
+    }
+
+    private void rejectBluetooth(int reason) {
+        closeLink();
+        bluetoothStatus = getString(reason);
+        if (screen == Screen.BLUETOOTH) showBluetooth();
+        else updateArena(-1);
+        toast(bluetoothStatus);
     }
 
     private void showSettings() {
@@ -2726,10 +2783,14 @@ public final class MainActivity extends Activity {
         heading(getString(R.string.social_navigation_friends), "");
         if (pendingSocialInvite != null) {
             String origin = SocialClient.origin(socialBaseUrl());
-            if (pendingSocialInviteOrigin == null) pendingSocialInviteOrigin = origin;
-            else if (!pendingSocialInviteOrigin.equals(origin)) clearPendingSocialInvite(pendingSocialInvite);
+            if (pendingSocialInviteOrigin == null && origin != null) {
+                pendingSocialInviteOrigin = origin;
+                rememberSocialInvitation();
+            }
         }
-        socialPanel = new SocialPanel(ui, socialClient, this::showSocialDuel, pendingSocialInvite, this::connectGoogle,
+        String visibleInvite = pendingSocialInviteOrigin == null || pendingSocialInviteOrigin.equals(SocialClient.origin(socialBaseUrl()))
+                ? pendingSocialInvite : null;
+        socialPanel = new SocialPanel(ui, socialClient, this::showSocialDuel, visibleInvite, this::connectGoogle,
                 this::showTournament, this::editTurnNotifications, this::confirmBeta, this::betaInviteBase,
                 this::editSocialEndpoint, this::openFriendInvitation, this::clearPendingSocialInvite);
         content.addView(socialPanel.view());
@@ -2739,7 +2800,13 @@ public final class MainActivity extends Activity {
         if (!token.equals(pendingSocialInvite)) return;
         pendingSocialInvite = null;
         pendingSocialInviteOrigin = null;
+        rememberSocialInvitation();
         if (screen == Screen.SOCIAL && socialPanel != null) socialPanel.clearInvitation(token);
+    }
+
+    private void rememberSocialInvitation() {
+        preferences.edit().putString(gameLanguage.storageName("pending_social_invite"), pendingSocialInvite)
+                .putString(gameLanguage.storageName("pending_social_invite_origin"), pendingSocialInviteOrigin).apply();
     }
 
     private void showTournament() {
@@ -2927,6 +2994,11 @@ public final class MainActivity extends Activity {
         ui.gap(content, 5);
         content.addView(ui.body(String.join("  ·  ", scores)));
         ui.gap(content, 12);
+
+        if (mode.equals("bluetooth") && bluetoothHost && !bluetoothReady) {
+            content.addView(ui.button(getString(R.string.app_bluetooth_resume_host), false, this::showBluetooth));
+            ui.gap(content, 8);
+        }
 
         content.addView(ui.button(getString(R.string.match_result_new_game), true, () -> {
             if (mode.equals("bluetooth")) {
@@ -3162,7 +3234,8 @@ public final class MainActivity extends Activity {
             }
             return;
         }
-        if ((request == ENABLE_BLUETOOTH || request == APP_SETTINGS) && screen == Screen.BLUETOOTH) showBluetooth();
+        if ((request == ENABLE_BLUETOOTH || request == APP_SETTINGS || request == BLUETOOTH_SETTINGS)
+                && screen == Screen.BLUETOOTH) showBluetooth();
         if (request != EXPORT_FILE) return;
         String body = export;
         export = null;

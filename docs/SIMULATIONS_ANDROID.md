@@ -21,6 +21,14 @@ Le moteur Java d’Android a terminé **1 200 parties** avec Grammalecte 7.7 �
 
 En complément, six scénarios sur l’émulateur Android 8 ont vérifié la reprise avant le dernier tour, le chevalet vidé, les gagnants ex æquo et l’archivage unique. Un test de stockage concurrent a conservé 48 archives et les parties en cours.
 
+## Duels en ligne et Bluetooth de la bêta 0.16.4
+
+La campagne HTTP a terminé **656 duels**, dont 328 revanches miroir, sur les 164 plateaux français et les 164 plateaux anglais. Elle a recalculé les 1 312 poses, effectué 1 330 contrôles de renvoi ou de concurrence et provoqué dix pertes de réponse après enregistrement et dix redémarrages du serveur sur des bases isolées. Les invitations, les scores et les classements ont été vérifiés après la reprise. Les deux placements restent réservés aux participants et apparaissent après leurs deux coups. Une demande de revanche renvoyée après la fin retrouve aussi les placements du rejeu.
+
+Sur Android 16, l’invitation a été ouverte pendant une panne et acceptée après relance. Un brouillon valide a été retrouvé après retour depuis le menu et après arrêt forcé. Lorsque la requête échoue avant l’enregistrement, le joueur peut renvoyer son brouillon. Lorsque la réponse se perd après l’enregistrement, l’application relit le duel et affiche le score enregistré. Le test vérifie aussi les invitations expirées, le classement, les menus de gestion d’amis, le partage et l’affichage des deux coups terminés.
+
+Deux émulateurs Android 16 associés dans les réglages ont joué via Bluetooth classique. Une coupure radio a été provoquée pendant un brouillon puis après un passage enregistré. L’hôte a rouvert la connexion et l’invité a retrouvé le même plateau, son tour et son chevalet. Le brouillon du tour en cours est revenu et le passage enregistré n’a été compté qu’une fois. La reprise sur deux téléphones physiques reste à vérifier.
+
 ## Vérifier WordRivet 0.15.2 sur Android
 
 Les APK 0.15.1 et 0.15.2 ont rejoué les huit mêmes tours d’une partie française avec Grammalecte 7.7 sur un émulateur Android 16 arm64, en mode avion et sans réseau actif. La partie archivée fournit le plateau et le score attendus. Le contrôle recalcule les points des placements et compare le score affiché, les détails affichés et les temps d’inférence consignés par l’application.

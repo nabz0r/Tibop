@@ -65,6 +65,11 @@ final class PracticePanel {
         this(ui, position, lexicon, false, false, null, duelSubmit, "", null);
     }
 
+    PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, Consumer<List<FrenchGame.Tile>> duelSubmit,
+                  String draft, Consumer<List<FrenchGame.Tile>> saveDraft) {
+        this(ui, position, lexicon, false, false, null, duelSubmit, draft, saveDraft);
+    }
+
     private PracticePanel(ViewKit ui, PracticePosition position, Lexicon lexicon, boolean first, boolean tutorial,
                           DailyResult dailyResult, Consumer<List<FrenchGame.Tile>> duelSubmit,
                           String draft, Consumer<List<FrenchGame.Tile>> saveDraft) {

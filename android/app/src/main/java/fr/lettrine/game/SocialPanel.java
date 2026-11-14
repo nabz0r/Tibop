@@ -218,6 +218,8 @@ final class SocialPanel {
             card.addView(ui.body(details));
             if (status.equals("your_turn")) {
                 addAction(card, R.string.social_play, true, () -> openLatestDuel(id));
+            } else if (status.equals("waiting")) {
+                addAction(card, R.string.social_duel_details, false, () -> openLatestDuel(id));
             }
             if (status.equals("finished")) {
                 addAction(card, mirror ? R.string.social_mirror_result : R.string.social_duel_details,
@@ -371,7 +373,8 @@ final class SocialPanel {
         confirm(R.string.social_duel_cancel, label(R.string.social_duel_cancel_confirm), () -> {
             if (!begin()) return;
             client.cancelDuel(id, (result, error) -> {
-                if (finish(error) && root.isAttachedToWindow()) load();
+                finish(error);
+                if (root.isAttachedToWindow()) load();
             });
         });
     }

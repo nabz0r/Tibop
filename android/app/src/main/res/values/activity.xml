@@ -44,6 +44,7 @@
     <string name="app_hint_no_move">Aucun placement trouvé.</string>
     <string name="app_bluetooth_two">Jouer à deux</string>
     <string name="app_bluetooth_pair">Associez d’abord les téléphones dans les réglages Bluetooth d’Android.</string>
+    <string name="app_bluetooth_pair_settings">Ouvrir les réglages Bluetooth</string>
     <string name="app_bluetooth_cancel">Annuler la connexion</string>
     <string name="app_bluetooth_missing">Cet appareil ne propose pas le Bluetooth classique.</string>
     <string name="app_bluetooth_nearby_hint">Autorisez les appareils à proximité dans les réglages de Lettrine.</string>
@@ -60,6 +61,12 @@
     <string name="app_bluetooth_enable_first">Activez d’abord le Bluetooth.</string>
     <string name="app_bluetooth_host">Hôte</string>
     <string name="app_bluetooth_waiting">En attente d’un joueur…</string>
+    <string name="app_bluetooth_reconnect">Se reconnecter</string>
+    <string name="app_bluetooth_resume_host">Attendre l’autre joueur</string>
+    <string name="app_bluetooth_resume_status">Partie Bluetooth en pause</string>
+    <string name="app_bluetooth_resume_guest_hint">Demandez à l’hôte d’ouvrir la reprise de son côté avant de vous reconnecter.</string>
+    <string name="app_bluetooth_wrong_match">L’autre appareil ne reprend pas cette partie Bluetooth.</string>
+    <string name="app_bluetooth_handshake_timeout">L’autre appareil n’a pas répondu. Réessayez la connexion.</string>
     <string name="app_bluetooth_incompatible">Les deux appareils doivent utiliser la même version et le même lexique.</string>
     <string name="app_bluetooth_unexpected">État inattendu</string>
     <string name="app_bluetooth_refused">L’hôte a refusé ce coup.</string>

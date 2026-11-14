@@ -1380,7 +1380,7 @@ async fn rematch(
             separate_racks,
             curated,
         )?;
-        Ok(Json(json!({"duel":duel_json(app,db,&duel,&user)?})))
+        Ok(Json(json!({"duel":duel_detail(app,db,&duel,&user)?})))
     })
     .await
 }
@@ -1399,7 +1399,7 @@ async fn mirror(
         }
         if let Some(mirror_id) = &previous.mirror_id {
             let existing = duel(db, mirror_id, &user)?;
-            return Ok(Json(json!({"duel":duel_json(app,db,&existing,&user)?})));
+            return Ok(Json(json!({"duel":duel_detail(app,db,&existing,&user)?})));
         }
         if !previous.can_mirror() {
             return Err(conflict(
@@ -2660,6 +2660,16 @@ mod tests {
         let complete = request(&base, Method::POST, &m_play, &b, move_a, StatusCode::OK).await;
         assert_eq!(complete["duel"]["score"], first["duel"]["score"]);
         assert_eq!(complete["duel"]["mirror_available"], false);
+        let restored_mirror = request(
+            &base,
+            Method::POST,
+            &mirror_path,
+            &b,
+            json!({}),
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(restored_mirror["duel"], complete["duel"]);
         request(
             &base,
             Method::POST,
@@ -2669,10 +2679,11 @@ mod tests {
             StatusCode::CONFLICT,
         )
         .await;
+        let rematch_path = format!("{classic_path}/rematch");
         let regular = request(
             &base,
             Method::POST,
-            &format!("{classic_path}/rematch"),
+            &rematch_path,
             &a,
             json!({}),
             StatusCode::OK,
@@ -2687,6 +2698,38 @@ mod tests {
                 .len(),
             1
         );
+        let rematch_id = regular["duel"]["id"].as_str().unwrap();
+        let puzzle = &app.puzzles[1];
+        let placement = candidate(&app, puzzle, puzzle.rack, puzzle.rack);
+        let rematch_play = format!("duels/{rematch_id}/play");
+        request(
+            &base,
+            Method::POST,
+            &rematch_play,
+            &a,
+            placement.clone(),
+            StatusCode::OK,
+        )
+        .await;
+        let finished_rematch = request(
+            &base,
+            Method::POST,
+            &rematch_play,
+            &b,
+            placement,
+            StatusCode::OK,
+        )
+        .await;
+        let restored_rematch = request(
+            &base,
+            Method::POST,
+            &rematch_path,
+            &b,
+            json!({}),
+            StatusCode::OK,
+        )
+        .await;
+        assert_eq!(restored_rematch["duel"], finished_rematch["duel"]);
         request(
             &base,
             Method::POST,

@@ -7,7 +7,7 @@
 <p align="center">Le jeu de lettres de Lettrine pour Android. Affrontez NAB en français ou en anglais et revenez sur vos meilleurs coups.</p>
 
 <p align="center">
-  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.3/android/artifacts/lettrine.apk">Télécharger l’APK 0.16.3</a></strong> ·
+  <strong><a href="https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.4/android/artifacts/lettrine.apk">Télécharger l’APK 0.16.4</a></strong> ·
   <a href="https://nabz0r.github.io/scrabnble/">Page de la bêta</a> ·
   <a href="android/README.md">Guide Android</a> ·
   <a href="#lettrine-studio">Studio sur Mac</a>

@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
+import android.os.SystemClock;
 
 import org.json.JSONObject;
 
@@ -26,27 +27,32 @@ final class BluetoothLink implements Closeable {
 
     private static final UUID SERVICE = UUID.fromString("8b99652a-287e-48e2-904a-67d02b41ac99");
     private static final int MAX_FRAME = 1_048_576;
+    private static final int ACCEPT_TIMEOUT_MS = 90_000;
     private final Listener listener;
     private final ExecutorService writer = Executors.newSingleThreadExecutor();
     private volatile BluetoothServerSocket server;
     private volatile BluetoothSocket socket;
     private volatile DataOutputStream output;
+    private volatile String peerAddress;
     private volatile boolean closed;
 
     BluetoothLink(Listener listener) { this.listener = listener; }
 
     void start(BluetoothAdapter adapter, BluetoothDevice device) {
+        start(adapter, device, null);
+    }
+
+    void start(BluetoothAdapter adapter, BluetoothDevice device, String expectedPeerAddress) {
         new Thread(() -> {
             try {
                 if (device == null) {
-                    BluetoothServerSocket opened = adapter.listenUsingRfcommWithServiceRecord("Lettrine", SERVICE);
-                    server = opened;
-                    if (closed) {
-                        opened.close();
-                        return;
+                    try (BluetoothServerSocket opened = adapter.listenUsingRfcommWithServiceRecord("Lettrine", SERVICE)) {
+                        server = opened;
+                        if (closed) return;
+                        socket = acceptPeer(opened, expectedPeerAddress);
+                    } finally {
+                        server = null;
                     }
-                    socket = opened.accept(90_000);
-                    opened.close();
                 } else {
                     socket = device.createRfcommSocketToServiceRecord(SERVICE);
                     if (closed) {
@@ -59,6 +65,7 @@ final class BluetoothLink implements Closeable {
                     socket.close();
                     return;
                 }
+                peerAddress = socket.getRemoteDevice().getAddress();
                 output = new DataOutputStream(socket.getOutputStream());
                 DataInputStream input = new DataInputStream(socket.getInputStream());
                 listener.connected(this);
@@ -76,6 +83,26 @@ final class BluetoothLink implements Closeable {
             }
         }, "Lettrine Bluetooth").start();
     }
+
+    private BluetoothSocket acceptPeer(BluetoothServerSocket opened, String expectedPeerAddress) throws IOException {
+        long deadline = SystemClock.elapsedRealtime() + ACCEPT_TIMEOUT_MS;
+        while (!closed) {
+            long remaining = deadline - SystemClock.elapsedRealtime();
+            if (remaining <= 0) break;
+            BluetoothSocket candidate = opened.accept((int) remaining);
+            if (expectedPeerAddress == null) return candidate;
+            boolean expected = false;
+            try {
+                expected = expectedPeerAddress.equalsIgnoreCase(candidate.getRemoteDevice().getAddress());
+                if (expected) return candidate;
+            } finally {
+                if (!expected) candidate.close();
+            }
+        }
+        throw new IOException("Aucun appareil Bluetooth compatible.");
+    }
+
+    String peerAddress() { return peerAddress; }
 
     void send(JSONObject message) {
         if (closed || output == null) return;

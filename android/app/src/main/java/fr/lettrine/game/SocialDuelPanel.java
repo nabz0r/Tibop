@@ -20,6 +20,7 @@ final class SocialDuelPanel {
     private final Lexicon catalogLexicon;
     private final Runnable back;
     private final String duelId;
+    private final String draftKey;
     private final LinearLayout root;
     private final TextView notice;
     private PracticePanel practice;
@@ -31,6 +32,7 @@ final class SocialDuelPanel {
         this.catalogLexicon = catalogLexicon;
         this.back = back;
         duelId = duel.optString("id");
+        draftKey = client.duelDraftKey(duel);
         root = ui.column();
         notice = ui.body("");
         notice.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
@@ -57,7 +59,8 @@ final class SocialDuelPanel {
         }
         root.addView(ui.body(label(isMirror(duel) ? R.string.social_mirror_goal : R.string.social_duel_goal)));
         ui.gap(root, 10);
-        practice = new PracticePanel(ui, position, rules, this::confirm);
+        practice = new PracticePanel(ui, position, rules, this::confirm, client.duelDraft(draftKey),
+                tiles -> client.saveDuelDraft(draftKey, tiles));
         root.addView(practice.view());
     }
 
@@ -135,17 +138,27 @@ final class SocialDuelPanel {
         client.play(duelId, tiles, (result, error) -> {
             JSONObject duel = result == null ? null : result.optJSONObject("duel");
             if (duel == null) {
-                practice.setSubmitting(false);
-                notice.setText(error == null ? label(R.string.social_network_error) : error);
-                notice.setVisibility(View.VISIBLE);
-                notice.requestRectangleOnScreen(new android.graphics.Rect(0, 0, notice.getWidth(), ui.dp(48)));
+                client.duel(duelId, (latest, refreshError) -> {
+                    JSONObject recovered = latest == null ? null : latest.optJSONObject("duel");
+                    if (recovered != null && !"your_turn".equals(recovered.optString("status"))) {
+                        showResult(recovered);
+                    } else showSubmitError(error);
+                });
             } else {
                 showResult(duel);
             }
         });
     }
 
+    private void showSubmitError(String error) {
+        practice.setSubmitting(false);
+        notice.setText(error == null ? label(R.string.social_network_error) : error);
+        notice.setVisibility(View.VISIBLE);
+        notice.requestRectangleOnScreen(new android.graphics.Rect(0, 0, notice.getWidth(), ui.dp(48)));
+    }
+
     private void showResult(JSONObject duel) {
+        client.saveDuelDraft(draftKey, List.of());
         root.removeAllViews();
         LinearLayout result = ui.card();
         int score = duel.optInt("score");
@@ -167,6 +180,27 @@ final class SocialDuelPanel {
         }
         root.addView(result);
         if (finished) showMoves(duel);
+        else {
+            TextView refresh = ui.button(label(R.string.social_refresh), false, () -> {});
+            ui.gap(root, 10);
+            root.addView(refresh);
+            refresh.setOnClickListener(view -> {
+                ui.enabled(refresh, false);
+                client.duel(duelId, (latest, error) -> {
+                    JSONObject current = latest == null ? null : latest.optJSONObject("duel");
+                    if (current != null && "finished".equals(current.optString("status"))) showResult(current);
+                    else {
+                        ui.enabled(refresh, true);
+                        if (error != null) {
+                            notice.setText(error);
+                            notice.setVisibility(View.VISIBLE);
+                        }
+                    }
+                });
+            });
+            root.addView(notice, 0);
+            notice.setVisibility(View.GONE);
+        }
         backButton();
     }
 

@@ -1,10 +1,10 @@
 # WordRivet pour Android
 
-L’[APK de bêta 0.16.3](artifacts/lettrine.apk) de WordRivet fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il met à jour une installation directe qui utilise la même signature. Le [bundle 0.16.3](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
+L’[APK de bêta 0.16.4](artifacts/lettrine.apk) de WordRivet fonctionne en invité hors ligne à partir d’Android 8 (API 26). Il met à jour une installation directe qui utilise la même signature. Le [bundle 0.16.4](artifacts/lettrine.aab) est destiné à l’importation dans la Play Console.
 
 ## Tester la bêta sur son téléphone
 
-1. Sur Android, [téléchargez l’APK 0.16.3](https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.3/android/artifacts/lettrine.apk) et ouvrez-le. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Pour mettre à jour une bêta installée directement, gardez l’application en place et choisissez **Mettre à jour**.
+1. Sur Android, [téléchargez l’APK 0.16.4](https://raw.githubusercontent.com/nabz0r/scrabnble/refs/tags/v0.16.4/android/artifacts/lettrine.apk) et ouvrez-le. Si Android le demande, autorisez l’installation depuis le navigateur ou l’application Fichiers. Pour mettre à jour une bêta installée directement, gardez l’application en place et choisissez **Mettre à jour**.
 2. En français, ouvrez **Jouer contre NAB** ou **Jouer à deux ou plus** et démarrez une nouvelle partie. Faites glisser une tuile du chevalet sur une autre pour déplacer la première. Faites ensuite glisser une tuile sur le plateau. Quittez l’application en cours de tour et touchez **Reprendre ma partie** pour retrouver l’ordre des lettres et le brouillon.
 3. Pour tester le lexique, si le tirage le permet, essayez `KM` ou `KG` sur la case centrale, puis un mot courant comme `AS` ou `CHAT`. Le jeu indique le motif du refus ou le score du coup. Le filtre s’applique aux nouvelles parties classiques en français.
 4. Pour un duel avec le lexique filtré, installez tous les deux la mise à jour et ouvrez **Amis** pour vous connecter avant de lancer un nouveau duel. Les liens d’amitié déjà envoyés s’utilisent comme avant.
@@ -30,7 +30,7 @@ L’[APK de bêta 0.16.3](artifacts/lettrine.apk) de WordRivet fonctionne en inv
 - **Premier défi** ouvre une position courte depuis l’accueil. Prolongez le mot sur le plateau, validez votre pose, puis comparez votre score à la proposition de NAB. Vous pouvez retenter le défi à tout moment.
 - **Mes parties** permet de garder plusieurs solos et parties à tour de rôle sur l’appareil. Chaque partie reprend avec son score, son tour et ses tuiles en brouillon. Un abandon demande confirmation. Une connexion Bluetooth active reste liée à une seule partie.
 - **Entre amis** accueille deux à quatre joueurs sur le même appareil. Le chevalet est masqué à chaque changement de joueur. Les parties solo et locales en cours sont sauvegardées après chaque tour.
-- **Bluetooth** relie deux appareils préalablement associés dans Android. L’un choisit **Héberger** et l’autre choisit l’appareil hôte. Les deux APK doivent embarquer le même lexique. Une coupure interrompt la partie.
+- **Bluetooth** relie deux appareils préalablement associés dans Android. L’un choisit **Héberger** et l’autre choisit l’appareil hôte. Les deux APK doivent embarquer le même lexique. Après une coupure, gardez l’application ouverte des deux côtés. L’hôte touche **Attendre l’autre joueur**, puis l’invité touche **Se reconnecter**. La reprise exige la 0.16.4 ou une version ultérieure des deux côtés et que les deux appareils aient déjà reçu la partie. L’hôte resynchronise le plateau, le score et le tour. Le brouillon de l’invité revient si son coup n’a pas été enregistré.
 - **Jouer contre NAB** propose quatre niveaux et un niveau adaptatif. La première partie propose Promeneur et l’application mémorise ensuite le niveau choisi. L’adaptatif lit l’Elo local et ajuste sa difficulté pendant la partie en fonction de l’écart de score. Les parties avec aide au placement restent dans l’historique et sont exclues de l’Elo.
 - Glissez une lettre dans le chevalet pour la réordonner et essayer un mot. Pour la poser, glissez-la sur le plateau ou touchez la lettre puis la case. Le jeu conserve l’ordre du chevalet au retour dans une partie classique en cours, jusqu’au tour suivant. Déplacez les tuiles en brouillon directement sur le plateau et consultez le score ou la raison du refus avant de valider.
 - En partie, le joueur actif et le zoom sont visibles au-dessus du plateau. La case visée s’allume pendant le glissement. En portrait, le chevalet reste en bas sur les écrans assez hauts avec une taille de texte standard. Dans **Options**, mélangez les lettres, sélectionnez celles à échanger ou confirmez une passe. Le joker se choisit dans une grille de 26 lettres.
@@ -188,6 +188,11 @@ Le compte social invité suffit pour jouer en ligne. Pour proposer la connexion 
 - Sur Android 16, l’annulation de la vidéo de démonstration a laissé le solde intact. Une annonce Google terminée a crédité un ticket bonus.
 
 Les salons web et l’Elo du studio sont accessibles dans le navigateur. L’application conserve son historique et son Elo sur le téléphone et transfère les parties au studio par export JSON.
+
+## Vérification de la version 0.16.4
+
+- Une invitation reçue reste disponible après arrêt forcé. Un duel retrouve son brouillon à la réouverture. Après un envoi interrompu, l’application vérifie si le serveur a déjà compté le coup. **Actualiser** affiche la réponse de l’autre joueur depuis l’écran d’attente.
+- La reprise Bluetooth a été testée entre deux émulateurs Android 16 après deux coupures radio, pendant un brouillon puis après un passage enregistré. [Scénarios et campagne à 656 duels](../docs/SIMULATIONS_ANDROID.md#duels-en-ligne-et-bluetooth-de-la-bêta-0164)
 
 ## Vérification de la version 0.16.3
 

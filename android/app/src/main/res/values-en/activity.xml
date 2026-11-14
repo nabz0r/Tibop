@@ -44,6 +44,7 @@
     <string name="app_hint_no_move">No placement found.</string>
     <string name="app_bluetooth_two">Play on two devices</string>
     <string name="app_bluetooth_pair">Pair the phones in Android’s Bluetooth settings first.</string>
+    <string name="app_bluetooth_pair_settings">Open Bluetooth settings</string>
     <string name="app_bluetooth_cancel">Cancel connection</string>
     <string name="app_bluetooth_missing">This device doesn’t support classic Bluetooth.</string>
     <string name="app_bluetooth_nearby_hint">Allow nearby devices in the app’s settings.</string>
@@ -60,6 +61,12 @@
     <string name="app_bluetooth_enable_first">Turn on Bluetooth first.</string>
     <string name="app_bluetooth_host">Host</string>
     <string name="app_bluetooth_waiting">Waiting for a player…</string>
+    <string name="app_bluetooth_reconnect">Reconnect</string>
+    <string name="app_bluetooth_resume_host">Wait for the other player</string>
+    <string name="app_bluetooth_resume_status">Bluetooth game paused</string>
+    <string name="app_bluetooth_resume_guest_hint">Ask the host to wait for you before reconnecting.</string>
+    <string name="app_bluetooth_wrong_match">The other device is resuming a different Bluetooth game.</string>
+    <string name="app_bluetooth_handshake_timeout">The other device didn’t respond. Try reconnecting.</string>
     <string name="app_bluetooth_incompatible">Both devices must use the same app version and dictionary.</string>
     <string name="app_bluetooth_unexpected">Unexpected game state</string>
     <string name="app_bluetooth_refused">The host rejected this move.</string>

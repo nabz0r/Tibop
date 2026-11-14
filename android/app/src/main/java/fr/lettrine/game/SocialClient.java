@@ -142,6 +142,25 @@ final class SocialClient {
         request("POST", "/duels/" + segment(duel) + "/play", placement(tiles), callback);
     }
 
+    String duelDraftKey(JSONObject duel) {
+        String endpoint = origin(base.get());
+        JSONObject puzzle = duel.optJSONObject("puzzle");
+        String id = duel.optString("id");
+        if (endpoint == null || puzzle == null || !id.matches("[0-9a-f]{32}")) return null;
+        TurnNotifications.Session session = TurnNotifications.currentSession(context, language);
+        String identity = puzzle.optString("identity");
+        if (session == null || !endpoint.equals(session.origin()) || !identity.matches("[0-9a-f]{24}")) return null;
+        return "duel-draft:" + endpoint + ":" + session.scope() + ":" + id + ":" + identity;
+    }
+
+    String duelDraft(String key) { return key == null ? "" : preferences.getString(key, ""); }
+
+    void saveDuelDraft(String key, List<FrenchGame.Tile> tiles) {
+        if (key == null) return;
+        if (tiles.isEmpty()) preferences.edit().remove(key).apply();
+        else preferences.edit().putString(key, MatchCodec.tiles(tiles, true).toString()).apply();
+    }
+
     void tournament(Callback callback) { request("GET", "/tournament", null, callback); }
 
     void playTournament(long tournament, int round, List<FrenchGame.Tile> tiles, Callback callback) {
@@ -200,7 +219,11 @@ final class SocialClient {
                     result = exchange(origin, method, path, body, session(origin, name, lexicon), lexicon);
                 }
                 if (method.equals("DELETE") && path.equals("/profile")) {
-                    preferences.edit().remove("token:" + origin).remove("ready:" + origin).apply();
+                    SharedPreferences.Editor edit = preferences.edit().remove("token:" + origin).remove("ready:" + origin);
+                    for (String key : preferences.getAll().keySet()) {
+                        if (key.startsWith("duel-draft:" + origin + ":")) edit.remove(key);
+                    }
+                    edit.apply();
                 }
                 deliver(origin, callback, result, null, path.equals("/google"));
             } catch (ApiError exception) {
