@@ -66,7 +66,7 @@ python3 tools/import_campaign.py \
 curl -fsS http://127.0.0.1:8787/api/stats
 ```
 
-La restauration charge les parties et les deux métadonnées dans une seule transaction. Elle accepte la relance sur la même campagne et refuse une campagne différente dans la même collection. Les parties importées depuis Android ont leur propre table. Le studio redirige vers l’APK public de Tibop et lit l’AAB archivé depuis le dossier `android/artifacts/` monté en lecture seule. [Import de la campagne](../tools/import_campaign.py) · [Compilation Android](../android/README.md)
+La restauration charge les parties et les deux métadonnées dans une seule transaction. Elle accepte la relance sur la même campagne et refuse une campagne différente dans la même collection. Les parties importées depuis Android ont leur propre table. Le studio redirige vers l’APK de la publication GitHub de Tibop. Le dossier `android/artifacts/`, monté en lecture seule, contient le bundle Google Play archivé. Les APK compilés localement restent dans le dossier de sortie Gradle. [Import de la campagne](../tools/import_campaign.py) · [Compilation Android](../android/README.md)
 
 ## Données et provenance
 

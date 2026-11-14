@@ -76,6 +76,5 @@ if [[ "$gradle_task" == :app:bundleRelease ]]; then
     "$jarsigner" -verify -strict -keystore "$upload_key" -storepass:file "$upload_password" "$bundle.part" "$upload_alias"
     mv "$bundle.part" "$bundle"
 else
-    cp app/build/outputs/apk/debug/app-debug.apk artifacts/lettrine.apk.part
-    mv artifacts/lettrine.apk.part artifacts/lettrine.apk
+    printf 'APK : %s\n' "$root/android/app/build/outputs/apk/debug/app-debug.apk"
 fi

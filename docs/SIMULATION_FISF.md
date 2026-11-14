@@ -103,6 +103,6 @@ Pour un examen sur ODS 9, indiquez dans `LETTRINE_FISF_WORDS` un fichier intégr
 
 ## Android
 
-Dans WordRivet 0.15.2, **Profil → Réglages → Lexique personnel** accepte une liste autorisée pour les parties hors ligne. L’écran affiche le nombre de formes importées et permet de copier l’empreinte de la liste normalisée. Les parties d’entraînement restent associées à cette empreinte. Le banc avec la pendule et l’arbitrage tourne dans le laboratoire. [APK](../android/artifacts/lettrine.apk)
+Dans WordRivet 0.15.2, **Profil → Réglages → Lexique personnel** accepte une liste autorisée pour les parties hors ligne. L’écran affiche le nombre de formes importées et permet de copier l’empreinte de la liste normalisée. Les parties d’entraînement restent associées à cette empreinte. Le banc avec la pendule et l’arbitrage tourne dans le laboratoire. [Bêta Android de Tibop](https://nabz0r.github.io/scrabnble/)
 
 Le banc mesure la stratégie de jeu de NAB Recherche avancée. Sur Android, SmolLM2 135M Instruct sélectionne sur demande un détail de l’explication vérifiée par le moteur, comme les mots croisés, une case bonus ou un joker. L’essai sur deux versions de l’APK mesure l’utilité de ce choix pour expliquer le score et le délai de réponse en mode avion. [Essai dans l’APK](SIMULATIONS_ANDROID.md#vérifier-wordrivet-0152-sur-android) · [Modèle embarqué et licences](../android/app/src/main/assets/SmolLM2-NOTICE.md)

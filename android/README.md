@@ -58,6 +58,8 @@ Installer le SDK Android 36, le NDK `28.2.13676358`, Java 17, Python 3, CMake 3.
 ./android/scripts/build.sh
 ```
 
+Le script affiche le chemin de l’APK généré dans `android/app/build/outputs/apk/debug/`.
+
 Sur un poste où les dépendances sont en cache, `LETTRINE_GRADLE_OFFLINE=1` compile sans téléchargement. `ANDROID_NDK_HOME` permet de sélectionner le NDK. Le script fabrique les métadonnées du lexique classique à partir des [exclusions versionnées](../data/fr/classic-exclusions.txt). Pour tester un autre lexique autorisé, définissez `LETTRINE_WORDS` avec un chemin de fichier UTF-8 contenant un mot par ligne et `LETTRINE_WORDS_LABEL` avec le nom de l’édition. Une compilation avec une liste fournie utilise cette liste sans le filtre Classique.
 
 L’APK direct utilise les annonces de démonstration Google. Pour le reproduire, préfixez la compilation de l’APK par `LETTRINE_ADMOB_TEST=1`. Le bundle signé fourni se compile avec `LETTRINE_ADMOB_TEST=0` et sans identifiants AdMob. [Configuration et récompenses](../docs/ECONOMIE_ANDROID.md) · [Simulations du moteur Android](../docs/SIMULATIONS_ANDROID.md)
